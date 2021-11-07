@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option go_package="../game_proto";
+package game_proto;
+
+// 错误ID定义
+enum ErrorId {
+	NONE = 0;
+	ACCOUNT_NOT_FOUND = 1; // 帐号找不到
+	INVALID_ACCOUNT = 2; // 非法帐号名
+	ACCOUNT_IS_LOGGIN = 3; // 帐号正在登录
+
+	SESSION_INTERNAL_ERROR = 100; // 会话内部错误
+	PLAYER_ENTER_GAME_REPEATED = 101; // 玩家重复进入游戏
+	DIFFERENT_PLAYER_ENTER_SAME_SESSION = 102; // 不同玩家进入同一会话
+	PLAYER_ENTERING_GAME = 103; // 玩家正在进入游戏
+
+	PLAYER_CHANGE_TANK_FAILED = 200; // 玩家改变坦克失败
+	PLAYER_RESTORE_TANK_FAILED = 201; // 玩家恢复坦克失败
+}
+
+// 错误协议返回
+message MsgErrorAck {
+	ErrorId Error = 1;
+	enum ProtoId { None = 0; Id = 9999; }
+}

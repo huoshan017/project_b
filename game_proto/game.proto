@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+option go_package="../game_proto";
+package game_proto;
+import "common.proto";
+
+// 登录
+message MsgAccountLoginGameReq {
+    string Account = 1;
+    string Password = 2;
+    string AccessToken = 3;
+    enum ProtoId {None = 0; Id = 1;}
+}
+
+// 登录返回
+message MsgAccountLoginGameAck {
+    string Account = 1;
+    string SessionToken = 2;
+    uint32 Result = 3;
+    enum ProtoId {None = 0; Id = 2;}
+}
+
+// 进入游戏请求
+message MsgPlayerEnterGameReq {
+    string Account = 1;
+    string SessionToken = 2;
+    enum ProtoId { None = 0; Id = 100; }
+}
+
+// 进入游戏返回
+message MsgPlayerEnterGameAck {
+    PlayerAccountTankInfo SelfTankInfo = 1;
+    repeated PlayerAccountTankInfo OtherPlayerTankInfoList = 2;
+    enum ProtoId { None = 0; Id = 101; }
+}
+
+// 进入游戏结束通知
+message MsgPlayerEnterGameFinishNtf {
+    enum ProtoId { None = 0; Id = 102; }
+}
+
+// 玩家进入游戏同步
+message MsgPlayerEnterGameSync {
+    PlayerAccountTankInfo TankInfo = 1;
+    enum ProtoId { None = 0; Id = 103; }
+}
+
+// 退出游戏请求
+message MsgPlayerExitGameReq {
+    enum ProtoId { None = 0; Id = 110; }
+}
+
+// 退出游戏返回
+message MsgPlayerExitGameAck {
+    enum ProtoId { None = 0; Id = 111; }
+}
+
+// 玩家退出游戏同步
+message MsgPlayerExitGameSync {
+    uint64 PlayerId = 1;
+    enum ProtoId { None = 0; Id = 112; }
+}
+
+// 玩家基本信息请求
+message MsgPlayerBasicInfoReq {
+    enum ProtoId { None = 0; Id = 120; }
+}
+
+// 玩家基本信息返回
+message MsgPlayerBasicInfoAck {
+    enum ProtoId { None = 0; Id = 121; }
+}
+
+// 坦克移动请求
+message MsgPlayerTankMoveReq {
+    TankMoveInfo MoveInfo = 1;
+    enum ProtoId { None = 0; Id = 200; }
+}
+
+// 坦克移动返回
+message MsgPlayerTankMoveAck {
+    uint64 PlayerId = 1;
+    enum ProtoId {None = 0; Id = 201;}
+}
+
+// 坦克移动同步
+message MsgPlayerTankMoveSync {
+    uint64 PlayerId = 1;
+    TankMoveInfo MoveInfo = 2;
+    enum ProtoId {None = 0; Id = 202;}
+}
+
+// 改变坦克请求
+message MsgPlayerChangeTankReq {
+    int32 TankId = 1; // 坦克id
+    enum ProtoId { None = 0; Id = 210; }
+}
+
+// 改变坦克回复
+message MsgPlayerChangeTankAck {
+    TankInfo ChangedTankInfo = 1;
+    enum ProtoId { None = 0; Id = 211; }
+}
+
+// 改变坦克同步
+message MsgPlayerChangeTankSync {
+    PlayerTankInfo ChangedTankInfo = 1;
+    enum ProtoId { None = 0; Id = 212; }
+}
+
+// 恢复坦克请求
+message MsgPlayerRestoreTankReq {
+    enum ProtoId { None = 0; Id = 213; }
+}
+
+// 恢复坦克回应
+message MsgPlayerRestoreTankAck {
+    int32 TankId = 1;
+    enum ProtoId { None = 0; Id = 214; }
+}
+
+// 恢复坦克同步
+message MsgPlayerRestoreTankSync {
+    uint64 PlayerId = 1;
+    int32 TankId = 2;
+    enum ProtoId { None = 0; Id = 215; }
+}
