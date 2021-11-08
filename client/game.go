@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"project_b/common"
+	"project_b/common_data"
+	"time"
 
 	"golang.org/x/image/math/f64"
 
@@ -20,19 +22,20 @@ const (
 )
 
 type Game struct {
-	mode        Mode
-	net         *NetClient           // 网络模块
-	msgHandler  *MsgHandler          // 消息处理器
-	logic       *common.GameLogic    // 游戏逻辑
-	playerMgr   *CPlayerManager      // 玩家管理器
-	eventMgr    common.IEventManager // 游戏事件管理器，向上层逻辑传递事件
-	cmdMgr      *CmdHandleManager    // 命令处理管理器
-	camera      *Camera              // 摄像机
-	currMap     *Map                 // 当前地图
-	uiMgr       *UIManager           // UI管理
-	playableMgr *PlayableManager     // 可播放管理器
-	myId        uint64               // 我的ID
-	myAcc       string               // 我的帐号
+	mode          Mode
+	net           *NetClient           // 网络模块
+	msgHandler    *MsgHandler          // 消息处理器
+	logic         *common.GameLogic    // 游戏逻辑
+	playerMgr     *CPlayerManager      // 玩家管理器
+	eventMgr      common.IEventManager // 游戏事件管理器，向上层逻辑传递事件
+	cmdMgr        *CmdHandleManager    // 命令处理管理器
+	camera        *Camera              // 摄像机
+	currMap       *Map                 // 当前地图资源
+	uiMgr         *UIManager           // UI管理
+	playableMgr   *PlayableManager     // 可播放管理器
+	myId          uint64               // 我的ID
+	myAcc         string               // 我的帐号
+	lastCheckTime time.Time            // 上次检测时间
 }
 
 // 创建游戏
@@ -101,7 +104,17 @@ func (g *Game) Update() error {
 			g.loadMap()
 			g.logic.Start()
 		} else {
-			g.logic.Update()
+			now := time.Now()
+			if g.lastCheckTime.IsZero() {
+				g.lastCheckTime = now
+			} else {
+				tick := now.Sub(g.lastCheckTime)
+				for tick >= common_data.GameLogicTick {
+					g.logic.Update(common_data.GameLogicTick)
+					tick -= common_data.GameLogicTick
+					g.lastCheckTime.Add(common_data.GameLogicTick)
+				}
+			}
 		}
 		g.handleInput()
 	case ModeGameOver:

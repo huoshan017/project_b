@@ -197,7 +197,7 @@ func (o *MovableObject) Stop() {
 }
 
 // 更新
-func (o *MovableObject) Update() {
+func (o *MovableObject) Update(tick time.Duration) {
 	if o.state == 0 {
 		return
 	}

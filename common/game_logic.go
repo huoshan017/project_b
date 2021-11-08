@@ -3,6 +3,7 @@ package common
 import (
 	"project_b/common/object"
 	"project_b/game_map"
+	"time"
 )
 
 type GameLogic struct {
@@ -31,8 +32,8 @@ func (g *GameLogic) MapIndex() int32 {
 }
 
 // 在逻辑线程中更新
-func (g *GameLogic) Update() {
-	g.scene.Update()
+func (g *GameLogic) Update(tick time.Duration) {
+	g.scene.Update(tick)
 }
 
 // 开始逻辑

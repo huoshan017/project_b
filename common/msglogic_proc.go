@@ -4,10 +4,13 @@ import (
 	"errors"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 const (
-	GameLogicProcDefaultMsgListLength = 100
+	LogicProcDefaultMsgListLength = 100
+	LogicProcDefaultTimeTick      = 100 * time.Millisecond
+	LogicProcMinTimeTick          = 10 * time.Millisecond
 )
 
 var (
@@ -39,6 +42,8 @@ type MsgLogicProc struct {
 	agentCh     chan *agentData
 	agentMap    map[AgentKey]interface{}
 	handleMap   map[uint32]func(AgentKey, MsgData) error
+	tickHandle  func(tick time.Duration)
+	tick        time.Duration
 	closeCh     chan struct{}
 	closed      int32
 	errHandle   func(err error)
@@ -47,7 +52,7 @@ type MsgLogicProc struct {
 // 创建消息逻辑处理
 func CreateMsgLogicProc() *MsgLogicProc {
 	return &MsgLogicProc{
-		msgList: make(chan *msgData, GameLogicProcDefaultMsgListLength),
+		msgList: make(chan *msgData, LogicProcDefaultMsgListLength),
 		msgDataPool: &sync.Pool{
 			New: func() interface{} {
 				return &msgData{}
@@ -66,6 +71,12 @@ func (p *MsgLogicProc) RegisterHandle(msgid uint32, handle func(key AgentKey, ms
 		return
 	}
 	p.handleMap[msgid] = handle
+}
+
+// 设置定时器处理函数
+func (p *MsgLogicProc) SetTickHandle(handle func(tick time.Duration), tick time.Duration) {
+	p.tickHandle = handle
+	p.tick = tick
 }
 
 // 设置错误处理函数
@@ -148,7 +159,19 @@ func (p *MsgLogicProc) Run() {
 	if atomic.LoadInt32(&p.closed) > 0 {
 		return
 	}
-	loop := true
+
+	if p.tick == 0 {
+		p.tick = LogicProcDefaultTimeTick
+	} else if p.tick < LogicProcMinTimeTick {
+		p.tick = LogicProcMinTimeTick
+	}
+
+	var (
+		ticker        = time.NewTicker(p.tick)
+		lastCheckTime = time.Now()
+		loop          = true
+	)
+
 	for loop {
 		select {
 		case d, o := <-p.msgList:
@@ -184,6 +207,13 @@ func (p *MsgLogicProc) Run() {
 				if err != nil && p.errHandle != nil {
 					p.errHandle(err)
 				}
+			}
+		case <-ticker.C:
+			if p.tickHandle != nil {
+				now := time.Now()
+				tick := now.Sub(lastCheckTime)
+				p.tickHandle(tick)
+				lastCheckTime = now
 			}
 		case <-p.closeCh:
 			loop = false

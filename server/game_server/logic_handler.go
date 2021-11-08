@@ -80,5 +80,5 @@ func (h *GameLogicHandler) onPlayerChangeTank(sender gproc.ISender, args interfa
 
 // tick处理
 func (h *GameLogicHandler) onTick(tick time.Duration) {
-	h.logic.Update()
+	h.logic.Update(tick)
 }

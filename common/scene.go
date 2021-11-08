@@ -4,6 +4,7 @@ import (
 	"log"
 	"project_b/common/object"
 	"project_b/game_map"
+	"time"
 )
 
 const (
@@ -107,11 +108,11 @@ func (s *Scene) GetEnemyTanks() map[int32]*object.Tank {
 	return s.enemyTanks
 }
 
-func (s *Scene) Update() {
+func (s *Scene) Update(tick time.Duration) {
 	for _, tank := range s.playerTanks {
-		tank.Update()
+		tank.Update(tick)
 	}
 	for _, tank := range s.enemyTanks {
-		tank.Update()
+		tank.Update(tick)
 	}
 }

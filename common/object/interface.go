@@ -1,5 +1,7 @@
 package object
 
+import "time"
+
 type IObject interface {
 	Id() int32 // 注意：这是配置id
 	SetPos(x, y int32)
@@ -10,7 +12,7 @@ type IObject interface {
 	Right() int32
 	Top() int32
 	Bottom() int32
-	Update()
+	Update(tick time.Duration)
 }
 
 type IMovableObject interface {
