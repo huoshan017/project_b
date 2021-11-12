@@ -90,6 +90,22 @@ message MsgPlayerTankMoveSync {
     enum ProtoId {None = 0; Id = 202;}
 }
 
+// 坦克停止移动请求
+message MsgPlayerTankStopMoveReq {
+    enum ProtoId { None = 0; Id = 203; }
+}
+
+// 坦克停止移动返回
+message MsgPlayerTankStopMoveAck {
+    enum ProtoId { None = 0; Id = 204; }
+}
+
+// 坦克停止移动同步
+message MsgPlayerTankStopMoveSync {
+    uint64 PlayerId = 1;
+    enum ProtoId { None = 0; Id = 205; }
+}
+
 // 改变坦克请求
 message MsgPlayerChangeTankReq {
     int32 TankId = 1; // 坦克id

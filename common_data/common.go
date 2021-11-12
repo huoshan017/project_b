@@ -3,5 +3,5 @@ package common_data
 import "time"
 
 var (
-	GameLogicTick = time.Millisecond * 100
+	GameLogicTick = time.Millisecond * 200
 )

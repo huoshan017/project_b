@@ -5,6 +5,10 @@ import (
 	"project_b/common/object"
 )
 
+var (
+	PlayableLerpT = 0.1 // 插值系数
+)
+
 type frameConfig struct {
 	frameNum       int32
 	dirMap         map[object.Direction]int32
@@ -151,7 +155,7 @@ func init() {
 }
 
 // 根据等级和方向创建坦克动画
-func CreateTankAnim(id int32, level int32, dir object.Direction) *client_base.SpriteAnimConfig {
+func CreateTankAnimConfig(id int32, level int32, dir object.Direction) *client_base.SpriteAnimConfig {
 	anim := &client_base.SpriteAnimConfig{}
 	anim0 := tankAnimConfig[id]
 	frame0 := tankFrameConfig[id]

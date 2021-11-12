@@ -4,28 +4,29 @@ import (
 	"fmt"
 	"project_b/common/object"
 	"project_b/common_data"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // 坦克包含四个方向的播放对象
 type tankDirPlayable struct {
-	left  *PlayableObject
-	right *PlayableObject
-	up    *PlayableObject
-	down  *PlayableObject
+	left  *PlayableMoveObject
+	right *PlayableMoveObject
+	up    *PlayableMoveObject
+	down  *PlayableMoveObject
 }
 
 // 坦克等级方向播放对象
 type tankLevelDirPlayable struct {
-	tankId         int32              // 坦克Id，用作tank对象中静态数据变化之后之前的id查询
-	levelPlayables []*tankDirPlayable // 等级索引播放对象
-	tank           *object.Tank       // 当前坦克对象
-	lastPlayable   *PlayableObject    // 上一次的播放对象
+	tankId         int32               // 坦克Id，用作tank对象中静态数据变化之后之前的id查询
+	levelPlayables []*tankDirPlayable  // 等级索引播放对象
+	tank           *object.Tank        // 当前坦克对象
+	lastPlayable   *PlayableMoveObject // 上一次的播放对象
 }
 
 // 当前正在播放的
-func (p *tankLevelDirPlayable) getCurrPlayable() *PlayableObject {
+func (p *tankLevelDirPlayable) getCurrPlayable() *PlayableMoveObject {
 	level := p.tank.Level()
 	dir := p.tank.Dir()
 	levelPlayable := p.levelPlayables[level-1]
@@ -69,6 +70,7 @@ type PlayableManager struct {
 	playerTankPlayables map[uint64]*tankLevelDirPlayable  // 唯一uid映射到*PlayableObject
 	enemyTankPlayables  map[int32]*tankLevelDirPlayable   // 实例id映射到*PlayableObject
 	freeTankPlayables   map[int32][]*tankLevelDirPlayable // 空闲的坦克等级方向播放对象，按照坦克配置id索引
+	lastCheckTime       time.Time
 }
 
 // 创建播放管理器
@@ -113,20 +115,20 @@ func (m *PlayableManager) newTankLevelDirPlayable(tank *object.Tank) *tankLevelD
 		for j := int32(0); j <= int32(object.DirMax-object.DirMin); j++ {
 			level := i + 1
 			dir := object.Direction(j + int32(object.DirMin))
-			anim := CreateTankAnim(tank.Id(), level, dir)
-			if anim == nil {
+			animConfig := CreateTankAnimConfig(tank.Id(), level, dir)
+			if animConfig == nil {
 				str := fmt.Sprintf("new tank playable anim is nil, level %v, dir %v", level, dir)
 				panic(str)
 			}
 			switch dir {
 			case object.DirUp:
-				playables.levelPlayables[i].up = NewPlayableObject(tank, anim)
+				playables.levelPlayables[i].up = NewPlayableMoveObject(tank, animConfig)
 			case object.DirDown:
-				playables.levelPlayables[i].down = NewPlayableObject(tank, anim)
+				playables.levelPlayables[i].down = NewPlayableMoveObject(tank, animConfig)
 			case object.DirLeft:
-				playables.levelPlayables[i].left = NewPlayableObject(tank, anim)
+				playables.levelPlayables[i].left = NewPlayableMoveObject(tank, animConfig)
 			case object.DirRight:
-				playables.levelPlayables[i].right = NewPlayableObject(tank, anim)
+				playables.levelPlayables[i].right = NewPlayableMoveObject(tank, animConfig)
 			}
 		}
 	}
@@ -249,22 +251,28 @@ func (m *PlayableManager) StopAllTanksPlayable() {
 
 // 更新
 func (m *PlayableManager) Update(screen *ebiten.Image) {
-	m.UpdatePlayerTanksPlayable(screen)
-	m.UpdatEnemyTanksPlayable(screen)
+	var tick time.Duration
+	now := time.Now()
+	if !m.lastCheckTime.IsZero() {
+		tick = now.Sub(m.lastCheckTime)
+	}
+	m.UpdatePlayerTanksPlayable(tick, screen)
+	m.UpdatEnemyTanksPlayable(tick, screen)
+	m.lastCheckTime = now
 }
 
 // 更新玩家坦克动画
-func (m *PlayableManager) UpdatePlayerTanksPlayable(screen *ebiten.Image) {
+func (m *PlayableManager) UpdatePlayerTanksPlayable(tick time.Duration, screen *ebiten.Image) {
 	for _, p := range m.playerTankPlayables {
 		playable := p.getCurrPlayable()
-		playable.Update(screen)
+		playable.Update(tick, screen)
 	}
 }
 
 // 更新敌人坦克动画
-func (m *PlayableManager) UpdatEnemyTanksPlayable(screen *ebiten.Image) {
+func (m *PlayableManager) UpdatEnemyTanksPlayable(tick time.Duration, screen *ebiten.Image) {
 	for _, p := range m.enemyTankPlayables {
 		playable := p.getCurrPlayable()
-		playable.Update(screen)
+		playable.Update(tick, screen)
 	}
 }

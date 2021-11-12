@@ -11,10 +11,17 @@ type IEventInvoker interface {
 	InvokeEvent(id EventId, args ...interface{})
 }
 
+// 事件派发器
+type IEventDispatcher interface {
+	DispatchEvent(id EventId, args ...interface{})
+	Update()
+}
+
 // 事件管理器
 type IEventManager interface {
 	IEventRegistrar
 	IEventInvoker
+	IEventDispatcher
 }
 
 // 游戏逻辑接口

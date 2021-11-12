@@ -664,6 +664,144 @@ func (MsgPlayerTankMoveSync_ProtoId) EnumDescriptor() ([]byte, []int) {
 	return file_game_proto_rawDescGZIP(), []int{13, 0}
 }
 
+type MsgPlayerTankStopMoveReq_ProtoId int32
+
+const (
+	MsgPlayerTankStopMoveReq_None MsgPlayerTankStopMoveReq_ProtoId = 0
+	MsgPlayerTankStopMoveReq_Id   MsgPlayerTankStopMoveReq_ProtoId = 203
+)
+
+// Enum value maps for MsgPlayerTankStopMoveReq_ProtoId.
+var (
+	MsgPlayerTankStopMoveReq_ProtoId_name = map[int32]string{
+		0:   "None",
+		203: "Id",
+	}
+	MsgPlayerTankStopMoveReq_ProtoId_value = map[string]int32{
+		"None": 0,
+		"Id":   203,
+	}
+)
+
+func (x MsgPlayerTankStopMoveReq_ProtoId) Enum() *MsgPlayerTankStopMoveReq_ProtoId {
+	p := new(MsgPlayerTankStopMoveReq_ProtoId)
+	*p = x
+	return p
+}
+
+func (x MsgPlayerTankStopMoveReq_ProtoId) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MsgPlayerTankStopMoveReq_ProtoId) Descriptor() protoreflect.EnumDescriptor {
+	return file_game_proto_enumTypes[14].Descriptor()
+}
+
+func (MsgPlayerTankStopMoveReq_ProtoId) Type() protoreflect.EnumType {
+	return &file_game_proto_enumTypes[14]
+}
+
+func (x MsgPlayerTankStopMoveReq_ProtoId) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MsgPlayerTankStopMoveReq_ProtoId.Descriptor instead.
+func (MsgPlayerTankStopMoveReq_ProtoId) EnumDescriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{14, 0}
+}
+
+type MsgPlayerTankStopMoveAck_ProtoId int32
+
+const (
+	MsgPlayerTankStopMoveAck_None MsgPlayerTankStopMoveAck_ProtoId = 0
+	MsgPlayerTankStopMoveAck_Id   MsgPlayerTankStopMoveAck_ProtoId = 204
+)
+
+// Enum value maps for MsgPlayerTankStopMoveAck_ProtoId.
+var (
+	MsgPlayerTankStopMoveAck_ProtoId_name = map[int32]string{
+		0:   "None",
+		204: "Id",
+	}
+	MsgPlayerTankStopMoveAck_ProtoId_value = map[string]int32{
+		"None": 0,
+		"Id":   204,
+	}
+)
+
+func (x MsgPlayerTankStopMoveAck_ProtoId) Enum() *MsgPlayerTankStopMoveAck_ProtoId {
+	p := new(MsgPlayerTankStopMoveAck_ProtoId)
+	*p = x
+	return p
+}
+
+func (x MsgPlayerTankStopMoveAck_ProtoId) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MsgPlayerTankStopMoveAck_ProtoId) Descriptor() protoreflect.EnumDescriptor {
+	return file_game_proto_enumTypes[15].Descriptor()
+}
+
+func (MsgPlayerTankStopMoveAck_ProtoId) Type() protoreflect.EnumType {
+	return &file_game_proto_enumTypes[15]
+}
+
+func (x MsgPlayerTankStopMoveAck_ProtoId) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MsgPlayerTankStopMoveAck_ProtoId.Descriptor instead.
+func (MsgPlayerTankStopMoveAck_ProtoId) EnumDescriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{15, 0}
+}
+
+type MsgPlayerTankStopMoveSync_ProtoId int32
+
+const (
+	MsgPlayerTankStopMoveSync_None MsgPlayerTankStopMoveSync_ProtoId = 0
+	MsgPlayerTankStopMoveSync_Id   MsgPlayerTankStopMoveSync_ProtoId = 205
+)
+
+// Enum value maps for MsgPlayerTankStopMoveSync_ProtoId.
+var (
+	MsgPlayerTankStopMoveSync_ProtoId_name = map[int32]string{
+		0:   "None",
+		205: "Id",
+	}
+	MsgPlayerTankStopMoveSync_ProtoId_value = map[string]int32{
+		"None": 0,
+		"Id":   205,
+	}
+)
+
+func (x MsgPlayerTankStopMoveSync_ProtoId) Enum() *MsgPlayerTankStopMoveSync_ProtoId {
+	p := new(MsgPlayerTankStopMoveSync_ProtoId)
+	*p = x
+	return p
+}
+
+func (x MsgPlayerTankStopMoveSync_ProtoId) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MsgPlayerTankStopMoveSync_ProtoId) Descriptor() protoreflect.EnumDescriptor {
+	return file_game_proto_enumTypes[16].Descriptor()
+}
+
+func (MsgPlayerTankStopMoveSync_ProtoId) Type() protoreflect.EnumType {
+	return &file_game_proto_enumTypes[16]
+}
+
+func (x MsgPlayerTankStopMoveSync_ProtoId) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MsgPlayerTankStopMoveSync_ProtoId.Descriptor instead.
+func (MsgPlayerTankStopMoveSync_ProtoId) EnumDescriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{16, 0}
+}
+
 type MsgPlayerChangeTankReq_ProtoId int32
 
 const (
@@ -694,11 +832,11 @@ func (x MsgPlayerChangeTankReq_ProtoId) String() string {
 }
 
 func (MsgPlayerChangeTankReq_ProtoId) Descriptor() protoreflect.EnumDescriptor {
-	return file_game_proto_enumTypes[14].Descriptor()
+	return file_game_proto_enumTypes[17].Descriptor()
 }
 
 func (MsgPlayerChangeTankReq_ProtoId) Type() protoreflect.EnumType {
-	return &file_game_proto_enumTypes[14]
+	return &file_game_proto_enumTypes[17]
 }
 
 func (x MsgPlayerChangeTankReq_ProtoId) Number() protoreflect.EnumNumber {
@@ -707,7 +845,7 @@ func (x MsgPlayerChangeTankReq_ProtoId) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MsgPlayerChangeTankReq_ProtoId.Descriptor instead.
 func (MsgPlayerChangeTankReq_ProtoId) EnumDescriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{14, 0}
+	return file_game_proto_rawDescGZIP(), []int{17, 0}
 }
 
 type MsgPlayerChangeTankAck_ProtoId int32
@@ -740,11 +878,11 @@ func (x MsgPlayerChangeTankAck_ProtoId) String() string {
 }
 
 func (MsgPlayerChangeTankAck_ProtoId) Descriptor() protoreflect.EnumDescriptor {
-	return file_game_proto_enumTypes[15].Descriptor()
+	return file_game_proto_enumTypes[18].Descriptor()
 }
 
 func (MsgPlayerChangeTankAck_ProtoId) Type() protoreflect.EnumType {
-	return &file_game_proto_enumTypes[15]
+	return &file_game_proto_enumTypes[18]
 }
 
 func (x MsgPlayerChangeTankAck_ProtoId) Number() protoreflect.EnumNumber {
@@ -753,7 +891,7 @@ func (x MsgPlayerChangeTankAck_ProtoId) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MsgPlayerChangeTankAck_ProtoId.Descriptor instead.
 func (MsgPlayerChangeTankAck_ProtoId) EnumDescriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{15, 0}
+	return file_game_proto_rawDescGZIP(), []int{18, 0}
 }
 
 type MsgPlayerChangeTankSync_ProtoId int32
@@ -786,11 +924,11 @@ func (x MsgPlayerChangeTankSync_ProtoId) String() string {
 }
 
 func (MsgPlayerChangeTankSync_ProtoId) Descriptor() protoreflect.EnumDescriptor {
-	return file_game_proto_enumTypes[16].Descriptor()
+	return file_game_proto_enumTypes[19].Descriptor()
 }
 
 func (MsgPlayerChangeTankSync_ProtoId) Type() protoreflect.EnumType {
-	return &file_game_proto_enumTypes[16]
+	return &file_game_proto_enumTypes[19]
 }
 
 func (x MsgPlayerChangeTankSync_ProtoId) Number() protoreflect.EnumNumber {
@@ -799,7 +937,7 @@ func (x MsgPlayerChangeTankSync_ProtoId) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MsgPlayerChangeTankSync_ProtoId.Descriptor instead.
 func (MsgPlayerChangeTankSync_ProtoId) EnumDescriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{16, 0}
+	return file_game_proto_rawDescGZIP(), []int{19, 0}
 }
 
 type MsgPlayerRestoreTankReq_ProtoId int32
@@ -832,11 +970,11 @@ func (x MsgPlayerRestoreTankReq_ProtoId) String() string {
 }
 
 func (MsgPlayerRestoreTankReq_ProtoId) Descriptor() protoreflect.EnumDescriptor {
-	return file_game_proto_enumTypes[17].Descriptor()
+	return file_game_proto_enumTypes[20].Descriptor()
 }
 
 func (MsgPlayerRestoreTankReq_ProtoId) Type() protoreflect.EnumType {
-	return &file_game_proto_enumTypes[17]
+	return &file_game_proto_enumTypes[20]
 }
 
 func (x MsgPlayerRestoreTankReq_ProtoId) Number() protoreflect.EnumNumber {
@@ -845,7 +983,7 @@ func (x MsgPlayerRestoreTankReq_ProtoId) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MsgPlayerRestoreTankReq_ProtoId.Descriptor instead.
 func (MsgPlayerRestoreTankReq_ProtoId) EnumDescriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{17, 0}
+	return file_game_proto_rawDescGZIP(), []int{20, 0}
 }
 
 type MsgPlayerRestoreTankAck_ProtoId int32
@@ -878,11 +1016,11 @@ func (x MsgPlayerRestoreTankAck_ProtoId) String() string {
 }
 
 func (MsgPlayerRestoreTankAck_ProtoId) Descriptor() protoreflect.EnumDescriptor {
-	return file_game_proto_enumTypes[18].Descriptor()
+	return file_game_proto_enumTypes[21].Descriptor()
 }
 
 func (MsgPlayerRestoreTankAck_ProtoId) Type() protoreflect.EnumType {
-	return &file_game_proto_enumTypes[18]
+	return &file_game_proto_enumTypes[21]
 }
 
 func (x MsgPlayerRestoreTankAck_ProtoId) Number() protoreflect.EnumNumber {
@@ -891,7 +1029,7 @@ func (x MsgPlayerRestoreTankAck_ProtoId) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MsgPlayerRestoreTankAck_ProtoId.Descriptor instead.
 func (MsgPlayerRestoreTankAck_ProtoId) EnumDescriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{18, 0}
+	return file_game_proto_rawDescGZIP(), []int{21, 0}
 }
 
 type MsgPlayerRestoreTankSync_ProtoId int32
@@ -924,11 +1062,11 @@ func (x MsgPlayerRestoreTankSync_ProtoId) String() string {
 }
 
 func (MsgPlayerRestoreTankSync_ProtoId) Descriptor() protoreflect.EnumDescriptor {
-	return file_game_proto_enumTypes[19].Descriptor()
+	return file_game_proto_enumTypes[22].Descriptor()
 }
 
 func (MsgPlayerRestoreTankSync_ProtoId) Type() protoreflect.EnumType {
-	return &file_game_proto_enumTypes[19]
+	return &file_game_proto_enumTypes[22]
 }
 
 func (x MsgPlayerRestoreTankSync_ProtoId) Number() protoreflect.EnumNumber {
@@ -937,7 +1075,7 @@ func (x MsgPlayerRestoreTankSync_ProtoId) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MsgPlayerRestoreTankSync_ProtoId.Descriptor instead.
 func (MsgPlayerRestoreTankSync_ProtoId) EnumDescriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{19, 0}
+	return file_game_proto_rawDescGZIP(), []int{22, 0}
 }
 
 // 登录
@@ -1623,6 +1761,132 @@ func (x *MsgPlayerTankMoveSync) GetMoveInfo() *TankMoveInfo {
 	return nil
 }
 
+// 坦克停止移动请求
+type MsgPlayerTankStopMoveReq struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *MsgPlayerTankStopMoveReq) Reset() {
+	*x = MsgPlayerTankStopMoveReq{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_game_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgPlayerTankStopMoveReq) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgPlayerTankStopMoveReq) ProtoMessage() {}
+
+func (x *MsgPlayerTankStopMoveReq) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MsgPlayerTankStopMoveReq.ProtoReflect.Descriptor instead.
+func (*MsgPlayerTankStopMoveReq) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{14}
+}
+
+// 坦克停止移动返回
+type MsgPlayerTankStopMoveAck struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *MsgPlayerTankStopMoveAck) Reset() {
+	*x = MsgPlayerTankStopMoveAck{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_game_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgPlayerTankStopMoveAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgPlayerTankStopMoveAck) ProtoMessage() {}
+
+func (x *MsgPlayerTankStopMoveAck) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MsgPlayerTankStopMoveAck.ProtoReflect.Descriptor instead.
+func (*MsgPlayerTankStopMoveAck) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{15}
+}
+
+// 坦克停止移动同步
+type MsgPlayerTankStopMoveSync struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	PlayerId uint64 `protobuf:"varint,1,opt,name=PlayerId,proto3" json:"PlayerId,omitempty"`
+}
+
+func (x *MsgPlayerTankStopMoveSync) Reset() {
+	*x = MsgPlayerTankStopMoveSync{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_game_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MsgPlayerTankStopMoveSync) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MsgPlayerTankStopMoveSync) ProtoMessage() {}
+
+func (x *MsgPlayerTankStopMoveSync) ProtoReflect() protoreflect.Message {
+	mi := &file_game_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MsgPlayerTankStopMoveSync.ProtoReflect.Descriptor instead.
+func (*MsgPlayerTankStopMoveSync) Descriptor() ([]byte, []int) {
+	return file_game_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *MsgPlayerTankStopMoveSync) GetPlayerId() uint64 {
+	if x != nil {
+		return x.PlayerId
+	}
+	return 0
+}
+
 // 改变坦克请求
 type MsgPlayerChangeTankReq struct {
 	state         protoimpl.MessageState
@@ -1635,7 +1899,7 @@ type MsgPlayerChangeTankReq struct {
 func (x *MsgPlayerChangeTankReq) Reset() {
 	*x = MsgPlayerChangeTankReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_game_proto_msgTypes[14]
+		mi := &file_game_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1648,7 +1912,7 @@ func (x *MsgPlayerChangeTankReq) String() string {
 func (*MsgPlayerChangeTankReq) ProtoMessage() {}
 
 func (x *MsgPlayerChangeTankReq) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[14]
+	mi := &file_game_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1661,7 +1925,7 @@ func (x *MsgPlayerChangeTankReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgPlayerChangeTankReq.ProtoReflect.Descriptor instead.
 func (*MsgPlayerChangeTankReq) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{14}
+	return file_game_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MsgPlayerChangeTankReq) GetTankId() int32 {
@@ -1683,7 +1947,7 @@ type MsgPlayerChangeTankAck struct {
 func (x *MsgPlayerChangeTankAck) Reset() {
 	*x = MsgPlayerChangeTankAck{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_game_proto_msgTypes[15]
+		mi := &file_game_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1696,7 +1960,7 @@ func (x *MsgPlayerChangeTankAck) String() string {
 func (*MsgPlayerChangeTankAck) ProtoMessage() {}
 
 func (x *MsgPlayerChangeTankAck) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[15]
+	mi := &file_game_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1709,7 +1973,7 @@ func (x *MsgPlayerChangeTankAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgPlayerChangeTankAck.ProtoReflect.Descriptor instead.
 func (*MsgPlayerChangeTankAck) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{15}
+	return file_game_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *MsgPlayerChangeTankAck) GetChangedTankInfo() *TankInfo {
@@ -1731,7 +1995,7 @@ type MsgPlayerChangeTankSync struct {
 func (x *MsgPlayerChangeTankSync) Reset() {
 	*x = MsgPlayerChangeTankSync{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_game_proto_msgTypes[16]
+		mi := &file_game_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1744,7 +2008,7 @@ func (x *MsgPlayerChangeTankSync) String() string {
 func (*MsgPlayerChangeTankSync) ProtoMessage() {}
 
 func (x *MsgPlayerChangeTankSync) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[16]
+	mi := &file_game_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1757,7 +2021,7 @@ func (x *MsgPlayerChangeTankSync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgPlayerChangeTankSync.ProtoReflect.Descriptor instead.
 func (*MsgPlayerChangeTankSync) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{16}
+	return file_game_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *MsgPlayerChangeTankSync) GetChangedTankInfo() *PlayerTankInfo {
@@ -1777,7 +2041,7 @@ type MsgPlayerRestoreTankReq struct {
 func (x *MsgPlayerRestoreTankReq) Reset() {
 	*x = MsgPlayerRestoreTankReq{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_game_proto_msgTypes[17]
+		mi := &file_game_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1790,7 +2054,7 @@ func (x *MsgPlayerRestoreTankReq) String() string {
 func (*MsgPlayerRestoreTankReq) ProtoMessage() {}
 
 func (x *MsgPlayerRestoreTankReq) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[17]
+	mi := &file_game_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1803,7 +2067,7 @@ func (x *MsgPlayerRestoreTankReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgPlayerRestoreTankReq.ProtoReflect.Descriptor instead.
 func (*MsgPlayerRestoreTankReq) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{17}
+	return file_game_proto_rawDescGZIP(), []int{20}
 }
 
 // 恢复坦克回应
@@ -1818,7 +2082,7 @@ type MsgPlayerRestoreTankAck struct {
 func (x *MsgPlayerRestoreTankAck) Reset() {
 	*x = MsgPlayerRestoreTankAck{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_game_proto_msgTypes[18]
+		mi := &file_game_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1831,7 +2095,7 @@ func (x *MsgPlayerRestoreTankAck) String() string {
 func (*MsgPlayerRestoreTankAck) ProtoMessage() {}
 
 func (x *MsgPlayerRestoreTankAck) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[18]
+	mi := &file_game_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1844,7 +2108,7 @@ func (x *MsgPlayerRestoreTankAck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgPlayerRestoreTankAck.ProtoReflect.Descriptor instead.
 func (*MsgPlayerRestoreTankAck) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{18}
+	return file_game_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *MsgPlayerRestoreTankAck) GetTankId() int32 {
@@ -1867,7 +2131,7 @@ type MsgPlayerRestoreTankSync struct {
 func (x *MsgPlayerRestoreTankSync) Reset() {
 	*x = MsgPlayerRestoreTankSync{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_game_proto_msgTypes[19]
+		mi := &file_game_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1880,7 +2144,7 @@ func (x *MsgPlayerRestoreTankSync) String() string {
 func (*MsgPlayerRestoreTankSync) ProtoMessage() {}
 
 func (x *MsgPlayerRestoreTankSync) ProtoReflect() protoreflect.Message {
-	mi := &file_game_proto_msgTypes[19]
+	mi := &file_game_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1893,7 +2157,7 @@ func (x *MsgPlayerRestoreTankSync) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MsgPlayerRestoreTankSync.ProtoReflect.Descriptor instead.
 func (*MsgPlayerRestoreTankSync) Descriptor() ([]byte, []int) {
-	return file_game_proto_rawDescGZIP(), []int{19}
+	return file_game_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *MsgPlayerRestoreTankSync) GetPlayerId() uint64 {
@@ -2004,44 +2268,57 @@ var file_game_proto_rawDesc = []byte{
 	0x2e, 0x54, 0x61, 0x6e, 0x6b, 0x4d, 0x6f, 0x76, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x08, 0x4d,
 	0x6f, 0x76, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f,
 	0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02,
-	0x49, 0x64, 0x10, 0xca, 0x01, 0x22, 0x4e, 0x0a, 0x16, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79,
-	0x65, 0x72, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x52, 0x65, 0x71, 0x12,
-	0x16, 0x0a, 0x06, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x06, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f,
-	0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02,
-	0x49, 0x64, 0x10, 0xd2, 0x01, 0x22, 0x76, 0x0a, 0x16, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79,
-	0x65, 0x72, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x41, 0x63, 0x6b, 0x12,
-	0x3e, 0x0a, 0x0f, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e,
-	0x66, 0x6f, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x67, 0x61, 0x6d, 0x65, 0x5f,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0f,
-	0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x22,
-	0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f,
-	0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd3, 0x01, 0x22, 0x7d, 0x0a,
-	0x17, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65,
-	0x54, 0x61, 0x6e, 0x6b, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x44, 0x0a, 0x0f, 0x43, 0x68, 0x61, 0x6e,
-	0x67, 0x65, 0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x61, 0x6d, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x50,
-	0x6c, 0x61, 0x79, 0x65, 0x72, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0f, 0x43,
-	0x68, 0x61, 0x6e, 0x67, 0x65, 0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x1c,
-	0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e,
-	0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd4, 0x01, 0x22, 0x37, 0x0a, 0x17,
-	0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x54, 0x61, 0x6e, 0x6b, 0x52, 0x65, 0x71, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f,
-	0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02,
-	0x49, 0x64, 0x10, 0xd5, 0x01, 0x22, 0x4f, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79,
-	0x65, 0x72, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x41, 0x63, 0x6b,
-	0x12, 0x16, 0x0a, 0x06, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05,
-	0x52, 0x06, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74,
-	0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a,
-	0x02, 0x49, 0x64, 0x10, 0xd6, 0x01, 0x22, 0x6c, 0x0a, 0x18, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61,
-	0x79, 0x65, 0x72, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x53, 0x79,
-	0x6e, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x49, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x04, 0x52, 0x08, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x49, 0x64, 0x12, 0x16,
-	0x0a, 0x06, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06,
-	0x54, 0x61, 0x6e, 0x6b, 0x49, 0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49,
-	0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49,
-	0x64, 0x10, 0xd7, 0x01, 0x42, 0x0f, 0x5a, 0x0d, 0x2e, 0x2e, 0x2f, 0x67, 0x61, 0x6d, 0x65, 0x5f,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x49, 0x64, 0x10, 0xca, 0x01, 0x22, 0x38, 0x0a, 0x18, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79,
+	0x65, 0x72, 0x54, 0x61, 0x6e, 0x6b, 0x53, 0x74, 0x6f, 0x70, 0x4d, 0x6f, 0x76, 0x65, 0x52, 0x65,
+	0x71, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04,
+	0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xcb, 0x01, 0x22,
+	0x38, 0x0a, 0x18, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x54, 0x61, 0x6e, 0x6b,
+	0x53, 0x74, 0x6f, 0x70, 0x4d, 0x6f, 0x76, 0x65, 0x41, 0x63, 0x6b, 0x22, 0x1c, 0x0a, 0x07, 0x50,
+	0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00,
+	0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xcc, 0x01, 0x22, 0x55, 0x0a, 0x19, 0x4d, 0x73, 0x67,
+	0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x54, 0x61, 0x6e, 0x6b, 0x53, 0x74, 0x6f, 0x70, 0x4d, 0x6f,
+	0x76, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72,
+	0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x08, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72,
+	0x49, 0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a,
+	0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xcd, 0x01,
+	0x22, 0x4e, 0x0a, 0x16, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x43, 0x68, 0x61,
+	0x6e, 0x67, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x52, 0x65, 0x71, 0x12, 0x16, 0x0a, 0x06, 0x54, 0x61,
+	0x6e, 0x6b, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x54, 0x61, 0x6e, 0x6b,
+	0x49, 0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a,
+	0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd2, 0x01,
+	0x22, 0x76, 0x0a, 0x16, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x43, 0x68, 0x61,
+	0x6e, 0x67, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x41, 0x63, 0x6b, 0x12, 0x3e, 0x0a, 0x0f, 0x43, 0x68,
+	0x61, 0x6e, 0x67, 0x65, 0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x67, 0x61, 0x6d, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0f, 0x43, 0x68, 0x61, 0x6e, 0x67,
+	0x65, 0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72,
+	0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12,
+	0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd3, 0x01, 0x22, 0x7d, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x50,
+	0x6c, 0x61, 0x79, 0x65, 0x72, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x53,
+	0x79, 0x6e, 0x63, 0x12, 0x44, 0x0a, 0x0f, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x64, 0x54, 0x61,
+	0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x61, 0x6d, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72,
+	0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x0f, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65,
+	0x64, 0x54, 0x61, 0x6e, 0x6b, 0x49, 0x6e, 0x66, 0x6f, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f,
+	0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07,
+	0x0a, 0x02, 0x49, 0x64, 0x10, 0xd4, 0x01, 0x22, 0x37, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x50, 0x6c,
+	0x61, 0x79, 0x65, 0x72, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x52,
+	0x65, 0x71, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a,
+	0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd5, 0x01,
+	0x22, 0x4f, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x52, 0x65, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x41, 0x63, 0x6b, 0x12, 0x16, 0x0a, 0x06, 0x54,
+	0x61, 0x6e, 0x6b, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x54, 0x61, 0x6e,
+	0x6b, 0x49, 0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08,
+	0x0a, 0x04, 0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd6,
+	0x01, 0x22, 0x6c, 0x0a, 0x18, 0x4d, 0x73, 0x67, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x52, 0x65,
+	0x73, 0x74, 0x6f, 0x72, 0x65, 0x54, 0x61, 0x6e, 0x6b, 0x53, 0x79, 0x6e, 0x63, 0x12, 0x1a, 0x0a,
+	0x08, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x49, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x08, 0x50, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x49, 0x64, 0x12, 0x16, 0x0a, 0x06, 0x54, 0x61, 0x6e,
+	0x6b, 0x49, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x54, 0x61, 0x6e, 0x6b, 0x49,
+	0x64, 0x22, 0x1c, 0x0a, 0x07, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x49, 0x64, 0x12, 0x08, 0x0a, 0x04,
+	0x4e, 0x6f, 0x6e, 0x65, 0x10, 0x00, 0x12, 0x07, 0x0a, 0x02, 0x49, 0x64, 0x10, 0xd7, 0x01, 0x42,
+	0x0f, 0x5a, 0x0d, 0x2e, 0x2e, 0x2f, 0x67, 0x61, 0x6d, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2056,8 +2333,8 @@ func file_game_proto_rawDescGZIP() []byte {
 	return file_game_proto_rawDescData
 }
 
-var file_game_proto_enumTypes = make([]protoimpl.EnumInfo, 20)
-var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_game_proto_enumTypes = make([]protoimpl.EnumInfo, 23)
+var file_game_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_game_proto_goTypes = []interface{}{
 	(MsgAccountLoginGameReq_ProtoId)(0),      // 0: game_proto.MsgAccountLoginGameReq.ProtoId
 	(MsgAccountLoginGameAck_ProtoId)(0),      // 1: game_proto.MsgAccountLoginGameAck.ProtoId
@@ -2073,45 +2350,51 @@ var file_game_proto_goTypes = []interface{}{
 	(MsgPlayerTankMoveReq_ProtoId)(0),        // 11: game_proto.MsgPlayerTankMoveReq.ProtoId
 	(MsgPlayerTankMoveAck_ProtoId)(0),        // 12: game_proto.MsgPlayerTankMoveAck.ProtoId
 	(MsgPlayerTankMoveSync_ProtoId)(0),       // 13: game_proto.MsgPlayerTankMoveSync.ProtoId
-	(MsgPlayerChangeTankReq_ProtoId)(0),      // 14: game_proto.MsgPlayerChangeTankReq.ProtoId
-	(MsgPlayerChangeTankAck_ProtoId)(0),      // 15: game_proto.MsgPlayerChangeTankAck.ProtoId
-	(MsgPlayerChangeTankSync_ProtoId)(0),     // 16: game_proto.MsgPlayerChangeTankSync.ProtoId
-	(MsgPlayerRestoreTankReq_ProtoId)(0),     // 17: game_proto.MsgPlayerRestoreTankReq.ProtoId
-	(MsgPlayerRestoreTankAck_ProtoId)(0),     // 18: game_proto.MsgPlayerRestoreTankAck.ProtoId
-	(MsgPlayerRestoreTankSync_ProtoId)(0),    // 19: game_proto.MsgPlayerRestoreTankSync.ProtoId
-	(*MsgAccountLoginGameReq)(nil),           // 20: game_proto.MsgAccountLoginGameReq
-	(*MsgAccountLoginGameAck)(nil),           // 21: game_proto.MsgAccountLoginGameAck
-	(*MsgPlayerEnterGameReq)(nil),            // 22: game_proto.MsgPlayerEnterGameReq
-	(*MsgPlayerEnterGameAck)(nil),            // 23: game_proto.MsgPlayerEnterGameAck
-	(*MsgPlayerEnterGameFinishNtf)(nil),      // 24: game_proto.MsgPlayerEnterGameFinishNtf
-	(*MsgPlayerEnterGameSync)(nil),           // 25: game_proto.MsgPlayerEnterGameSync
-	(*MsgPlayerExitGameReq)(nil),             // 26: game_proto.MsgPlayerExitGameReq
-	(*MsgPlayerExitGameAck)(nil),             // 27: game_proto.MsgPlayerExitGameAck
-	(*MsgPlayerExitGameSync)(nil),            // 28: game_proto.MsgPlayerExitGameSync
-	(*MsgPlayerBasicInfoReq)(nil),            // 29: game_proto.MsgPlayerBasicInfoReq
-	(*MsgPlayerBasicInfoAck)(nil),            // 30: game_proto.MsgPlayerBasicInfoAck
-	(*MsgPlayerTankMoveReq)(nil),             // 31: game_proto.MsgPlayerTankMoveReq
-	(*MsgPlayerTankMoveAck)(nil),             // 32: game_proto.MsgPlayerTankMoveAck
-	(*MsgPlayerTankMoveSync)(nil),            // 33: game_proto.MsgPlayerTankMoveSync
-	(*MsgPlayerChangeTankReq)(nil),           // 34: game_proto.MsgPlayerChangeTankReq
-	(*MsgPlayerChangeTankAck)(nil),           // 35: game_proto.MsgPlayerChangeTankAck
-	(*MsgPlayerChangeTankSync)(nil),          // 36: game_proto.MsgPlayerChangeTankSync
-	(*MsgPlayerRestoreTankReq)(nil),          // 37: game_proto.MsgPlayerRestoreTankReq
-	(*MsgPlayerRestoreTankAck)(nil),          // 38: game_proto.MsgPlayerRestoreTankAck
-	(*MsgPlayerRestoreTankSync)(nil),         // 39: game_proto.MsgPlayerRestoreTankSync
-	(*PlayerAccountTankInfo)(nil),            // 40: game_proto.PlayerAccountTankInfo
-	(*TankMoveInfo)(nil),                     // 41: game_proto.TankMoveInfo
-	(*TankInfo)(nil),                         // 42: game_proto.TankInfo
-	(*PlayerTankInfo)(nil),                   // 43: game_proto.PlayerTankInfo
+	(MsgPlayerTankStopMoveReq_ProtoId)(0),    // 14: game_proto.MsgPlayerTankStopMoveReq.ProtoId
+	(MsgPlayerTankStopMoveAck_ProtoId)(0),    // 15: game_proto.MsgPlayerTankStopMoveAck.ProtoId
+	(MsgPlayerTankStopMoveSync_ProtoId)(0),   // 16: game_proto.MsgPlayerTankStopMoveSync.ProtoId
+	(MsgPlayerChangeTankReq_ProtoId)(0),      // 17: game_proto.MsgPlayerChangeTankReq.ProtoId
+	(MsgPlayerChangeTankAck_ProtoId)(0),      // 18: game_proto.MsgPlayerChangeTankAck.ProtoId
+	(MsgPlayerChangeTankSync_ProtoId)(0),     // 19: game_proto.MsgPlayerChangeTankSync.ProtoId
+	(MsgPlayerRestoreTankReq_ProtoId)(0),     // 20: game_proto.MsgPlayerRestoreTankReq.ProtoId
+	(MsgPlayerRestoreTankAck_ProtoId)(0),     // 21: game_proto.MsgPlayerRestoreTankAck.ProtoId
+	(MsgPlayerRestoreTankSync_ProtoId)(0),    // 22: game_proto.MsgPlayerRestoreTankSync.ProtoId
+	(*MsgAccountLoginGameReq)(nil),           // 23: game_proto.MsgAccountLoginGameReq
+	(*MsgAccountLoginGameAck)(nil),           // 24: game_proto.MsgAccountLoginGameAck
+	(*MsgPlayerEnterGameReq)(nil),            // 25: game_proto.MsgPlayerEnterGameReq
+	(*MsgPlayerEnterGameAck)(nil),            // 26: game_proto.MsgPlayerEnterGameAck
+	(*MsgPlayerEnterGameFinishNtf)(nil),      // 27: game_proto.MsgPlayerEnterGameFinishNtf
+	(*MsgPlayerEnterGameSync)(nil),           // 28: game_proto.MsgPlayerEnterGameSync
+	(*MsgPlayerExitGameReq)(nil),             // 29: game_proto.MsgPlayerExitGameReq
+	(*MsgPlayerExitGameAck)(nil),             // 30: game_proto.MsgPlayerExitGameAck
+	(*MsgPlayerExitGameSync)(nil),            // 31: game_proto.MsgPlayerExitGameSync
+	(*MsgPlayerBasicInfoReq)(nil),            // 32: game_proto.MsgPlayerBasicInfoReq
+	(*MsgPlayerBasicInfoAck)(nil),            // 33: game_proto.MsgPlayerBasicInfoAck
+	(*MsgPlayerTankMoveReq)(nil),             // 34: game_proto.MsgPlayerTankMoveReq
+	(*MsgPlayerTankMoveAck)(nil),             // 35: game_proto.MsgPlayerTankMoveAck
+	(*MsgPlayerTankMoveSync)(nil),            // 36: game_proto.MsgPlayerTankMoveSync
+	(*MsgPlayerTankStopMoveReq)(nil),         // 37: game_proto.MsgPlayerTankStopMoveReq
+	(*MsgPlayerTankStopMoveAck)(nil),         // 38: game_proto.MsgPlayerTankStopMoveAck
+	(*MsgPlayerTankStopMoveSync)(nil),        // 39: game_proto.MsgPlayerTankStopMoveSync
+	(*MsgPlayerChangeTankReq)(nil),           // 40: game_proto.MsgPlayerChangeTankReq
+	(*MsgPlayerChangeTankAck)(nil),           // 41: game_proto.MsgPlayerChangeTankAck
+	(*MsgPlayerChangeTankSync)(nil),          // 42: game_proto.MsgPlayerChangeTankSync
+	(*MsgPlayerRestoreTankReq)(nil),          // 43: game_proto.MsgPlayerRestoreTankReq
+	(*MsgPlayerRestoreTankAck)(nil),          // 44: game_proto.MsgPlayerRestoreTankAck
+	(*MsgPlayerRestoreTankSync)(nil),         // 45: game_proto.MsgPlayerRestoreTankSync
+	(*PlayerAccountTankInfo)(nil),            // 46: game_proto.PlayerAccountTankInfo
+	(*TankMoveInfo)(nil),                     // 47: game_proto.TankMoveInfo
+	(*TankInfo)(nil),                         // 48: game_proto.TankInfo
+	(*PlayerTankInfo)(nil),                   // 49: game_proto.PlayerTankInfo
 }
 var file_game_proto_depIdxs = []int32{
-	40, // 0: game_proto.MsgPlayerEnterGameAck.SelfTankInfo:type_name -> game_proto.PlayerAccountTankInfo
-	40, // 1: game_proto.MsgPlayerEnterGameAck.OtherPlayerTankInfoList:type_name -> game_proto.PlayerAccountTankInfo
-	40, // 2: game_proto.MsgPlayerEnterGameSync.TankInfo:type_name -> game_proto.PlayerAccountTankInfo
-	41, // 3: game_proto.MsgPlayerTankMoveReq.MoveInfo:type_name -> game_proto.TankMoveInfo
-	41, // 4: game_proto.MsgPlayerTankMoveSync.MoveInfo:type_name -> game_proto.TankMoveInfo
-	42, // 5: game_proto.MsgPlayerChangeTankAck.ChangedTankInfo:type_name -> game_proto.TankInfo
-	43, // 6: game_proto.MsgPlayerChangeTankSync.ChangedTankInfo:type_name -> game_proto.PlayerTankInfo
+	46, // 0: game_proto.MsgPlayerEnterGameAck.SelfTankInfo:type_name -> game_proto.PlayerAccountTankInfo
+	46, // 1: game_proto.MsgPlayerEnterGameAck.OtherPlayerTankInfoList:type_name -> game_proto.PlayerAccountTankInfo
+	46, // 2: game_proto.MsgPlayerEnterGameSync.TankInfo:type_name -> game_proto.PlayerAccountTankInfo
+	47, // 3: game_proto.MsgPlayerTankMoveReq.MoveInfo:type_name -> game_proto.TankMoveInfo
+	47, // 4: game_proto.MsgPlayerTankMoveSync.MoveInfo:type_name -> game_proto.TankMoveInfo
+	48, // 5: game_proto.MsgPlayerChangeTankAck.ChangedTankInfo:type_name -> game_proto.TankInfo
+	49, // 6: game_proto.MsgPlayerChangeTankSync.ChangedTankInfo:type_name -> game_proto.PlayerTankInfo
 	7,  // [7:7] is the sub-list for method output_type
 	7,  // [7:7] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
@@ -2295,7 +2578,7 @@ func file_game_proto_init() {
 			}
 		}
 		file_game_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgPlayerChangeTankReq); i {
+			switch v := v.(*MsgPlayerTankStopMoveReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2307,7 +2590,7 @@ func file_game_proto_init() {
 			}
 		}
 		file_game_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgPlayerChangeTankAck); i {
+			switch v := v.(*MsgPlayerTankStopMoveAck); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2319,7 +2602,7 @@ func file_game_proto_init() {
 			}
 		}
 		file_game_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgPlayerChangeTankSync); i {
+			switch v := v.(*MsgPlayerTankStopMoveSync); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2331,7 +2614,7 @@ func file_game_proto_init() {
 			}
 		}
 		file_game_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgPlayerRestoreTankReq); i {
+			switch v := v.(*MsgPlayerChangeTankReq); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2343,7 +2626,7 @@ func file_game_proto_init() {
 			}
 		}
 		file_game_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgPlayerRestoreTankAck); i {
+			switch v := v.(*MsgPlayerChangeTankAck); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2355,6 +2638,42 @@ func file_game_proto_init() {
 			}
 		}
 		file_game_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgPlayerChangeTankSync); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_game_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgPlayerRestoreTankReq); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_game_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MsgPlayerRestoreTankAck); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_game_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*MsgPlayerRestoreTankSync); i {
 			case 0:
 				return &v.state
@@ -2372,8 +2691,8 @@ func file_game_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_game_proto_rawDesc,
-			NumEnums:      20,
-			NumMessages:   20,
+			NumEnums:      23,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

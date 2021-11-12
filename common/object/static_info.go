@@ -23,7 +23,7 @@ func (info ObjStaticInfo) Id() int32 {
 }
 
 func (info ObjStaticInfo) Pos0() Pos {
-	return Pos{info.x0, info.y0}
+	return Pos{float64(info.x0), float64(info.y0)}
 }
 
 func (info ObjStaticInfo) Width() int32 {

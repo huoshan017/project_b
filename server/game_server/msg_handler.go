@@ -262,6 +262,23 @@ func (h *GameMsgHandler) onPlayerTankMoveReq(sess gsnet.ISession, data []byte) e
 	return nil
 }
 
+// 坦克停止移动请求
+func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess gsnet.ISession, data []byte) error {
+	p, err := h.toPlayer(sess)
+	if err != nil {
+		return err
+	}
+
+	var req game_proto.MsgPlayerTankStopMoveReq
+	err = proto.Unmarshal(data, &req)
+	if err != nil {
+		return err
+	}
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankStopMoveReq_Id), &req)
+
+	return nil
+}
+
 // 内部函数，注册协议
 func (s *GameMsgHandler) registerHandles() {
 	s.RegisterHandle(uint32(game_proto.MsgAccountLoginGameReq_Id), s.onPlayerLoginReq)
@@ -269,7 +286,8 @@ func (s *GameMsgHandler) registerHandles() {
 	s.RegisterHandle(uint32(game_proto.MsgPlayerExitGameReq_Id), s.onPlayerExitGameReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankReq_Id), s.onPlayerChangeTankReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankReq_Id), s.onPlayerRestoreTankReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveSync_Id), s.onPlayerTankMoveReq)
+	s.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), s.onPlayerTankMoveReq)
+	s.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), s.onPlayerTankStopMoveReq)
 }
 
 // 会话转成玩家

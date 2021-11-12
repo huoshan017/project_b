@@ -6,7 +6,7 @@ import (
 
 // 坐标位置
 type Pos struct {
-	X, Y int32 // 注意：x轴向右，y轴向上 为正方向
+	X, Y float64 // 注意：x轴向右，y轴向上 为正方向
 }
 
 // 矩形
@@ -18,7 +18,7 @@ type Rect struct {
 // 物体结构
 type object struct {
 	staticInfo        *ObjStaticInfo // 静态常量数据
-	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
+	x, y              float64        // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 }
 
@@ -52,13 +52,23 @@ func (o object) OriginId() int32 {
 	return o.staticInfo.id
 }
 
+// 类型
+func (o object) Type() ObjectType {
+	return o.staticInfo.typ
+}
+
+// 子类型
+func (o object) Subtype() ObjSubType {
+	return o.staticInfo.subType
+}
+
 // 位置
-func (o object) Pos() (int32, int32) {
+func (o object) Pos() (float64, float64) {
 	return o.x, o.y
 }
 
 // 坐标位置，相对于父坐标系
-func (o *object) SetPos(x, y int32) {
+func (o *object) SetPos(x, y float64) {
 	o.x = x
 	o.y = y
 }
@@ -80,35 +90,35 @@ func (o object) Height() int32 {
 }
 
 // 左侧坐标（相对于父坐标系）
-func (o object) Left() int32 {
+func (o object) Left() float64 {
 	if o.changedStaticInfo != nil {
-		return o.x + o.changedStaticInfo.x0
+		return o.x + float64(o.changedStaticInfo.x0)
 	}
-	return o.x + o.staticInfo.x0
+	return o.x + float64(o.staticInfo.x0)
 }
 
 // 右侧坐标（相对于父坐标系）
-func (o object) Right() int32 {
+func (o object) Right() float64 {
 	if o.changedStaticInfo != nil {
-		return o.Left() + o.changedStaticInfo.w
+		return o.Left() + float64(o.changedStaticInfo.w)
 	}
-	return o.Left() + o.staticInfo.w
+	return o.Left() + float64(o.staticInfo.w)
 }
 
 // 顶部坐标（相对于父坐标系）
-func (o object) Top() int32 {
+func (o object) Top() float64 {
 	if o.changedStaticInfo != nil {
-		return o.Bottom() + o.changedStaticInfo.h
+		return o.Bottom() + float64(o.changedStaticInfo.h)
 	}
-	return o.Bottom() + o.staticInfo.h
+	return o.Bottom() + float64(o.staticInfo.h)
 }
 
 // 底部坐标（相对于父坐标系）
-func (o object) Bottom() int32 {
+func (o object) Bottom() float64 {
 	if o.changedStaticInfo != nil {
-		return o.y + o.changedStaticInfo.y0
+		return o.y + float64(o.changedStaticInfo.y0)
 	}
-	return o.y + o.staticInfo.y0
+	return o.y + float64(o.staticInfo.y0)
 }
 
 // 更新
@@ -122,7 +132,7 @@ type MovableObject struct {
 	dir             Direction
 	speed           float32 // 当前移动速度（米/秒）
 	state           int32   // 状态    0. 停止  1. 移动
-	lastUpdateTime  time.Time
+	lastUpdateTick  time.Duration
 	minMoveDistance float32
 }
 
@@ -188,7 +198,11 @@ func (o *MovableObject) Move(dir Direction) {
 	}
 	o.dir = dir
 	o.state = 1
-	o.lastUpdateTime = time.Now()
+}
+
+// 是否在移动
+func (o *MovableObject) IsMove() bool {
+	return o.state == 1
 }
 
 // 停止
@@ -206,30 +220,29 @@ func (o *MovableObject) Update(tick time.Duration) {
 		o.minMoveDistance = DefaultMinMoveDistance
 	}
 
-	now := time.Now()
-	diff := now.Sub(o.lastUpdateTime)
-	diffMs := float32(diff / time.Millisecond)
-	distance := (float32(o.speed) / 1000) * diffMs
+	o.lastUpdateTick += tick
+	diffMs := float64(o.lastUpdateTick / time.Millisecond)
+	distance := float64(o.speed / 1000) * diffMs
 
 	// 不够最小移动距离
-	if distance < o.minMoveDistance {
+	if distance < float64(o.minMoveDistance) {
 		return
 	}
 
 	switch o.dir {
 	case DirLeft:
-		o.x -= int32(distance)
+		o.x -= float64(distance)
 	case DirRight:
-		o.x += int32(distance)
+		o.x += float64(distance)
 	case DirUp:
-		o.y -= int32(distance)
+		o.y -= float64(distance)
 	case DirDown:
-		o.y += int32(distance)
+		o.y += float64(distance)
 	default:
 		return
 	}
 
-	o.lastUpdateTime = now.Add(time.Duration((float32(int32(distance)) - distance) / o.speed))
+	o.lastUpdateTick -= (time.Duration(diffMs)*time.Millisecond)
 }
 
 // 车辆

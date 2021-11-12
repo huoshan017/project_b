@@ -253,7 +253,7 @@ func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid uint32, msg protoreflec
 	players := t.GetAgentMapNoLock()
 	for _, d := range players {
 		pd := d.(*playerData)
-		if uid > 0 && pd.pid == uid {
+		if uid == 0 || pd.pid == uid {
 			continue
 		}
 		err = pd.send(msgid, msg)

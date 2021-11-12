@@ -112,11 +112,11 @@ func (g *Game) Update() error {
 				for tick >= common_data.GameLogicTick {
 					g.logic.Update(common_data.GameLogicTick)
 					tick -= common_data.GameLogicTick
-					g.lastCheckTime.Add(common_data.GameLogicTick)
+					g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
 				}
 			}
+			g.handleInput()
 		}
-		g.handleInput()
 	case ModeGameOver:
 		g.restart()
 		g.mode = ModeMainMenu

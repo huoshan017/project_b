@@ -40,12 +40,21 @@ func (e *Event) Call(args ...interface{}) {
 	}
 }
 
+type eventData struct {
+	eid  EventId
+	args []interface{}
+}
+
 type EventManager struct {
 	id2EventHandles map[EventId]*Event
+	edList          []*eventData
 }
 
 func NewEventManager() *EventManager {
-	return &(EventManager{id2EventHandles: make(map[EventId]*Event)})
+	return &EventManager{
+		id2EventHandles: make(map[EventId]*Event),
+		edList:          make([]*eventData, 0),
+	}
 }
 
 func (e *EventManager) RegisterEvent(id EventId, handle EventHandle) {
@@ -69,5 +78,19 @@ func (e *EventManager) InvokeEvent(id EventId, args ...interface{}) {
 	handles, o := e.id2EventHandles[id]
 	if o {
 		handles.Call(args...)
+	}
+}
+
+func (e *EventManager) DispatchEvent(id EventId, args ...interface{}) {
+	e.edList = append(e.edList, &eventData{eid: id, args: args})
+}
+
+func (e *EventManager) Update() {
+	for _, ed := range e.edList {
+		handles, o := e.id2EventHandles[ed.eid]
+		if !o {
+			continue
+		}
+		handles.Call(ed.args...)
 	}
 }

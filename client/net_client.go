@@ -56,6 +56,15 @@ func (c *NetClient) SendTankMoveReq() error {
 	return c.Send(uint32(game_proto.MsgPlayerTankMoveReq_Id), data)
 }
 
+func (c *NetClient) SendTankStopMoveReq() error {
+	var req game_proto.MsgPlayerTankStopMoveReq
+	data, err := proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	return c.Send(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), data)
+}
+
 func (c *NetClient) SendTankChangeReq() error {
 	var req game_proto.MsgPlayerChangeTankReq
 	data, err := proto.Marshal(&req)
