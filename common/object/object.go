@@ -191,11 +191,8 @@ func (o MovableObject) CurrentSpeed() float32 {
 	return o.speed
 }
 
-// 移动
+// 移动，指定方向和下一个点的位置，提供给使用者判断是否会碰撞
 func (o *MovableObject) Move(dir Direction) {
-	if o.state == 1 {
-		return
-	}
 	o.dir = dir
 	o.state = 1
 }
@@ -222,7 +219,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	o.lastUpdateTick += tick
 	diffMs := float64(o.lastUpdateTick / time.Millisecond)
-	distance := float64(o.speed / 1000) * diffMs
+	distance := float64(o.speed/1000) * diffMs
 
 	// 不够最小移动距离
 	if distance < float64(o.minMoveDistance) {
@@ -231,18 +228,18 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	switch o.dir {
 	case DirLeft:
-		o.x -= float64(distance)
+		o.x -= distance
 	case DirRight:
-		o.x += float64(distance)
+		o.x += distance
 	case DirUp:
-		o.y -= float64(distance)
+		o.y -= distance
 	case DirDown:
-		o.y += float64(distance)
+		o.y += distance
 	default:
 		return
 	}
 
-	o.lastUpdateTick -= (time.Duration(diffMs)*time.Millisecond)
+	o.lastUpdateTick -= (time.Duration(diffMs) * time.Millisecond)
 }
 
 // 车辆

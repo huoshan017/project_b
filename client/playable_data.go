@@ -5,10 +5,6 @@ import (
 	"project_b/common/object"
 )
 
-var (
-	PlayableLerpT = 0.1 // 插值系数
-)
-
 type frameConfig struct {
 	frameNum       int32
 	dirMap         map[object.Direction]int32

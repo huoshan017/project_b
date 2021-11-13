@@ -109,9 +109,8 @@ func (g *Game) Update() error {
 				g.lastCheckTime = now
 			} else {
 				tick := now.Sub(g.lastCheckTime)
-				for tick >= common_data.GameLogicTick {
+				for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
 					g.logic.Update(common_data.GameLogicTick)
-					tick -= common_data.GameLogicTick
 					g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
 				}
 			}

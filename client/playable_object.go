@@ -95,7 +95,7 @@ func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
 			po.lastTick += tick
 			ms := float64(po.lastTick / time.Millisecond)
 			d := float64(po.mobj.CurrentSpeed()) * ms / 1000
-			getLog().Debug("PlayableMoveObject currentSpeed = %v, tick = %v, lastTick = %v, d = %v", po.mobj.CurrentSpeed(), tick, po.lastTick, d)
+			getLog().Debug("1 PlayableMoveObject currentSpeed = %v, tick = %v, lastTick = %v, d = %v", po.mobj.CurrentSpeed(), tick, po.lastTick, d)
 			dir := po.mobj.Dir()
 			switch dir {
 			case common_object.DirLeft:
@@ -112,10 +112,12 @@ func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
 			po.lastTick -= time.Duration(ms) * time.Millisecond
 			dx = po.op.GeoM.Element(0, 2)
 			dy = po.op.GeoM.Element(1, 2)
-			getLog().Debug("PlayableMoveObject after lastTick = %v, dx=%v, dy=%v", po.lastTick, dx, dy)
+			getLog().Debug("2 PlayableMoveObject after lastTick = %v, dx=%v, dy=%v", po.lastTick, dx, dy)
+		} else {
+			po.lastTick = 0
 		}
 	} else {
-		getLog().Debug("PlayableMoveObject dx=%v, dy=%v, po.x=%v, po.y=%v, x=%v, y=%v", dx, dy, po.x, po.y, x, y)
+		getLog().Debug("3 PlayableMoveObject dx=%v, dy=%v, po.x=%v, po.y=%v, x=%v, y=%v", dx, dy, po.x, po.y, x, y)
 		po.op.GeoM.SetElement(0, 2, x)
 		po.op.GeoM.SetElement(1, 2, y)
 		po.x = x
