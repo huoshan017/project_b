@@ -164,7 +164,7 @@ var (
 // 初始化动画配置
 func initAnimConfigs() {
 	moveableObjectAnimConfigList = []*ObjectAnimConfig{
-		&ObjectAnimConfig{Index: 1, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 1,
+		{Index: 1, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 1,
 			AnimConfig: []*base.SpriteAnimConfig{
 				// 空左右上下
 				nil,
@@ -173,7 +173,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1, 1, object.DirUp),
 				CreateTankAnimConfig(1, 1, object.DirDown),
 			}}, // 玩家坦克一级
-		&ObjectAnimConfig{Index: 2, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 2,
+		{Index: 2, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 2,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1, 2, object.DirLeft),
@@ -181,7 +181,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1, 2, object.DirUp),
 				CreateTankAnimConfig(1, 2, object.DirDown),
 			}}, // 玩家坦克二级
-		&ObjectAnimConfig{Index: 3, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 3,
+		{Index: 3, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 3,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1, 3, object.DirLeft),
@@ -189,7 +189,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1, 3, object.DirUp),
 				CreateTankAnimConfig(1, 3, object.DirDown),
 			}}, // 玩家坦克三级
-		&ObjectAnimConfig{Index: 4, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 4,
+		{Index: 4, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 4,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1, 4, object.DirLeft),
@@ -197,7 +197,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1, 4, object.DirUp),
 				CreateTankAnimConfig(1, 4, object.DirDown),
 			}}, // 玩家坦克四级
-		&ObjectAnimConfig{Index: 5, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 1,
+		{Index: 5, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 1,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(2, 1, object.DirLeft),
@@ -205,7 +205,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(2, 1, object.DirUp),
 				CreateTankAnimConfig(2, 1, object.DirDown),
 			}}, // 同伴坦克一级
-		&ObjectAnimConfig{Index: 6, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 2,
+		{Index: 6, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 2,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(2, 2, object.DirLeft),
@@ -213,7 +213,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(2, 2, object.DirUp),
 				CreateTankAnimConfig(2, 2, object.DirDown),
 			}}, // 同伴坦克二级
-		&ObjectAnimConfig{Index: 7, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 3,
+		{Index: 7, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 3,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(2, 3, object.DirLeft),
@@ -221,7 +221,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(2, 3, object.DirUp),
 				CreateTankAnimConfig(2, 3, object.DirDown),
 			}}, // 同伴坦克三级
-		&ObjectAnimConfig{Index: 8, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 4,
+		{Index: 8, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 4,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(2, 4, object.DirLeft),
@@ -229,7 +229,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(2, 4, object.DirUp),
 				CreateTankAnimConfig(2, 4, object.DirDown),
 			}}, // 同伴坦克四级
-		&ObjectAnimConfig{Index: 9, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 1,
+		{Index: 9, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 1,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1000, 1, object.DirLeft),
@@ -237,7 +237,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1000, 1, object.DirUp),
 				CreateTankAnimConfig(1000, 1, object.DirDown),
 			}}, // 轻型坦克
-		&ObjectAnimConfig{Index: 10, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 2,
+		{Index: 10, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 2,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1000, 2, object.DirLeft),
@@ -245,7 +245,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1000, 2, object.DirUp),
 				CreateTankAnimConfig(1000, 2, object.DirDown),
 			}}, // 轻型坦克红色
-		&ObjectAnimConfig{Index: 11, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 1,
+		{Index: 11, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 1,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1001, 1, object.DirLeft),
@@ -253,7 +253,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1001, 1, object.DirUp),
 				CreateTankAnimConfig(1001, 1, object.DirDown),
 			}}, // 快速坦克
-		&ObjectAnimConfig{Index: 12, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 2,
+		{Index: 12, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 2,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1001, 2, object.DirLeft),
@@ -261,7 +261,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1001, 2, object.DirUp),
 				CreateTankAnimConfig(1001, 2, object.DirDown),
 			}}, // 快速坦克红
-		&ObjectAnimConfig{Index: 13, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 1,
+		{Index: 13, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 1,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1002, 1, object.DirLeft),
@@ -269,7 +269,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1002, 1, object.DirUp),
 				CreateTankAnimConfig(1002, 1, object.DirDown),
 			}}, // 重型坦克
-		&ObjectAnimConfig{Index: 14, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 2,
+		{Index: 14, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 2,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1002, 2, object.DirLeft),
@@ -277,7 +277,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1002, 2, object.DirUp),
 				CreateTankAnimConfig(1002, 2, object.DirDown),
 			}}, // 重型坦克绿
-		&ObjectAnimConfig{Index: 15, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 3,
+		{Index: 15, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 3,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1002, 3, object.DirLeft),
@@ -285,7 +285,7 @@ func initAnimConfigs() {
 				CreateTankAnimConfig(1002, 3, object.DirUp),
 				CreateTankAnimConfig(1002, 3, object.DirDown),
 			}}, // 重型坦克黄
-		&ObjectAnimConfig{Index: 16, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 4,
+		{Index: 16, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 4,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				CreateTankAnimConfig(1002, 4, object.DirLeft),

@@ -124,7 +124,7 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 	tank := args[2].(*object.Tank)
 
 	// 加入播放管理
-	g.playableMgr.AddPlayerTankLevelDirPlayable(uid, tank)
+	g.playableMgr.AddPlayerTankPlayable(uid, tank)
 
 	if g.myAcc == account {
 		g.myId = uid
@@ -151,7 +151,7 @@ func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 	uid := args[0].(uint64)
 
 	// 从播放管理器中删除
-	g.playableMgr.RemovePlayerTankLevelDirPlayable(uid)
+	g.playableMgr.RemovePlayerTankPlayable(uid)
 
 	getLog().Info("handle event: player (uid: %v) exited game", uid)
 }
@@ -176,8 +176,8 @@ func (g *Game) onEventTankChange(args ...interface{}) {
 	}
 	pid := args[0].(uint64)
 	tank := args[1].(*object.Tank)
-	g.playableMgr.RemovePlayerTankLevelDirPlayable(pid)
-	g.playableMgr.AddPlayerTankLevelDirPlayable(pid, tank)
+	g.playableMgr.RemovePlayerTankPlayable(pid)
+	g.playableMgr.AddPlayerTankPlayable(pid, tank)
 	getLog().Info("handle event: player %v changed tank to %v", pid, tank.Id())
 }
 
@@ -189,7 +189,7 @@ func (g *Game) onEventTankRestore(args ...interface{}) {
 	}
 	pid := args[0].(uint64)
 	tank := args[1].(*object.Tank)
-	g.playableMgr.RemovePlayerTankLevelDirPlayable(pid)
-	g.playableMgr.AddPlayerTankLevelDirPlayable(pid, tank)
+	g.playableMgr.RemovePlayerTankPlayable(pid)
+	g.playableMgr.AddPlayerTankPlayable(pid, tank)
 	getLog().Info("handle event: player %v restore tank id to %v", pid, tank.Id())
 }
