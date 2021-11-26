@@ -44,7 +44,7 @@ func (h *GameLogicHandler) onPlayerTankEnterSync(sender gproc.ISender, args inte
 		gslog.Fatal("Must msg type %v", args)
 		return
 	}
-	h.logic.PlayerTankEnter(msg.playerId, object.NewTank(common_data.PlayerTankInitData))
+	h.logic.PlayerTankEnter(msg.playerId, object.NewTank(msg.playerId, common_data.PlayerTankInitData))
 }
 
 // 玩家坦克离开同步

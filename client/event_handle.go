@@ -3,7 +3,7 @@ package main
 import (
 	"reflect"
 
-	"project_b/common"
+	"project_b/common/base"
 	"project_b/common/object"
 )
 
@@ -11,23 +11,23 @@ const (
 	//EventIdNone = common.EventId(iota)
 
 	/* UI操作事件 */
-	EventIdOpLogin     = common.EventId(1)
-	EventIdOpEnterGame = common.EventId(2)
+	EventIdOpLogin     = base.EventId(1)
+	EventIdOpEnterGame = base.EventId(2)
 
 	/* 网络协议事件 */
 	// 进入游戏 参数：Account(string), PlayerId(uint64), TankInfo()
-	EventIdPlayerEnterGame = common.EventId(100)
+	EventIdPlayerEnterGame = base.EventId(100)
 	// 进入游戏完成
-	EventIdPlayerEnterGameCompleted = common.EventId(101)
+	EventIdPlayerEnterGameCompleted = base.EventId(101)
 	// 离开游戏
-	EventIdPlayerExitGame = common.EventId(102)
+	EventIdPlayerExitGame = base.EventId(102)
 
 	/* 游戏逻辑事件 */
-	EventIdTankMove     = common.EventId(200)  // 移动事件
-	EventIdTankStopMove = common.EventId(201)  // 停止移动事件
-	EventIdTankMoveSync = common.EventId(202)  // 移动同步事件
-	EventIdTankChange   = common.EventId(1000) // 改变坦克
-	EventIdTankRestore  = common.EventId(1001) // 恢复坦克
+	EventIdTankMove     = base.EventId(200)  // 移动事件
+	EventIdTankStopMove = base.EventId(201)  // 停止移动事件
+	EventIdTankMoveSync = base.EventId(202)  // 移动同步事件
+	EventIdTankChange   = base.EventId(1000) // 改变坦克
+	EventIdTankRestore  = base.EventId(1001) // 恢复坦克
 )
 
 // todo 发送协议的事件处理和设备输入的事件处理最好分开，方便做逻辑和显示分离

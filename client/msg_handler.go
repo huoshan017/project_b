@@ -2,6 +2,7 @@ package main
 
 import (
 	"project_b/common"
+	"project_b/common/base"
 	"project_b/common_data"
 	"project_b/game_proto"
 	"time"
@@ -14,10 +15,10 @@ type MsgHandler struct {
 	net       *NetClient
 	logic     *common.GameLogic
 	playerMgr *CPlayerManager
-	invoker   common.IEventInvoker
+	invoker   base.IEventInvoker
 }
 
-func CreateMsgHandler(net *NetClient, logic *common.GameLogic, playerMgr *CPlayerManager, invoker common.IEventInvoker) *MsgHandler {
+func CreateMsgHandler(net *NetClient, logic *common.GameLogic, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
 	return &MsgHandler{
 		net:       net,
 		logic:     logic,

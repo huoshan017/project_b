@@ -4,6 +4,9 @@ import "time"
 
 // 物体接口
 type IObject interface {
+	Init()                     // 初始化
+	Uninit()                   // 反初始化
+	InstId() uint64            // 实例id
 	Id() int32                 // 注意：这是配置id
 	Type() ObjectType          // 类型
 	Subtype() ObjSubType       // 子类型
@@ -25,5 +28,13 @@ type IMovableObject interface {
 	Speed() float32        // 速度
 	CurrentSpeed() float32 // 当前速度
 	Move(Direction)        // 移动
-	IsMove() bool          // 是否在移动
+
+	// ----------------------------------
+	// 事件接口
+	RegisterMoveEventHandle(handle func(args ...interface{}))       // 注册移动事件
+	UnregisterMoveEventHandle(handle func(args ...interface{}))     // 注销移动事件
+	RegisterStopMoveEventHandle(handle func(args ...interface{}))   // 注册停止移动事件
+	UnregisterStopMoveEventHandle(handle func(args ...interface{})) // 注销停止移动事件
+	RegisterUpdateEventHandle(handle func(args ...interface{}))     // 注册更新事件
+	UnregisterUpdateEventHandle(handle func(args ...interface{}))   // 注销更新事件
 }

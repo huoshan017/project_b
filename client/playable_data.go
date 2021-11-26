@@ -1,7 +1,7 @@
 package main
 
 import (
-	client_base "project_b/client/base"
+	"project_b/client/base"
 	"project_b/common/object"
 )
 
@@ -12,16 +12,18 @@ type frameConfig struct {
 }
 
 var (
-	tankAnimConfig  map[int32]*client_base.SpriteAnimConfig
-	tankFrameConfig map[int32]*frameConfig
+	tankAnimOriginalConfig map[int32]*base.SpriteAnimConfig // 坦克动画初始配置map
+	tankFrameConfig        map[int32]*frameConfig           // 帧配置map
+	bulletAnimConfig       map[int32]*base.SpriteAnimConfig // 子弹动画配置map
 )
 
-func initAnims() {
-	tankAnimConfig = map[int32]*client_base.SpriteAnimConfig{
+// 初始化动画初始配置
+func initAnimOriginalConfigs() {
+	tankAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
 		// 玩家坦克动画配置
 		1: {
 			Image: player1_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []client_base.SpriteIndex{
+			FramePosList: []base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}, {X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}, {X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
 				{X: 0, Y: 2}, {X: 1, Y: 2}, {X: 2, Y: 2}, {X: 3, Y: 2}, {X: 4, Y: 2}, {X: 5, Y: 2}, {X: 6, Y: 2}, {X: 7, Y: 2},
@@ -31,7 +33,7 @@ func initAnims() {
 		// 同伴坦克动画配置
 		2: {
 			Image: player2_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []client_base.SpriteIndex{
+			FramePosList: []base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}, {X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}, {X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
 				{X: 0, Y: 2}, {X: 1, Y: 2}, {X: 2, Y: 2}, {X: 3, Y: 2}, {X: 4, Y: 2}, {X: 5, Y: 2}, {X: 6, Y: 2}, {X: 7, Y: 2},
@@ -41,7 +43,7 @@ func initAnims() {
 		// 轻型坦克动画配置
 		1000: {
 			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []client_base.SpriteIndex{
+			FramePosList: []base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1},
 				{X: 0, Y: 2}, {X: 1, Y: 2}, {X: 2, Y: 2}, {X: 3, Y: 2},
@@ -51,7 +53,7 @@ func initAnims() {
 		// 快速坦克动画配置
 		1001: {
 			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []client_base.SpriteIndex{
+			FramePosList: []base.SpriteIndex{
 				{X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
 				{X: 4, Y: 2}, {X: 5, Y: 2}, {X: 6, Y: 2}, {X: 7, Y: 2},
@@ -61,7 +63,7 @@ func initAnims() {
 		// 重型坦克动画配置
 		1002: {
 			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []client_base.SpriteIndex{
+			FramePosList: []base.SpriteIndex{
 				{X: 0, Y: 4}, {X: 1, Y: 4}, {X: 2, Y: 4}, {X: 3, Y: 4}, {X: 4, Y: 4}, {X: 5, Y: 4}, {X: 6, Y: 4}, {X: 7, Y: 4},
 				{X: 0, Y: 5}, {X: 1, Y: 5}, {X: 2, Y: 5}, {X: 3, Y: 5}, {X: 4, Y: 5}, {X: 5, Y: 5}, {X: 6, Y: 5}, {X: 7, Y: 5},
 				{X: 0, Y: 6}, {X: 1, Y: 6}, {X: 2, Y: 6}, {X: 3, Y: 6}, {X: 4, Y: 6}, {X: 5, Y: 6}, {X: 6, Y: 6}, {X: 7, Y: 6},
@@ -145,15 +147,165 @@ func initAnims() {
 	}
 }
 
-func init() {
-	initImages()
-	initAnims()
+// 物体动画配置
+type ObjectAnimConfig struct {
+	Index      int32
+	Type       object.ObjectType
+	Subtype    object.ObjSubType
+	Id         int32
+	Level      int32
+	AnimConfig []*base.SpriteAnimConfig // 使用物体方向枚举做索引
 }
 
-// 根据等级和方向创建坦克动画
-func CreateTankAnimConfig(id int32, level int32, dir object.Direction) *client_base.SpriteAnimConfig {
-	anim := &client_base.SpriteAnimConfig{}
-	anim0 := tankAnimConfig[id]
+var (
+	moveableObjectAnimConfigList []*ObjectAnimConfig // 移动物体动画配置
+)
+
+// 初始化动画配置
+func initAnimConfigs() {
+	moveableObjectAnimConfigList = []*ObjectAnimConfig{
+		&ObjectAnimConfig{Index: 1, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 1,
+			AnimConfig: []*base.SpriteAnimConfig{
+				// 空左右上下
+				nil,
+				CreateTankAnimConfig(1, 1, object.DirLeft),
+				CreateTankAnimConfig(1, 1, object.DirRight),
+				CreateTankAnimConfig(1, 1, object.DirUp),
+				CreateTankAnimConfig(1, 1, object.DirDown),
+			}}, // 玩家坦克一级
+		&ObjectAnimConfig{Index: 2, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 2,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1, 2, object.DirLeft),
+				CreateTankAnimConfig(1, 2, object.DirRight),
+				CreateTankAnimConfig(1, 2, object.DirUp),
+				CreateTankAnimConfig(1, 2, object.DirDown),
+			}}, // 玩家坦克二级
+		&ObjectAnimConfig{Index: 3, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 3,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1, 3, object.DirLeft),
+				CreateTankAnimConfig(1, 3, object.DirRight),
+				CreateTankAnimConfig(1, 3, object.DirUp),
+				CreateTankAnimConfig(1, 3, object.DirDown),
+			}}, // 玩家坦克三级
+		&ObjectAnimConfig{Index: 4, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 4,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1, 4, object.DirLeft),
+				CreateTankAnimConfig(1, 4, object.DirRight),
+				CreateTankAnimConfig(1, 4, object.DirUp),
+				CreateTankAnimConfig(1, 4, object.DirDown),
+			}}, // 玩家坦克四级
+		&ObjectAnimConfig{Index: 5, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 1,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(2, 1, object.DirLeft),
+				CreateTankAnimConfig(2, 1, object.DirRight),
+				CreateTankAnimConfig(2, 1, object.DirUp),
+				CreateTankAnimConfig(2, 1, object.DirDown),
+			}}, // 同伴坦克一级
+		&ObjectAnimConfig{Index: 6, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 2,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(2, 2, object.DirLeft),
+				CreateTankAnimConfig(2, 2, object.DirRight),
+				CreateTankAnimConfig(2, 2, object.DirUp),
+				CreateTankAnimConfig(2, 2, object.DirDown),
+			}}, // 同伴坦克二级
+		&ObjectAnimConfig{Index: 7, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 3,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(2, 3, object.DirLeft),
+				CreateTankAnimConfig(2, 3, object.DirRight),
+				CreateTankAnimConfig(2, 3, object.DirUp),
+				CreateTankAnimConfig(2, 3, object.DirDown),
+			}}, // 同伴坦克三级
+		&ObjectAnimConfig{Index: 8, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 4,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(2, 4, object.DirLeft),
+				CreateTankAnimConfig(2, 4, object.DirRight),
+				CreateTankAnimConfig(2, 4, object.DirUp),
+				CreateTankAnimConfig(2, 4, object.DirDown),
+			}}, // 同伴坦克四级
+		&ObjectAnimConfig{Index: 9, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 1,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1000, 1, object.DirLeft),
+				CreateTankAnimConfig(1000, 1, object.DirRight),
+				CreateTankAnimConfig(1000, 1, object.DirUp),
+				CreateTankAnimConfig(1000, 1, object.DirDown),
+			}}, // 轻型坦克
+		&ObjectAnimConfig{Index: 10, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 2,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1000, 2, object.DirLeft),
+				CreateTankAnimConfig(1000, 2, object.DirRight),
+				CreateTankAnimConfig(1000, 2, object.DirUp),
+				CreateTankAnimConfig(1000, 2, object.DirDown),
+			}}, // 轻型坦克红色
+		&ObjectAnimConfig{Index: 11, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 1,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1001, 1, object.DirLeft),
+				CreateTankAnimConfig(1001, 1, object.DirRight),
+				CreateTankAnimConfig(1001, 1, object.DirUp),
+				CreateTankAnimConfig(1001, 1, object.DirDown),
+			}}, // 快速坦克
+		&ObjectAnimConfig{Index: 12, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 2,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1001, 2, object.DirLeft),
+				CreateTankAnimConfig(1001, 2, object.DirRight),
+				CreateTankAnimConfig(1001, 2, object.DirUp),
+				CreateTankAnimConfig(1001, 2, object.DirDown),
+			}}, // 快速坦克红
+		&ObjectAnimConfig{Index: 13, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 1,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1002, 1, object.DirLeft),
+				CreateTankAnimConfig(1002, 1, object.DirRight),
+				CreateTankAnimConfig(1002, 1, object.DirUp),
+				CreateTankAnimConfig(1002, 1, object.DirDown),
+			}}, // 重型坦克
+		&ObjectAnimConfig{Index: 14, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 2,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1002, 2, object.DirLeft),
+				CreateTankAnimConfig(1002, 2, object.DirRight),
+				CreateTankAnimConfig(1002, 2, object.DirUp),
+				CreateTankAnimConfig(1002, 2, object.DirDown),
+			}}, // 重型坦克绿
+		&ObjectAnimConfig{Index: 15, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 3,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1002, 3, object.DirLeft),
+				CreateTankAnimConfig(1002, 3, object.DirRight),
+				CreateTankAnimConfig(1002, 3, object.DirUp),
+				CreateTankAnimConfig(1002, 3, object.DirDown),
+			}}, // 重型坦克黄
+		&ObjectAnimConfig{Index: 16, Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 4,
+			AnimConfig: []*base.SpriteAnimConfig{
+				nil,
+				CreateTankAnimConfig(1002, 4, object.DirLeft),
+				CreateTankAnimConfig(1002, 4, object.DirRight),
+				CreateTankAnimConfig(1002, 4, object.DirUp),
+				CreateTankAnimConfig(1002, 4, object.DirDown),
+			}}, // 重型坦克红
+	}
+}
+
+func init() {
+	initImages()
+	initAnimOriginalConfigs()
+	initAnimConfigs()
+}
+
+// 根据等级和方向创建坦克动画配置
+func CreateTankAnimConfig(id int32, level int32, dir object.Direction) *base.SpriteAnimConfig {
+	anim := &base.SpriteAnimConfig{}
+	anim0 := tankAnimOriginalConfig[id]
 	frame0 := tankFrameConfig[id]
 	anim.Image = anim0.Image
 	anim.PlayInterval = anim0.PlayInterval
@@ -165,4 +317,25 @@ func CreateTankAnimConfig(id int32, level int32, dir object.Direction) *client_b
 		anim.FramePosList = append(anim.FramePosList, anim0.FramePosList[frame0.frameLevelList[level-1][idx]])
 	}
 	return anim
+}
+
+// 获得物体动画配置
+func GetObjectAnimConfig(typ object.ObjectType, subtype object.ObjSubType, id int32, level int32) *ObjectAnimConfig {
+	var objAnimConfig *ObjectAnimConfig
+	switch typ {
+	case object.ObjTypeMovable:
+		for _, c := range moveableObjectAnimConfigList {
+			if c.Subtype == subtype && c.Id == id && c.Level == level {
+				objAnimConfig = c
+				break
+			}
+		}
+	case object.ObjTypeStatic:
+	}
+	return objAnimConfig
+}
+
+// 获得坦克动画配置
+func GetTankAnimConfig(id int32, level int32) *ObjectAnimConfig {
+	return GetObjectAnimConfig(object.ObjTypeMovable, object.ObjSubTypeTank, id, level)
 }

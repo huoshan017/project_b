@@ -1,10 +1,10 @@
 package main
 
 import (
-	"project_b/common"
+	"project_b/common/base"
 )
 
 type IGame interface {
 	GetMode() Mode
-	EventMgr() common.IEventManager
+	EventMgr() base.IEventManager
 }

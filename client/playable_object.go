@@ -1,9 +1,8 @@
 package main
 
 import (
-	client_base "project_b/client/base"
-	common_object "project_b/common/object"
-	"project_b/utils"
+	"project_b/client/base"
+	"project_b/common/object"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -11,21 +10,24 @@ import (
 
 // 可播放接口
 type IPlayable interface {
+	Init()
+	Uninit()
+	Reset(object.IObject)
 	Play()
 	Stop()
-	Update(*ebiten.Image)
+	Update(time.Duration, *ebiten.Image)
 }
 
 // 可播放对象
 type PlayableObject struct {
 	IPlayable
 	op   *ebiten.DrawImageOptions
-	obj  common_object.IObject
-	anim client_base.SpriteAnim
+	obj  object.IObject
+	anim base.SpriteAnim
 }
 
 // 创建可播放对象
-func NewPlayableObject(obj common_object.IObject, spriteConfig *client_base.SpriteAnimConfig) *PlayableObject {
+func NewPlayableObject(obj object.IObject, spriteConfig *base.SpriteAnimConfig) *PlayableObject {
 	if spriteConfig == nil {
 		panic("spriteConfig nil !!!")
 	}
@@ -36,12 +38,22 @@ func NewPlayableObject(obj common_object.IObject, spriteConfig *client_base.Spri
 	return &PlayableObject{
 		obj:  obj,
 		op:   op,
-		anim: *client_base.NewSpriteAnim(spriteConfig),
+		anim: *base.NewSpriteAnim(spriteConfig),
 	}
 }
 
+// 初始化
+func (po *PlayableObject) Init() {
+
+}
+
+// 反初始化
+func (po *PlayableObject) Uninit() {
+
+}
+
 // 重置对象
-func (po *PlayableObject) ResetObj(obj common_object.IObject) {
+func (po *PlayableObject) ResetObj(obj object.IObject) {
 	po.obj = obj
 }
 
@@ -64,65 +76,124 @@ func (po *PlayableObject) Update(tick time.Duration, screen *ebiten.Image) {
 	po.anim.Update(screen, po.op)
 }
 
-// 可移动物体的播放对象
+// 可移动物体的播放对象，有四个方向的动画
 type PlayableMoveObject struct {
-	PlayableObject
-	mobj     common_object.IMovableObject
-	x, y     float64
-	lastTick time.Duration // 上一帧tick
+	IPlayable
+	op            *ebiten.DrawImageOptions
+	mobj          object.IMovableObject
+	anims         []*base.SpriteAnim
+	startMoveTime time.Time        // 开始移动的时间
+	moveDir       object.Direction // 移动方向
+	currSpeed     float64          // 当前速度
+	moveDuration  time.Duration    // 移动持续时间
+	dx, dy        float64          // 目标点坐标，负数表示已经到达过该点
+	usedDestXY    bool             // 是否使用过目标点坐标
 }
 
 // 创建可移动物体的播放对象
-func NewPlayableMoveObject(mobj common_object.IMovableObject, spriteConfig *client_base.SpriteAnimConfig) *PlayableMoveObject {
-	obj := NewPlayableObject(mobj, spriteConfig)
+func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *ObjectAnimConfig) *PlayableMoveObject {
+	op := &ebiten.DrawImageOptions{}
 	x, y := mobj.Pos()
-	return &PlayableMoveObject{
-		PlayableObject: *obj,
-		mobj:           mobj,
-		x:              x,
-		y:              y,
+	op.GeoM.Translate(float64(x), float64(y))
+	pobj := &PlayableMoveObject{
+		op:   op,
+		mobj: mobj,
+		anims: []*base.SpriteAnim{
+			nil,
+			base.NewSpriteAnim(animConfig.AnimConfig[object.DirLeft]),
+			base.NewSpriteAnim(animConfig.AnimConfig[object.DirRight]),
+			base.NewSpriteAnim(animConfig.AnimConfig[object.DirUp]),
+			base.NewSpriteAnim(animConfig.AnimConfig[object.DirDown]),
+		},
+		moveDir:    mobj.Dir(),
+		usedDestXY: true,
 	}
+	return pobj
+}
+
+// 初始化
+func (po *PlayableMoveObject) Init() {
+	// 注册移动停止更新事件
+	po.mobj.RegisterMoveEventHandle(po.onEventMove)
+	po.mobj.RegisterStopMoveEventHandle(po.onEventStopMove)
+	po.mobj.RegisterUpdateEventHandle(po.onEventUpdate)
+}
+
+// 反初始化
+func (po *PlayableMoveObject) Uninit() {
+	// 注销移动停止更新事件
+	po.mobj.UnregisterMoveEventHandle(po.onEventMove)
+	po.mobj.UnregisterStopMoveEventHandle(po.onEventStopMove)
+	po.mobj.UnregisterUpdateEventHandle(po.onEventUpdate)
+}
+
+// 播放
+func (po *PlayableMoveObject) Play() {
+	po.anims[po.moveDir].Play()
+}
+
+// 停止
+func (po *PlayableMoveObject) Stop() {
+	po.anims[po.moveDir].Stop()
 }
 
 // 更新
 // todo 如果一个方向上的移动到停止最后逻辑帧和渲染帧不一致的话，则再次移动或换方向时会出现被往回拉情况
 func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
-	x, y := po.mobj.Pos()
+	if po.moveDuration != 0 {
+		var duration time.Duration
+		if po.moveDuration > 0 {
+			duration = po.moveDuration
+			po.moveDuration = 0
+		} else {
+			now := time.Now()
+			duration = now.Sub(po.startMoveTime)
+			po.startMoveTime = now
+		}
+		dx := po.op.GeoM.Element(0, 2)
+		dy := po.op.GeoM.Element(1, 2)
+		d := po.currSpeed * float64(duration) / float64(time.Second)
+		getLog().Debug("1 PlayableMoveObject instid=%v, currentSpeed=%v, tick=%v, duration=%v, distance=%v", po.mobj.InstId(), po.currSpeed, tick, duration, d)
+		switch po.moveDir {
+		case object.DirLeft:
+			po.op.GeoM.SetElement(0, 2, dx-d)
+		case object.DirRight:
+			po.op.GeoM.SetElement(0, 2, dx+d)
+		case object.DirUp:
+			po.op.GeoM.SetElement(1, 2, dy-d)
+		case object.DirDown:
+			po.op.GeoM.SetElement(1, 2, dy+d)
+		default:
+			return
+		}
+		dx = po.op.GeoM.Element(0, 2)
+		dy = po.op.GeoM.Element(1, 2)
+		getLog().Debug("2 PlayableMoveObject after instid=%v, dx=%v, dy=%v", po.mobj.InstId(), dx, dy)
+	}
+
+	po.anims[po.moveDir].Update(screen, po.op)
+}
+
+// 移动事件处理
+func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
+	po.startMoveTime = args[0].(time.Time)
+	po.moveDir = args[1].(object.Direction)
+	po.currSpeed = args[2].(float64)
+	po.moveDuration = -1 // 表示正在移动
+}
+
+// 停止移动事件处理
+func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
+	stopTime := args[0].(time.Time)
+	po.moveDuration = stopTime.Sub(po.startMoveTime)
+}
+
+// 更新事件处理
+func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
 	dx := po.op.GeoM.Element(0, 2)
 	dy := po.op.GeoM.Element(1, 2)
-	if utils.Float64IsEqual(x, po.x) && utils.Float64IsEqual(y, po.y) {
-		if po.mobj.IsMove() {
-			po.lastTick += tick
-			ms := float64(po.lastTick / time.Millisecond)
-			d := float64(po.mobj.CurrentSpeed()) * ms / 1000
-			getLog().Debug("1 PlayableMoveObject currentSpeed = %v, tick = %v, lastTick = %v, d = %v", po.mobj.CurrentSpeed(), tick, po.lastTick, d)
-			dir := po.mobj.Dir()
-			switch dir {
-			case common_object.DirLeft:
-				po.op.GeoM.SetElement(0, 2, dx-d)
-			case common_object.DirRight:
-				po.op.GeoM.SetElement(0, 2, dx+d)
-			case common_object.DirUp:
-				po.op.GeoM.SetElement(1, 2, dy-d)
-			case common_object.DirDown:
-				po.op.GeoM.SetElement(1, 2, dy+d)
-			default:
-				return
-			}
-			po.lastTick -= time.Duration(ms) * time.Millisecond
-			dx = po.op.GeoM.Element(0, 2)
-			dy = po.op.GeoM.Element(1, 2)
-			getLog().Debug("2 PlayableMoveObject after lastTick = %v, dx=%v, dy=%v", po.lastTick, dx, dy)
-		} else {
-			po.lastTick = 0
-		}
-	} else {
-		getLog().Debug("3 PlayableMoveObject dx=%v, dy=%v, po.x=%v, po.y=%v, x=%v, y=%v", dx, dy, po.x, po.y, x, y)
-		po.op.GeoM.SetElement(0, 2, x)
-		po.op.GeoM.SetElement(1, 2, y)
-		po.x = x
-		po.y = y
-		po.lastTick = 0
-	}
-	po.anim.Update(screen, po.op)
+	po.dx = args[0].(float64)
+	po.dy = args[1].(float64)
+	po.usedDestXY = false
+	getLog().Debug("3 PlayableMoveObject instid=%v, display_x=%v, display_y=%v, dest_x=%v, dest_y=%v, now=%v", po.mobj.InstId(), dx, dy, po.dx, po.dy, time.Now())
 }

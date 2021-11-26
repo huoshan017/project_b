@@ -1,21 +1,22 @@
 package common
 
 import (
+	"project_b/common/base"
 	"project_b/common/object"
 	"project_b/game_map"
 	"time"
 )
 
 type GameLogic struct {
-	eventMgr IEventManager // 事件管理
-	scene    *Scene        // 场景
-	state    int32         // 0 未开始  1. 运行中
-	mapIndex int32         // 地图索引
+	eventMgr base.IEventManager // 事件管理
+	scene    *Scene             // 场景
+	state    int32              // 0 未开始  1. 运行中
+	mapIndex int32              // 地图索引
 }
 
 // 创建游戏逻辑
 func NewGameLogic() *GameLogic {
-	gl := &GameLogic{eventMgr: NewEventManager()}
+	gl := &GameLogic{eventMgr: base.NewEventManager()}
 	gl.scene = NewScene(gl.eventMgr)
 	return gl
 }
@@ -52,12 +53,12 @@ func (g *GameLogic) IsStart() bool {
 }
 
 // 注册事件
-func (g *GameLogic) RegisterEvent(eid EventId, handle func(args ...interface{})) {
+func (g *GameLogic) RegisterEvent(eid base.EventId, handle func(args ...interface{})) {
 	g.eventMgr.RegisterEvent(eid, handle)
 }
 
 // 注销事件
-func (g *GameLogic) UnregisterEvent(eid EventId, handle func(args ...interface{})) {
+func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interface{})) {
 	g.eventMgr.UnregisterEvent(eid, handle)
 }
 

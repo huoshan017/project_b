@@ -1,6 +1,7 @@
 package object
 
 import (
+	"project_b/common/base"
 	"time"
 )
 
@@ -17,9 +18,20 @@ type Rect struct {
 
 // 物体结构
 type object struct {
+	instId            uint64         // 实例id
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              float64        // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
+}
+
+// 初始化
+func (o *object) Init() {
+
+}
+
+// 反初始化
+func (o *object) Uninit() {
+
 }
 
 // 设置静态信息
@@ -37,6 +49,11 @@ func (o *object) RestoreStaticInfo() {
 	if o.changedStaticInfo != nil {
 		o.changedStaticInfo = nil
 	}
+}
+
+// 实例id
+func (o object) InstId() uint64 {
+	return o.instId
 }
 
 // 配置id
@@ -129,19 +146,26 @@ func (o object) Update() {
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir             Direction
-	speed           float32 // 当前移动速度（米/秒）
-	state           int32   // 状态    0. 停止  1. 移动
-	lastUpdateTick  time.Duration
-	minMoveDistance float32
+	dir           Direction   // 方向
+	speed         float32     // 当前移动速度（米/秒）
+	isMoving      bool        // 是否已更新
+	startMoveTime time.Time   // 移动开始时间
+	stopTime      time.Time   // 停止移动时间
+	moveDataList  []*moveData // 移动数据队列
+	moveEvent     *base.Event // 移动事件
+	stopEvent     *base.Event // 停止事件
+	updateEvent   *base.Event // 更新事件
 }
 
 // 创建可移动物体
-func NewMovableObject(staticInfo *ObjStaticInfo) *MovableObject {
+func NewMovableObject(instId uint64, staticInfo *ObjStaticInfo) *MovableObject {
 	o := &MovableObject{
-		object: object{staticInfo: staticInfo},
-		dir:    staticInfo.dir,
-		speed:  staticInfo.speed,
+		object:      object{instId: instId, staticInfo: staticInfo},
+		dir:         staticInfo.dir,
+		speed:       staticInfo.speed,
+		moveEvent:   base.NewEvent(),
+		stopEvent:   base.NewEvent(),
+		updateEvent: base.NewEvent(),
 	}
 	return o
 }
@@ -168,11 +192,6 @@ func (o *MovableObject) SetCurrentSpeed(speed float32) {
 	o.speed = speed
 }
 
-// 设置最小移动距离
-func (o *MovableObject) SetMinMoveDistance(d float32) {
-	o.minMoveDistance = d
-}
-
 // 当前方向
 func (o MovableObject) Dir() Direction {
 	return o.dir
@@ -191,42 +210,62 @@ func (o MovableObject) CurrentSpeed() float32 {
 	return o.speed
 }
 
-// 移动，指定方向和下一个点的位置，提供给使用者判断是否会碰撞
+// 移动
 func (o *MovableObject) Move(dir Direction) {
-	o.dir = dir
-	o.state = 1
-}
-
-// 是否在移动
-func (o *MovableObject) IsMove() bool {
-	return o.state == 1
+	if o.startMoveTime.IsZero() || !o.isMoving {
+		o.dir = dir
+		o.startMoveTime = time.Now()
+		o.isMoving = true
+		o.moveEvent.Call(o.startMoveTime, dir, float64(o.CurrentSpeed()))
+	}
 }
 
 // 停止
 func (o *MovableObject) Stop() {
-	o.state = 0
+	if !o.isMoving {
+		return
+	}
+	o.stopTime = time.Now()
+	o.isMoving = false
+	d := mdFreeList.get()
+	d.dir = o.dir
+	d.speed = float64(o.CurrentSpeed())
+	d.duration = o.stopTime.Sub(o.startMoveTime)
+	o.moveDataList = append(o.moveDataList, d)
+	o.stopEvent.Call(o.stopTime)
 }
 
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
-	if o.state == 0 {
-		return
+	updated := false
+
+	if o.moveDataList != nil && len(o.moveDataList) > 0 {
+		for _, md := range o.moveDataList {
+			o.update(md)
+			mdFreeList.put(md)
+		}
+		o.moveDataList = o.moveDataList[:0]
+		updated = true
 	}
 
-	if o.minMoveDistance < Delta {
-		o.minMoveDistance = DefaultMinMoveDistance
+	// 上一次移动还没停止
+	if o.startMoveTime.After(o.stopTime) {
+		now := time.Now()
+		var md = moveData{duration: now.Sub(o.startMoveTime), speed: float64(o.CurrentSpeed()), dir: o.dir}
+		o.update(&md)
+		o.startMoveTime = now
+		updated = true
 	}
 
-	o.lastUpdateTick += tick
-	diffMs := float64(o.lastUpdateTick / time.Millisecond)
-	distance := float64(o.speed/1000) * diffMs
-
-	// 不够最小移动距离
-	if distance < float64(o.minMoveDistance) {
-		return
+	if updated {
+		o.updateEvent.Call(o.x, o.y)
 	}
+}
 
-	switch o.dir {
+// 内部更新函数
+func (o *MovableObject) update(md *moveData) {
+	distance := float64(md.speed) * float64(md.duration) / float64(time.Second)
+	switch md.dir {
 	case DirLeft:
 		o.x -= distance
 	case DirRight:
@@ -236,10 +275,38 @@ func (o *MovableObject) Update(tick time.Duration) {
 	case DirDown:
 		o.y += distance
 	default:
-		return
+		panic("invalid direction")
 	}
+}
 
-	o.lastUpdateTick -= (time.Duration(diffMs) * time.Millisecond)
+// 注册移动事件
+func (o *MovableObject) RegisterMoveEventHandle(handle func(args ...interface{})) {
+	o.moveEvent.Register(handle)
+}
+
+// 注销移动事件
+func (o *MovableObject) UnregisterMoveEventHandle(handle func(args ...interface{})) {
+	o.moveEvent.Unregister(handle)
+}
+
+// 注册停止移动事件
+func (o *MovableObject) RegisterStopMoveEventHandle(handle func(args ...interface{})) {
+	o.stopEvent.Register(handle)
+}
+
+// 注销停止移动事件
+func (o *MovableObject) UnregisterStopMoveEventHandle(handle func(args ...interface{})) {
+	o.stopEvent.Unregister(handle)
+}
+
+// 注册更新事件
+func (o *MovableObject) RegisterUpdateEventHandle(handle func(args ...interface{})) {
+	o.updateEvent.Register(handle)
+}
+
+// 注销更新事件
+func (o *MovableObject) UnregisterUpdateEventHandle(handle func(args ...interface{})) {
+	o.updateEvent.Unregister(handle)
 }
 
 // 车辆
@@ -248,9 +315,9 @@ type Vehicle struct {
 }
 
 // 创建车辆
-func NewVehicle(staticInfo *ObjStaticInfo) *Vehicle {
+func NewVehicle(instId uint64, staticInfo *ObjStaticInfo) *Vehicle {
 	o := &Vehicle{
-		MovableObject: *NewMovableObject(staticInfo),
+		MovableObject: *NewMovableObject(instId, staticInfo),
 	}
 	return o
 }
@@ -262,9 +329,9 @@ type Tank struct {
 }
 
 // 创建坦克
-func NewTank(staticInfo *ObjStaticInfo) *Tank {
+func NewTank(instId uint64, staticInfo *ObjStaticInfo) *Tank {
 	return &Tank{
-		Vehicle: *NewVehicle(staticInfo),
+		Vehicle: *NewVehicle(instId, staticInfo),
 		level:   1,
 	}
 }

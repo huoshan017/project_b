@@ -84,7 +84,7 @@ func (p *Player) IsLeft() bool {
 
 // 初始化坦克
 func (p *Player) InitTank(info *object.ObjStaticInfo) {
-	p.tank = object.NewTank(info)
+	p.tank = object.NewTank(p.id, info)
 }
 
 // 设置玩家坦克
@@ -110,7 +110,7 @@ func (p *Player) RestoreTank() {
 // 会话玩家结构
 type SPlayer struct {
 	Player
-	sess gsnet.ISession
+	sess         gsnet.ISession
 	disconnected bool
 }
 

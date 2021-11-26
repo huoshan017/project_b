@@ -2,6 +2,7 @@ package common
 
 import (
 	"log"
+	"project_b/common/base"
 	"project_b/common/object"
 	"project_b/game_map"
 	"time"
@@ -14,14 +15,14 @@ const (
 // 场景结构必须在单个goroutine中执行
 type Scene struct {
 	gmap           *game_map.Config
-	eventMgr       IEventManager
+	eventMgr       base.IEventManager
 	playerTanks    map[uint64]*object.Tank
 	playerTankList []*object.Tank
 	enemyTanks     map[int32]*object.Tank
 	enemyTankList  []*object.Tank
 }
 
-func NewScene(eventMgr IEventManager) *Scene {
+func NewScene(eventMgr base.IEventManager) *Scene {
 	return &Scene{
 		eventMgr:       eventMgr,
 		playerTanks:    make(map[uint64]*object.Tank),
@@ -114,5 +115,65 @@ func (s *Scene) Update(tick time.Duration) {
 	}
 	for _, tank := range s.enemyTanks {
 		tank.Update(tick)
+	}
+}
+
+func (s *Scene) RegisterPlayerTankEvent(uid uint64, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	tank, o := s.playerTanks[uid]
+	if o {
+		tank.RegisterMoveEventHandle(moveEventHandle)
+		tank.RegisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) UnregisterPlayerTankEvent(uid uint64, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	tank, o := s.playerTanks[uid]
+	if o {
+		tank.UnregisterMoveEventHandle(moveEventHandle)
+		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) RegisterEnemyTankEvent(id int32, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	tank, o := s.enemyTanks[id]
+	if o {
+		tank.RegisterMoveEventHandle(moveEventHandle)
+		tank.RegisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) UnregisterEnemyTankEvent(id int32, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	tank, o := s.enemyTanks[id]
+	if o {
+		tank.UnregisterMoveEventHandle(moveEventHandle)
+		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) RegisterAllPlayersTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	for _, tank := range s.playerTanks {
+		tank.RegisterMoveEventHandle(moveEventHandle)
+		tank.RegisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) UnregisterAllPlayersTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	for _, tank := range s.playerTanks {
+		tank.UnregisterMoveEventHandle(moveEventHandle)
+		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) RegisterAllEnemiesTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	for _, tank := range s.enemyTanks {
+		tank.RegisterMoveEventHandle(moveEventHandle)
+		tank.RegisterStopMoveEventHandle(stopEventHandle)
+	}
+}
+
+func (s *Scene) UnregisterAllEnemiesTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+	for _, tank := range s.enemyTanks {
+		tank.UnregisterMoveEventHandle(moveEventHandle)
+		tank.UnregisterStopMoveEventHandle(stopEventHandle)
 	}
 }

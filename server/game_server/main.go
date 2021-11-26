@@ -62,13 +62,6 @@ func (s *GameService) Start() {
 var gslog *log.Logger
 
 func main() {
-	if len(os.Args) < 2 {
-		gslog.Error("args num invalid")
-		return
-	}
-	ip_str := flag.String("ip", "", "ip set")
-	flag.Parse()
-
 	gslog = log.NewWithConfig(&log.LogConfig{
 		Filename:      "./log/game_server.log",
 		MaxSize:       2,
@@ -78,6 +71,13 @@ func main() {
 		ConsoleOutput: true,
 	}, log.DebugLevel)
 	defer gslog.Sync()
+
+	if len(os.Args) < 2 {
+		gslog.Error("args num invalid")
+		return
+	}
+	ip_str := flag.String("ip", "", "ip set")
+	flag.Parse()
 
 	gameService := NewGameService()
 	if !gameService.Init(&config{addr: *ip_str}) {

@@ -20,6 +20,6 @@ func NewCPlayer(acc string, id uint64, net *NetClient) *CPlayer {
 }
 
 func (p *CPlayer) InitTankFromProto(tankProtoInfo *game_proto.TankInfo) {
-	tank := utils.TankProtoInfo2Info(tankProtoInfo)
+	tank := utils.TankProtoInfo2Info(p.Id(), tankProtoInfo)
 	p.SetTank(tank)
 }
