@@ -98,17 +98,22 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *ObjectAnimCon
 	pobj := &PlayableMoveObject{
 		op:   op,
 		mobj: mobj,
-		anims: []*base.SpriteAnim{
+		moveDir:    mobj.Dir(),
+		usedDestXY: true,
+	}
+	pobj.ChangeAnim(animConfig)
+	return pobj
+}
+
+// 改变动画
+func (po *PlayableMoveObject) ChangeAnim(animConfig *ObjectAnimConfig) {
+	po.anims = []*base.SpriteAnim{
 			nil,
 			base.NewSpriteAnim(animConfig.AnimConfig[object.DirLeft]),
 			base.NewSpriteAnim(animConfig.AnimConfig[object.DirRight]),
 			base.NewSpriteAnim(animConfig.AnimConfig[object.DirUp]),
 			base.NewSpriteAnim(animConfig.AnimConfig[object.DirDown]),
-		},
-		moveDir:    mobj.Dir(),
-		usedDestXY: true,
-	}
-	return pobj
+		}
 }
 
 // 初始化

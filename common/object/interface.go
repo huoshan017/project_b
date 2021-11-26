@@ -38,3 +38,13 @@ type IMovableObject interface {
 	RegisterUpdateEventHandle(handle func(args ...interface{}))     // 注册更新事件
 	UnregisterUpdateEventHandle(handle func(args ...interface{}))   // 注销更新事件
 }
+
+// 车辆接口
+type IVehicle interface {
+	IMovableObject
+}
+
+// 坦克接口
+type ITank interface {
+	IVehicle
+}

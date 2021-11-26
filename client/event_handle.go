@@ -176,8 +176,7 @@ func (g *Game) onEventTankChange(args ...interface{}) {
 	}
 	pid := args[0].(uint64)
 	tank := args[1].(*object.Tank)
-	g.playableMgr.RemovePlayerTankPlayable(pid)
-	g.playableMgr.AddPlayerTankPlayable(pid, tank)
+	g.playableMgr.ChangePlayerTankPlayable(pid, tank)
 	getLog().Info("handle event: player %v changed tank to %v", pid, tank.Id())
 }
 
@@ -189,7 +188,6 @@ func (g *Game) onEventTankRestore(args ...interface{}) {
 	}
 	pid := args[0].(uint64)
 	tank := args[1].(*object.Tank)
-	g.playableMgr.RemovePlayerTankPlayable(pid)
-	g.playableMgr.AddPlayerTankPlayable(pid, tank)
+	g.playableMgr.ChangePlayerTankPlayable(pid, tank)
 	getLog().Info("handle event: player %v restore tank id to %v", pid, tank.Id())
 }

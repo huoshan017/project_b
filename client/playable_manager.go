@@ -45,6 +45,16 @@ func (m *PlayableManager) RemovePlayerTankPlayable(uid uint64) {
 	delete(m.playerTankPlayables, uid)
 }
 
+// 改变玩家坦克播放
+func (m *PlayableManager) ChangePlayerTankPlayable(uid uint64, tank *object.Tank) {
+	playable, o := m.playerTankPlayables[uid]
+	if !o {
+		m.AddPlayerTankPlayable(uid, tank)
+		return
+	}
+	playable.ChangeAnim(GetTankAnimConfig(tank.Id(), tank.Level()))
+}
+
 // 开始播放玩家坦克动画
 func (m *PlayableManager) PlayPlayerTankPlayable(uid uint64) {
 	playable, o := m.playerTankPlayables[uid]
