@@ -15,8 +15,11 @@ type GameLogic struct {
 }
 
 // 创建游戏逻辑
-func NewGameLogic() *GameLogic {
-	gl := &GameLogic{eventMgr: base.NewEventManager()}
+func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
+	gl := &GameLogic{eventMgr: eventMgr}
+	if gl.eventMgr == nil {
+		gl.eventMgr = base.NewEventManager()
+	}
 	gl.scene = NewScene(gl.eventMgr)
 	return gl
 }

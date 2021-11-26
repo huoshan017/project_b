@@ -39,7 +39,7 @@ type GameLogicThread struct {
 func CreateGameLogicThread() *GameLogicThread {
 	t := &GameLogicThread{
 		MsgLogicProc: *common.CreateMsgLogicProc(),
-		gameLogic:    common.NewGameLogic(),
+		gameLogic:    common.NewGameLogic(nil),
 	}
 	t.registerHandles()
 	return t

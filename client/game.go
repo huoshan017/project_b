@@ -44,9 +44,9 @@ func NewGame() *Game {
 	g := &Game{
 		camera: &Camera{ViewPort: f64.Vec2{screenWidth, screenHeight}}, // 相机的视口范围与窗口屏幕大小一样
 	}
-	g.logic = common.NewGameLogic()
 	g.playerMgr = CreateCPlayerManager()
 	g.eventMgr = base.NewEventManager()
+	g.logic = common.NewGameLogic(g.eventMgr)
 	g.cmdMgr = CreateCmdHandleManager(g)
 	g.uiMgr = NewUIMgr(g)
 	g.uiMgr.Init()
