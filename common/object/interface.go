@@ -47,4 +47,11 @@ type IVehicle interface {
 // 坦克接口
 type ITank interface {
 	IVehicle
+	Change(info *ObjStaticInfo)
+	Restore()
+
+	// ---------------------------------
+	// 事件接口
+	RegisterChangeEventHandle(handle func(args ...interface{})) // 注册变化事件
+	UnregisterChangeEventHandle(handle func(args ...interface{})) // 注销变化事件
 }

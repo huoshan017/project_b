@@ -63,7 +63,8 @@ func (m *CmdHandleManager) Handle(cmd CmdCode, args ...interface{}) {
 func (m *CmdHandleManager) handleMove(args ...interface{}) {
 	dir := args[0].(object.Direction)
 	m.game.logic.PlayerTankMove(m.game.myId, dir)
-	m.game.eventMgr.InvokeEvent(EventIdTankMove)
+	// todo 在GameLogic中触发移动事件
+	//m.game.eventMgr.InvokeEvent(EventIdTankMove)
 	err := m.game.net.SendTankMoveReq()
 	if err != nil {
 		getLog().Warn("send tank move req err: %v", err)
@@ -73,7 +74,8 @@ func (m *CmdHandleManager) handleMove(args ...interface{}) {
 // 停止移动命令
 func (m *CmdHandleManager) handleStopMove(args ...interface{}) {
 	m.game.logic.PlayerTankStopMove(m.game.myId)
-	m.game.eventMgr.InvokeEvent(EventIdTankStopMove)
+	// todo 在GameLogic中触发停止事件
+	//m.game.eventMgr.InvokeEvent(EventIdTankStopMove)
 	err := m.game.net.SendTankStopMoveReq()
 	if err != nil {
 		getLog().Warn("send tank stop move req err: %v", err)

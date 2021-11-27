@@ -96,24 +96,24 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *ObjectAnimCon
 	x, y := mobj.Pos()
 	op.GeoM.Translate(float64(x), float64(y))
 	pobj := &PlayableMoveObject{
-		op:   op,
-		mobj: mobj,
+		op:         op,
+		mobj:       mobj,
 		moveDir:    mobj.Dir(),
 		usedDestXY: true,
 	}
-	pobj.ChangeAnim(animConfig)
+	pobj.changeAnim(animConfig)
 	return pobj
 }
 
 // 改变动画
-func (po *PlayableMoveObject) ChangeAnim(animConfig *ObjectAnimConfig) {
+func (po *PlayableMoveObject) changeAnim(animConfig *ObjectAnimConfig) {
 	po.anims = []*base.SpriteAnim{
-			nil,
-			base.NewSpriteAnim(animConfig.AnimConfig[object.DirLeft]),
-			base.NewSpriteAnim(animConfig.AnimConfig[object.DirRight]),
-			base.NewSpriteAnim(animConfig.AnimConfig[object.DirUp]),
-			base.NewSpriteAnim(animConfig.AnimConfig[object.DirDown]),
-		}
+		nil,
+		base.NewSpriteAnim(animConfig.AnimConfig[object.DirLeft]),
+		base.NewSpriteAnim(animConfig.AnimConfig[object.DirRight]),
+		base.NewSpriteAnim(animConfig.AnimConfig[object.DirUp]),
+		base.NewSpriteAnim(animConfig.AnimConfig[object.DirDown]),
+	}
 }
 
 // 初始化
@@ -185,12 +185,14 @@ func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 	po.moveDir = args[1].(object.Direction)
 	po.currSpeed = args[2].(float64)
 	po.moveDuration = -1 // 表示正在移动
+	po.Play()
 }
 
 // 停止移动事件处理
 func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
 	stopTime := args[0].(time.Time)
 	po.moveDuration = stopTime.Sub(po.startMoveTime)
+	po.Stop()
 }
 
 // 更新事件处理
@@ -200,5 +202,43 @@ func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
 	po.dx = args[0].(float64)
 	po.dy = args[1].(float64)
 	po.usedDestXY = false
+	po.op.GeoM.SetElement(0, 2, po.dx)
+	po.op.GeoM.SetElement(1, 2, po.dy)
 	getLog().Debug("3 PlayableMoveObject instid=%v, display_x=%v, display_y=%v, dest_x=%v, dest_y=%v, now=%v", po.mobj.InstId(), dx, dy, po.dx, po.dy, time.Now())
+}
+
+// 坦克播放对象
+type PlayableTank struct {
+	PlayableMoveObject
+	tankObj object.ITank
+}
+
+// 创建坦克播放对象
+func NewPlayableTank(tank object.ITank, animConfig *ObjectAnimConfig) *PlayableTank {
+	pt := &PlayableTank{
+		PlayableMoveObject: *NewPlayableMoveObject(tank, animConfig),
+		tankObj:            tank,
+	}
+	return pt
+}
+
+// 初始化
+func (pt *PlayableTank) Init() {
+	pt.PlayableMoveObject.Init()
+	pt.tankObj.RegisterChangeEventHandle(pt.onChange)
+}
+
+// 反初始化
+func (pt *PlayableTank) Uninit() {
+	pt.PlayableMoveObject.Uninit()
+	pt.tankObj.UnregisterChangeEventHandle(pt.onChange)
+}
+
+// 变化事件
+func (pt *PlayableTank) onChange(args ...interface{}) {
+	info := args[0].(*object.ObjStaticInfo)
+	level := args[1].(int32)
+	pt.currSpeed = (float64)(info.Speed())
+	pt.changeAnim(GetTankAnimConfig(info.Id(), level))
+	pt.Play()
 }

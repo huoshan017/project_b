@@ -45,9 +45,9 @@ func NewSpriteAnim(config *SpriteAnimConfig) *SpriteAnim {
 
 // 播放
 func (a *SpriteAnim) Play() {
-	if a.currState != stop {
-		return
-	}
+	//if a.currState != stop {
+	//	return
+	//}
 
 	a.currState = playing
 	a.currFrame = 0

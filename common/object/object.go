@@ -325,14 +325,16 @@ func NewVehicle(instId uint64, staticInfo *ObjStaticInfo) *Vehicle {
 // 坦克
 type Tank struct {
 	Vehicle
-	level int32
+	level       int32
+	changeEvent *base.Event
 }
 
 // 创建坦克
 func NewTank(instId uint64, staticInfo *ObjStaticInfo) *Tank {
 	return &Tank{
-		Vehicle: *NewVehicle(instId, staticInfo),
-		level:   1,
+		Vehicle:     *NewVehicle(instId, staticInfo),
+		level:       1,
+		changeEvent: base.NewEvent(),
 	}
 }
 
@@ -344,4 +346,27 @@ func (t Tank) Level() int32 {
 // 设置等级
 func (t *Tank) SetLevel(level int32) {
 	t.level = level
+}
+
+// 变化
+func (t *Tank) Change(info *ObjStaticInfo) {
+	t.ChangeStaticInfo(info)
+	t.SetCurrentSpeed(info.Speed())
+	t.changeEvent.Call(info, t.level)
+}
+
+// 还原
+func (t *Tank) Restore() {
+	t.RestoreStaticInfo()
+	t.changeEvent.Call(t.staticInfo, t.level)
+}
+
+// 注册变化事件
+func (t *Tank) RegisterChangeEventHandle(handle func(args ...interface{})) {
+	t.changeEvent.Register(handle)
+}
+
+// 注销变化事件
+func (t *Tank) UnregisterChangeEventHandle(handle func(args ...interface{})) {
+	t.changeEvent.Unregister(handle)
 }

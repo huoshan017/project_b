@@ -9,16 +9,16 @@ import (
 
 // 播放管理器
 type PlayableManager struct {
-	playerTankPlayables map[uint64]*PlayableMoveObject
-	enemyTankPlayables  map[int32]*PlayableMoveObject
+	playerTankPlayables map[uint64]*PlayableTank
+	enemyTankPlayables  map[int32]*PlayableTank
 	lastCheckTime       time.Time
 }
 
 // 创建播放管理器
 func CreatePlayableManager() *PlayableManager {
 	return &PlayableManager{
-		playerTankPlayables: make(map[uint64]*PlayableMoveObject),
-		enemyTankPlayables:  make(map[int32]*PlayableMoveObject),
+		playerTankPlayables: make(map[uint64]*PlayableTank),
+		enemyTankPlayables:  make(map[int32]*PlayableTank),
 	}
 }
 
@@ -29,7 +29,7 @@ func (m *PlayableManager) AddPlayerTankPlayable(uid uint64, tank *object.Tank) {
 	}
 	_, o := m.playerTankPlayables[uid]
 	if !o {
-		p := NewPlayableMoveObject(tank, GetTankAnimConfig(tank.Id(), tank.Level()))
+		p := NewPlayableTank(tank, GetTankAnimConfig(tank.Id(), tank.Level()))
 		p.Init()
 		m.playerTankPlayables[uid] = p
 	}
@@ -43,16 +43,6 @@ func (m *PlayableManager) RemovePlayerTankPlayable(uid uint64) {
 	}
 	playable.Uninit()
 	delete(m.playerTankPlayables, uid)
-}
-
-// 改变玩家坦克播放
-func (m *PlayableManager) ChangePlayerTankPlayable(uid uint64, tank *object.Tank) {
-	playable, o := m.playerTankPlayables[uid]
-	if !o {
-		m.AddPlayerTankPlayable(uid, tank)
-		return
-	}
-	playable.ChangeAnim(GetTankAnimConfig(tank.Id(), tank.Level()))
 }
 
 // 开始播放玩家坦克动画
@@ -89,7 +79,7 @@ func (m *PlayableManager) StopPlayersTankPlayable() {
 func (m *PlayableManager) AddEnemyTankPlayable(instId int32, tank *object.Tank) {
 	_, o := m.enemyTankPlayables[instId]
 	if !o {
-		p := NewPlayableMoveObject(tank, GetTankAnimConfig(tank.Id(), tank.Level()))
+		p := NewPlayableTank(tank, GetTankAnimConfig(tank.Id(), tank.Level()))
 		p.Init()
 		m.enemyTankPlayables[instId] = p
 	}

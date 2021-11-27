@@ -83,8 +83,7 @@ func (s *Scene) PlayerTankChange(uid uint64, staticInfo *object.ObjStaticInfo) b
 	if tank == nil {
 		return false
 	}
-	tank.ChangeStaticInfo(staticInfo)
-	tank.SetCurrentSpeed(staticInfo.Speed())
+	tank.Change(staticInfo)
 	return true
 }
 
@@ -93,7 +92,7 @@ func (s *Scene) PlayerTankRestore(uid uint64) int32 {
 	if tank == nil {
 		return 0
 	}
-	tank.RestoreStaticInfo()
+	tank.Restore()
 	return tank.Id()
 }
 
