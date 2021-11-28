@@ -158,7 +158,7 @@ func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
 		dx := po.op.GeoM.Element(0, 2)
 		dy := po.op.GeoM.Element(1, 2)
 		d := po.currSpeed * float64(duration) / float64(time.Second)
-		getLog().Debug("1 PlayableMoveObject instid=%v, currentSpeed=%v, tick=%v, duration=%v, distance=%v", po.mobj.InstId(), po.currSpeed, tick, duration, d)
+		//getLog().Debug("1 PlayableMoveObject instid=%v, currentSpeed=%v, tick=%v, duration=%v, distance=%v", po.mobj.InstId(), po.currSpeed, tick, duration, d)
 		switch po.moveDir {
 		case object.DirLeft:
 			po.op.GeoM.SetElement(0, 2, dx-d)
@@ -171,9 +171,9 @@ func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
 		default:
 			return
 		}
-		dx = po.op.GeoM.Element(0, 2)
-		dy = po.op.GeoM.Element(1, 2)
-		getLog().Debug("2 PlayableMoveObject after instid=%v, dx=%v, dy=%v", po.mobj.InstId(), dx, dy)
+		//dx = po.op.GeoM.Element(0, 2)
+		//dy = po.op.GeoM.Element(1, 2)
+		//getLog().Debug("2 PlayableMoveObject after instid=%v, dx=%v, dy=%v", po.mobj.InstId(), dx, dy)
 	}
 
 	po.anims[po.moveDir].Update(screen, po.op)
@@ -197,14 +197,14 @@ func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
 
 // 更新事件处理
 func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
-	dx := po.op.GeoM.Element(0, 2)
-	dy := po.op.GeoM.Element(1, 2)
+	//dx := po.op.GeoM.Element(0, 2)
+	//dy := po.op.GeoM.Element(1, 2)
 	po.dx = args[0].(float64)
 	po.dy = args[1].(float64)
 	po.usedDestXY = false
 	po.op.GeoM.SetElement(0, 2, po.dx)
 	po.op.GeoM.SetElement(1, 2, po.dy)
-	getLog().Debug("3 PlayableMoveObject instid=%v, display_x=%v, display_y=%v, dest_x=%v, dest_y=%v, now=%v", po.mobj.InstId(), dx, dy, po.dx, po.dy, time.Now())
+	//getLog().Debug("3 PlayableMoveObject instid=%v, display_x=%v, display_y=%v, dest_x=%v, dest_y=%v, now=%v", po.mobj.InstId(), dx, dy, po.dx, po.dy, time.Now())
 }
 
 // 坦克播放对象

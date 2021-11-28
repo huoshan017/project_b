@@ -65,7 +65,7 @@ func (m *CmdHandleManager) handleMove(args ...interface{}) {
 	m.game.logic.PlayerTankMove(m.game.myId, dir)
 	// todo 在GameLogic中触发移动事件
 	//m.game.eventMgr.InvokeEvent(EventIdTankMove)
-	err := m.game.net.SendTankMoveReq()
+	err := m.game.net.SendTankMoveReq(dir)
 	if err != nil {
 		getLog().Warn("send tank move req err: %v", err)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"project_b/common/object"
 	"project_b/game_proto"
 
 	"google.golang.org/protobuf/proto"
@@ -46,9 +47,10 @@ func (c *NetClient) SendEnterGameReq(account, sessionToken string) error {
 	return c.Send(uint32(game_proto.MsgPlayerEnterGameReq_Id), data)
 }
 
-func (c *NetClient) SendTankMoveReq() error {
+func (c *NetClient) SendTankMoveReq(dir object.Direction) error {
 	var req game_proto.MsgPlayerTankMoveReq
 	req.MoveInfo = &game_proto.TankMoveInfo{}
+	req.MoveInfo.Direction = int32(dir)
 	data, err := proto.Marshal(&req)
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package main
 import (
 	"project_b/common"
 	"project_b/common/base"
+	"project_b/common/object"
 	"project_b/common_data"
 	"project_b/game_proto"
 	"time"
@@ -66,6 +67,10 @@ func (h *MsgHandler) registerNetMsgHandles() {
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankSync_Id), h.onPlayerTankRestoreSync)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerEnterGameSync_Id), h.onPlayerEnterGameSync)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerExitGameSync_Id), h.onPlayerExitGameSync)
+	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveAck_Id), h.onPlayerTankMoveAck)
+	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), h.onPlayerTankStopMoveAck)
+	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveSync_Id), h.onPlayerTankMoveSync)
+	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveSync_Id), h.onPlayerTankStopMoveSync)
 	h.net.RegisterHandle(uint32(game_proto.MsgErrorAck_Id), h.onErrorAck)
 }
 
@@ -224,6 +229,52 @@ func (h *MsgHandler) onPlayerTankRestoreSync(sess gsnet.ISession, data []byte) e
 	if h.doTankRestore(sync.PlayerId, sync.TankId) {
 		getLog().Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
 	}
+
+	return nil
+}
+
+// 本玩家移动回应处理
+func (h *MsgHandler) onPlayerTankMoveAck(sess gsnet.ISession, data []byte) error {
+	var ack game_proto.MsgPlayerTankMoveAck
+	err := proto.Unmarshal(data, &ack)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 其他玩家移动同步处理
+func (h *MsgHandler) onPlayerTankMoveSync(sess gsnet.ISession, data []byte) error {
+	var sync game_proto.MsgPlayerTankMoveSync
+	err := proto.Unmarshal(data, &sync)
+	if err != nil {
+		return err
+	}
+
+	h.logic.PlayerTankMove(sync.PlayerId, object.Direction(sync.MoveInfo.Direction))
+
+	return nil
+}
+
+// 本玩家停止移动返回处理
+func (h *MsgHandler) onPlayerTankStopMoveAck(sess gsnet.ISession, data []byte) error {
+	var ack game_proto.MsgPlayerTankStopMoveAck
+	err := proto.Unmarshal(data, &ack)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 其他玩家停止移动同步处理
+func (h *MsgHandler) onPlayerTankStopMoveSync(sess gsnet.ISession, data []byte) error {
+	var sync game_proto.MsgPlayerTankMoveSync
+	err := proto.Unmarshal(data, &sync)
+	if err != nil {
+		return err
+	}
+
+	h.logic.PlayerTankStopMove(sync.PlayerId)
 
 	return nil
 }

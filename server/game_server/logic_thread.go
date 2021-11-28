@@ -49,6 +49,7 @@ func CreateGameLogicThread() *GameLogicThread {
 func (t *GameLogicThread) registerHandles() {
 	t.SetTickHandle(t.onTick, common_data.GameLogicTick)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), t.onPlayerTankMoveReq)
+	t.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), t.onPlayerTankStopMoveReq)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankReq_Id), t.onPlayerTankChange)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankReq_Id), t.onPlayerTankRestore)
 }
@@ -160,8 +161,45 @@ func (t *GameLogicThread) onTick(tick time.Duration) {
 
 // 坦克移动同步
 func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.MsgData) error {
-	//m := msg.(*game_proto.MsgPlayerTankMoveReq)
-	return nil
+	pd := t.getPlayerData(key)
+	if pd == nil {
+		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
+		return nil
+	}
+	m := msg.(*game_proto.MsgPlayerTankMoveReq)
+	var ack game_proto.MsgPlayerTankMoveAck
+	ack.PlayerId = pd.pid
+	err := pd.send(uint32(game_proto.MsgPlayerTankMoveAck_Id), &ack)
+	if err != nil {
+		return err
+	}
+	if t.GetAgentCountNoLock() > 0 {
+		var sync game_proto.MsgPlayerTankMoveSync
+		sync.PlayerId = pd.pid
+		sync.MoveInfo = m.MoveInfo
+		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankMoveSync_Id), &sync, pd.pid)
+	}
+	return err
+}
+
+// 坦克停止移动同步
+func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg common.MsgData) error {
+	pd := t.getPlayerData(key)
+	if pd == nil {
+		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
+		return nil
+	}
+	var ack game_proto.MsgPlayerTankStopMoveAck
+	err := pd.send(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), &ack)
+	if err != nil {
+		return err
+	}
+	if t.GetAgentCountNoLock() > 0 {
+		var sync game_proto.MsgPlayerTankStopMoveSync
+		sync.PlayerId = pd.pid
+		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankStopMoveSync_Id), &sync, pd.pid)
+	}
+	return err
 }
 
 // 玩家坦克改变
@@ -243,9 +281,9 @@ func (t *GameLogicThread) getPlayerData(key common.AgentKey) *playerData {
 }
 
 // 广播消息
-//func (t *GameLogicThread) broadcastMsg(msgid uint32, msg protoreflect.ProtoMessage) error {
-//	return t.broadcastMsgExceptPlayer(msgid, msg, 0)
-//}
+func (t *GameLogicThread) broadcastMsg(msgid uint32, msg protoreflect.ProtoMessage) error {
+	return t.broadcastMsgExceptPlayer(msgid, msg, 0)
+}
 
 // 广播消息除了某玩家
 func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid uint32, msg protoreflect.ProtoMessage, uid uint64) error {

@@ -1,6 +1,7 @@
 package object
 
 import (
+	"fmt"
 	"project_b/common/base"
 	"time"
 )
@@ -212,6 +213,10 @@ func (o MovableObject) CurrentSpeed() float32 {
 
 // 移动
 func (o *MovableObject) Move(dir Direction) {
+	if dir < DirMin || dir > DirMax {
+		str := fmt.Sprintf("invalid object direction %v", dir)
+		panic(str)
+	}
 	if o.startMoveTime.IsZero() || !o.isMoving {
 		o.dir = dir
 		o.startMoveTime = time.Now()
