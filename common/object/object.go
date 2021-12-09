@@ -3,7 +3,7 @@ package object
 import (
 	"fmt"
 	"project_b/common/base"
-	"time"
+	"project_b/common/time"
 )
 
 // 坐标位置
@@ -144,18 +144,25 @@ func (o object) Update() {
 
 }
 
+type moveObjectState int32
+
+const (
+	stopped  = moveObjectState(0)
+	toMove   = moveObjectState(1)
+	isMoving = moveObjectState(2)
+	toStop   = moveObjectState(3)
+)
+
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir           Direction   // 方向
-	speed         float32     // 当前移动速度（米/秒）
-	isMoving      bool        // 是否已更新
-	startMoveTime time.Time   // 移动开始时间
-	stopTime      time.Time   // 停止移动时间
-	moveDataList  []*moveData // 移动数据队列
-	moveEvent     *base.Event // 移动事件
-	stopEvent     *base.Event // 停止事件
-	updateEvent   *base.Event // 更新事件
+	dir   Direction       // 方向
+	speed float32         // 当前移动速度（米/秒）
+	state moveObjectState // 移动状态
+	//moveDataList []*moveData     // 移动数据队列
+	moveEvent   *base.Event // 移动事件
+	stopEvent   *base.Event // 停止事件
+	updateEvent *base.Event // 更新事件
 }
 
 // 创建可移动物体
@@ -217,20 +224,24 @@ func (o *MovableObject) Move(dir Direction) {
 		str := fmt.Sprintf("invalid object direction %v", dir)
 		panic(str)
 	}
-	if o.startMoveTime.IsZero() || !o.isMoving {
+	/*if o.startMoveTime.IsZero() || !o.isMoving {
 		o.dir = dir
-		o.startMoveTime = time.Now()
+		o.startMoveTime = timePoint
 		o.isMoving = true
 		o.moveEvent.Call(o.startMoveTime, dir, float64(o.CurrentSpeed()))
+	}*/
+	if o.state == stopped {
+		o.state = toMove
+		o.dir = dir
 	}
 }
 
 // 停止
 func (o *MovableObject) Stop() {
-	if !o.isMoving {
+	/*if !o.isMoving {
 		return
 	}
-	o.stopTime = time.Now()
+	o.stopTime = timePoint
 	o.isMoving = false
 	d := mdFreeList.get()
 	d.dir = o.dir
@@ -238,11 +249,22 @@ func (o *MovableObject) Stop() {
 	d.duration = o.stopTime.Sub(o.startMoveTime)
 	o.moveDataList = append(o.moveDataList, d)
 	o.stopEvent.Call(o.stopTime)
+	*/
+	// 准备移动则直接停止
+	if o.state == toMove {
+		o.state = stopped
+		return
+	}
+	// 正在移动则准备停止
+	if o.state == isMoving {
+		o.state = toStop
+		return
+	}
 }
 
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
-	updated := false
+	/*updated := false
 
 	if o.moveDataList != nil && len(o.moveDataList) > 0 {
 		for _, md := range o.moveDataList {
@@ -260,15 +282,42 @@ func (o *MovableObject) Update(tick time.Duration) {
 		o.update(&md)
 		o.startMoveTime = now
 		updated = true
+	}*/
+
+	if o.state == stopped {
+		return
 	}
 
-	if updated {
-		o.updateEvent.Call(o.x, o.y)
+	if o.state == toMove {
+		o.state = isMoving
+		o.moveEvent.Call(o.dir, float64(o.CurrentSpeed()), time.Now())
+		return
+	}
+
+	distance := float64(o.CurrentSpeed()) * float64(tick) / float64(time.Second)
+	switch o.dir {
+	case DirLeft:
+		o.x -= distance
+	case DirRight:
+		o.x += distance
+	case DirUp:
+		o.y -= distance
+	case DirDown:
+		o.y += distance
+	default:
+		panic("invalid direction")
+	}
+
+	o.updateEvent.Call(o.x, o.y, time.Now())
+
+	if o.state == toStop {
+		o.state = stopped
+		o.stopEvent.Call()
 	}
 }
 
 // 内部更新函数
-func (o *MovableObject) update(md *moveData) {
+/*func (o *MovableObject) update(md *moveData) {
 	distance := float64(md.speed) * float64(md.duration) / float64(time.Second)
 	switch md.dir {
 	case DirLeft:
@@ -282,7 +331,7 @@ func (o *MovableObject) update(md *moveData) {
 	default:
 		panic("invalid direction")
 	}
-}
+}*/
 
 // 注册移动事件
 func (o *MovableObject) RegisterMoveEventHandle(handle func(args ...interface{})) {

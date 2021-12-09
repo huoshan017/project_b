@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"project_b/common"
 	"project_b/common/base"
+	"project_b/common/time"
 	"project_b/common_data"
-	"time"
 
 	"golang.org/x/image/math/f64"
 
@@ -36,7 +36,7 @@ type Game struct {
 	playableMgr   *PlayableManager   // 可播放管理器
 	myId          uint64             // 我的ID
 	myAcc         string             // 我的帐号
-	lastCheckTime time.Time          // 上次检测时间
+	lastCheckTime time.CustomTime    // 上次检测时间
 }
 
 // 创建游戏

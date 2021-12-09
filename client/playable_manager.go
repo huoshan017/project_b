@@ -2,7 +2,7 @@ package main
 
 import (
 	"project_b/common/object"
-	"time"
+	"project_b/common/time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -11,7 +11,7 @@ import (
 type PlayableManager struct {
 	playerTankPlayables map[uint64]*PlayableTank
 	enemyTankPlayables  map[int32]*PlayableTank
-	lastCheckTime       time.Time
+	lastCheckTime       time.CustomTime
 }
 
 // 创建播放管理器

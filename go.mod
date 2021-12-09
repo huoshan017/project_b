@@ -8,7 +8,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hajimehoshi/ebiten/v2 v2.1.5
 	github.com/huoshan017/gproc v0.0.0-20210913125355-ecfcebb5e614
-	github.com/huoshan017/gsnet v0.0.0-20211107132347-ee22ad2d7fec
+	github.com/huoshan017/gsnet v0.0.0-20211205085829-048768423769
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect

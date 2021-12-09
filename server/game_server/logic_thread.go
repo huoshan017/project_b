@@ -3,6 +3,7 @@ package main
 import (
 	"project_b/common"
 	"project_b/common/object"
+	custom_time "project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_proto"
 	"project_b/utils"
@@ -47,7 +48,7 @@ func CreateGameLogicThread() *GameLogicThread {
 
 // 初始化
 func (t *GameLogicThread) registerHandles() {
-	t.SetTickHandle(t.onTick, common_data.GameLogicTick)
+	t.SetTickHandle(t.onTick, time.Duration(common_data.GameLogicTick))
 	t.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), t.onPlayerTankMoveReq)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), t.onPlayerTankStopMoveReq)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankReq_Id), t.onPlayerTankChange)
@@ -156,7 +157,7 @@ func (t *GameLogicThread) onPlayerTankLeaveReq(pid uint64, sessHandler *GameMsgH
 
 // tick处理
 func (t *GameLogicThread) onTick(tick time.Duration) {
-	t.gameLogic.Update(tick)
+	t.gameLogic.Update(custom_time.Duration(tick))
 }
 
 // 坦克移动同步

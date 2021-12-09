@@ -19,11 +19,12 @@ type GameMsgHandler struct {
 	lastCheckDiscDuration time.Duration
 }
 
-// 初始化
-func (h *GameMsgHandler) Init(args ...interface{}) {
+func CreateGameMsgHandler(args ...interface{}) gsnet.ISessionHandler {
+	h := &GameMsgHandler{}
 	h.MsgHandler = *gsnet.NewMsgHandler(&gsnet.DefaultMsgProto{})
 	h.service = args[0].(*GameService)
 	h.registerHandles()
+	return h
 }
 
 // 连接事件
@@ -35,6 +36,9 @@ func (h *GameMsgHandler) OnConnect(sess gsnet.ISession) {
 
 // 断开事件
 func (h *GameMsgHandler) OnDisconnect(sess gsnet.ISession, err error) {
+	if sess != h.sess {
+		panic("sess must same to OnConnect")
+	}
 	h.afterPlayerDisconnect(sess)
 	gslog.Info("session %v disconnected", sess.GetId())
 	h.sess = nil
@@ -42,6 +46,9 @@ func (h *GameMsgHandler) OnDisconnect(sess gsnet.ISession, err error) {
 
 // 定时器事件
 func (h *GameMsgHandler) OnTick(sess gsnet.ISession, tick time.Duration) {
+	if sess != h.sess {
+		panic("sess must same to OnConnect")
+	}
 	h.lastCheckDiscDuration += tick
 	// 0.5秒检测一次
 	if h.lastCheckDiscDuration >= time.Microsecond*500 {
@@ -257,6 +264,7 @@ func (h *GameMsgHandler) onPlayerTankMoveReq(sess gsnet.ISession, data []byte) e
 	if err != nil {
 		return err
 	}
+
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankMoveReq_Id), &sync)
 
 	return nil
@@ -274,6 +282,7 @@ func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess gsnet.ISession, data []byt
 	if err != nil {
 		return err
 	}
+
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankStopMoveReq_Id), &req)
 
 	return nil

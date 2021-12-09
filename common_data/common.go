@@ -1,7 +1,7 @@
 package common_data
 
-import "time"
+import "project_b/common/time"
 
 var (
-	GameLogicTick = time.Millisecond * 200
+	GameLogicTick = time.Millisecond * 100
 )

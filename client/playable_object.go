@@ -3,7 +3,7 @@ package main
 import (
 	"project_b/client/base"
 	"project_b/common/object"
-	"time"
+	"project_b/common/time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -79,15 +79,14 @@ func (po *PlayableObject) Update(tick time.Duration, screen *ebiten.Image) {
 // 可移动物体的播放对象，有四个方向的动画
 type PlayableMoveObject struct {
 	IPlayable
-	op            *ebiten.DrawImageOptions
-	mobj          object.IMovableObject
-	anims         []*base.SpriteAnim
-	startMoveTime time.Time        // 开始移动的时间
-	moveDir       object.Direction // 移动方向
-	currSpeed     float64          // 当前速度
-	moveDuration  time.Duration    // 移动持续时间
-	dx, dy        float64          // 目标点坐标，负数表示已经到达过该点
-	usedDestXY    bool             // 是否使用过目标点坐标
+	op         *ebiten.DrawImageOptions
+	mobj       object.IMovableObject
+	anims      []*base.SpriteAnim
+	isMoving   bool             // 是否正在移动
+	moveDir    object.Direction // 移动方向
+	currSpeed  float64          // 当前速度
+	updateTime time.CustomTime  // 更新时间点
+	dx, dy     float64          // 目标点坐标，负数表示已经到达过该点
 }
 
 // 创建可移动物体的播放对象
@@ -96,10 +95,9 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *ObjectAnimCon
 	x, y := mobj.Pos()
 	op.GeoM.Translate(float64(x), float64(y))
 	pobj := &PlayableMoveObject{
-		op:         op,
-		mobj:       mobj,
-		moveDir:    mobj.Dir(),
-		usedDestXY: true,
+		op:      op,
+		mobj:    mobj,
+		moveDir: mobj.Dir(),
 	}
 	pobj.changeAnim(animConfig)
 	return pobj
@@ -143,22 +141,15 @@ func (po *PlayableMoveObject) Stop() {
 }
 
 // 更新
-// todo 如果一个方向上的移动到停止最后逻辑帧和渲染帧不一致的话，则再次移动或换方向时会出现被往回拉情况
 func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
-	if po.moveDuration != 0 {
+	if po.isMoving {
 		var duration time.Duration
-		if po.moveDuration > 0 {
-			duration = po.moveDuration
-			po.moveDuration = 0
-		} else {
-			now := time.Now()
-			duration = now.Sub(po.startMoveTime)
-			po.startMoveTime = now
-		}
+		now := time.Now()
+		duration = now.Sub(po.updateTime)
+		po.updateTime = now
 		dx := po.op.GeoM.Element(0, 2)
 		dy := po.op.GeoM.Element(1, 2)
 		d := po.currSpeed * float64(duration) / float64(time.Second)
-		//getLog().Debug("1 PlayableMoveObject instid=%v, currentSpeed=%v, tick=%v, duration=%v, distance=%v", po.mobj.InstId(), po.currSpeed, tick, duration, d)
 		switch po.moveDir {
 		case object.DirLeft:
 			po.op.GeoM.SetElement(0, 2, dx-d)
@@ -171,40 +162,32 @@ func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
 		default:
 			return
 		}
-		//dx = po.op.GeoM.Element(0, 2)
-		//dy = po.op.GeoM.Element(1, 2)
-		//getLog().Debug("2 PlayableMoveObject after instid=%v, dx=%v, dy=%v", po.mobj.InstId(), dx, dy)
 	}
-
 	po.anims[po.moveDir].Update(screen, po.op)
 }
 
 // 移动事件处理
 func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
-	po.startMoveTime = args[0].(time.Time)
-	po.moveDir = args[1].(object.Direction)
-	po.currSpeed = args[2].(float64)
-	po.moveDuration = -1 // 表示正在移动
+	po.moveDir = args[0].(object.Direction)
+	po.currSpeed = args[1].(float64)
+	po.updateTime = args[2].(time.CustomTime)
+	po.isMoving = true
 	po.Play()
+}
+
+// 更新数据事件处理
+func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
+	po.dx = args[0].(float64)
+	po.dy = args[1].(float64)
+	po.updateTime = args[2].(time.CustomTime)
+	po.op.GeoM.SetElement(0, 2, po.dx)
+	po.op.GeoM.SetElement(1, 2, po.dy)
 }
 
 // 停止移动事件处理
 func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
-	stopTime := args[0].(time.Time)
-	po.moveDuration = stopTime.Sub(po.startMoveTime)
+	po.isMoving = false
 	po.Stop()
-}
-
-// 更新事件处理
-func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
-	//dx := po.op.GeoM.Element(0, 2)
-	//dy := po.op.GeoM.Element(1, 2)
-	po.dx = args[0].(float64)
-	po.dy = args[1].(float64)
-	po.usedDestXY = false
-	po.op.GeoM.SetElement(0, 2, po.dx)
-	po.op.GeoM.SetElement(1, 2, po.dy)
-	//getLog().Debug("3 PlayableMoveObject instid=%v, display_x=%v, display_y=%v, dest_x=%v, dest_y=%v, now=%v", po.mobj.InstId(), dx, dy, po.dx, po.dy, time.Now())
 }
 
 // 坦克播放对象

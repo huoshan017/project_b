@@ -3,7 +3,9 @@ package main
 import (
 	"project_b/common"
 	"project_b/common/object"
+	custom_time "project_b/common/time"
 	"project_b/common_data"
+
 	"time"
 
 	"github.com/huoshan017/gproc"
@@ -80,5 +82,5 @@ func (h *GameLogicHandler) onPlayerChangeTank(sender gproc.ISender, args interfa
 
 // tick处理
 func (h *GameLogicHandler) onTick(tick time.Duration) {
-	h.logic.Update(tick)
+	h.logic.Update(custom_time.Duration(tick))
 }

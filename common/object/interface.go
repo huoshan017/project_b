@@ -1,6 +1,6 @@
 package object
 
-import "time"
+import "project_b/common/time"
 
 // 物体接口
 type IObject interface {
@@ -52,6 +52,6 @@ type ITank interface {
 
 	// ---------------------------------
 	// 事件接口
-	RegisterChangeEventHandle(handle func(args ...interface{})) // 注册变化事件
+	RegisterChangeEventHandle(handle func(args ...interface{}))   // 注册变化事件
 	UnregisterChangeEventHandle(handle func(args ...interface{})) // 注销变化事件
 }

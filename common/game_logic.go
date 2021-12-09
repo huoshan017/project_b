@@ -3,8 +3,8 @@ package common
 import (
 	"project_b/common/base"
 	"project_b/common/object"
+	"project_b/common/time"
 	"project_b/game_map"
-	"time"
 )
 
 type GameLogic struct {

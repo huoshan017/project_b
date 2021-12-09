@@ -32,7 +32,7 @@ func (s *GameService) Init(conf *config) bool {
 	// 错误注册
 	gsnet.RegisterNoDisconnectError(ErrKickDuplicatePlayer)
 	// 创建服务
-	net := gsnet.NewServer(&GameMsgHandler{}, []interface{}{s})
+	net := gsnet.NewServer(CreateGameMsgHandler, gsnet.SetNewSessionHandlerFuncArgs(s))
 	// 监听
 	err := net.Listen(conf.addr)
 	if err != nil {

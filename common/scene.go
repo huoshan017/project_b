@@ -1,11 +1,11 @@
 package common
 
 import (
-	"log"
 	"project_b/common/base"
+	"project_b/common/log"
 	"project_b/common/object"
+	"project_b/common/time"
 	"project_b/game_map"
-	"time"
 )
 
 const (
@@ -63,7 +63,7 @@ func (s *Scene) GetPlayerTanks() map[uint64]*object.Tank {
 func (s *Scene) PlayerTankMove(uid uint64, dir object.Direction) {
 	tank := s.playerTanks[uid]
 	if tank == nil {
-		log.Printf("player %v tank not found", uid)
+		log.Error("player %v tank not found", uid)
 		return
 	}
 	tank.Move(dir)
@@ -72,7 +72,7 @@ func (s *Scene) PlayerTankMove(uid uint64, dir object.Direction) {
 func (s *Scene) PlayerTankStopMove(uid uint64) {
 	tank := s.playerTanks[uid]
 	if tank == nil {
-		log.Printf("player %v tank not found", uid)
+		log.Error("player %v tank not found", uid)
 		return
 	}
 	tank.Stop()
