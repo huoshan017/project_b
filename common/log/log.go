@@ -62,6 +62,10 @@ func (l *Logger) Stack(err interface{}) {
 	l.l.Errorf("%+v", er)
 }
 
+func (l *Logger) Sync() error {
+	return l.l.Sync()
+}
+
 type LogConfig struct {
 	Filename      string `json:"filename" yaml:"filename"`
 	MaxSize       int    `json:"maxsize" yaml:"maxsize"`
@@ -106,10 +110,6 @@ func New(writer io.Writer, level Level) *Logger {
 		level: level,
 	}
 	return logger
-}
-
-func (l *Logger) Sync() error {
-	return l.l.Sync()
 }
 
 var clog = New(os.Stdout, zapcore.DebugLevel)

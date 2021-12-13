@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"project_b/common"

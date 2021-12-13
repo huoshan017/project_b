@@ -1,4 +1,4 @@
-package main
+package core
 
 type CPlayerManager struct {
 	players map[uint64]*CPlayer

@@ -55,7 +55,7 @@ func (m *CmdHandleManager) Handle(cmd CmdCode, args ...interface{}) {
 		}
 	}
 	if !found {
-		getLog().Warn("not found handle for cmd %v", cmd)
+		glog.Warn("not found handle for cmd %v", cmd)
 	}
 }
 
@@ -67,7 +67,7 @@ func (m *CmdHandleManager) handleMove(args ...interface{}) {
 	//m.game.eventMgr.InvokeEvent(EventIdTankMove)
 	err := m.game.net.SendTankMoveReq(dir)
 	if err != nil {
-		getLog().Warn("send tank move req err: %v", err)
+		glog.Warn("send tank move req err: %v", err)
 	}
 }
 
@@ -78,7 +78,7 @@ func (m *CmdHandleManager) handleStopMove(args ...interface{}) {
 	//m.game.eventMgr.InvokeEvent(EventIdTankStopMove)
 	err := m.game.net.SendTankStopMoveReq()
 	if err != nil {
-		getLog().Warn("send tank stop move req err: %v", err)
+		glog.Warn("send tank stop move req err: %v", err)
 	}
 }
 
@@ -86,7 +86,7 @@ func (m *CmdHandleManager) handleStopMove(args ...interface{}) {
 func (m *CmdHandleManager) handleChangeTank(args ...interface{}) {
 	err := m.game.net.SendTankChangeReq()
 	if err != nil {
-		getLog().Warn("send tank change req err: %v", err)
+		glog.Warn("send tank change req err: %v", err)
 	}
 }
 
@@ -94,6 +94,6 @@ func (m *CmdHandleManager) handleChangeTank(args ...interface{}) {
 func (m *CmdHandleManager) handleRestoreTank(args ...interface{}) {
 	err := m.game.net.SendTankRestoreReq()
 	if err != nil {
-		getLog().Warn("send tank restore req err: %v", err)
+		glog.Warn("send tank restore req err: %v", err)
 	}
 }

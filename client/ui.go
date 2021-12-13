@@ -5,6 +5,8 @@ import (
 	"image/color"
 	"io/ioutil"
 
+	"project_b/client/core"
+
 	"github.com/golang/freetype/truetype"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -174,7 +176,7 @@ func (u *UIManager) Draw(screen *ebiten.Image) {
 func (u *UIManager) checkAndLogin() {
 	acc, passwd, o := u.loginUI.GetLoginState()
 	if o {
-		u.owner.EventMgr().InvokeEvent(EventIdOpLogin, acc, passwd)
+		u.owner.EventMgr().InvokeEvent(core.EventIdOpLogin, acc, passwd)
 		u.loginUI.ResetLoginState()
 	}
 }

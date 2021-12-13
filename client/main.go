@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	_ "image/png"
+	"log"
 	"math/rand"
 	"os"
+	"project_b/client/core"
 	"time"
-
-	"project_b/common/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -21,33 +21,24 @@ const (
 	screenHeight = 720
 )
 
-var gslog *log.Logger
-
-func getLog() *log.Logger {
-	if gslog == nil {
-		gslog = log.NewWithConfig(&log.LogConfig{
-			Filename:      "./log/client.log",
-			MaxSize:       2,
-			MaxBackups:    100,
-			MaxAge:        30,
-			Compress:      false,
-			ConsoleOutput: true,
-		}, log.DebugLevel)
-	}
-	return gslog
-}
-
 type Config struct {
 	ServerAddress string
 }
 
+var (
+	glog *core.Logger
+)
+
 func main() {
 	if len(os.Args) < 2 {
-		getLog().Error("args num invalid")
+		log.Printf("args num invalid")
 		return
 	}
+
 	ip_str := flag.String("ip", "", "ip set")
 	flag.Parse()
+
+	glog = core.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
 
 	game := NewGame()
 	err := game.Init(&Config{ServerAddress: *ip_str})
@@ -55,7 +46,7 @@ func main() {
 		return
 	}
 	defer game.Uninit()
-	defer getLog().Sync()
+	defer glog.Sync()
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("ProjectB")

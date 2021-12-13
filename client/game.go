@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"project_b/client/core"
 	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/time"
@@ -23,20 +24,26 @@ const (
 )
 
 type Game struct {
-	state         GameState
-	net           *NetClient         // 网络模块
-	msgHandler    *MsgHandler        // 消息处理器
-	logic         *common.GameLogic  // 游戏逻辑
-	playerMgr     *CPlayerManager    // 玩家管理器
-	eventMgr      base.IEventManager // 游戏事件管理器，向上层逻辑传递事件
-	cmdMgr        *CmdHandleManager  // 命令处理管理器
-	camera        *Camera            // 摄像机
-	currMap       *Map               // 当前地图资源
-	uiMgr         *UIManager         // UI管理
-	playableMgr   *PlayableManager   // 可播放管理器
-	myId          uint64             // 我的ID
-	myAcc         string             // 我的帐号
-	lastCheckTime time.CustomTime    // 上次检测时间
+	state GameState
+
+	//---------------------------------------
+	// 纯逻辑
+	net           *core.NetClient      // 网络模块
+	msgHandler    *core.MsgHandler     // 消息处理器
+	logic         *common.GameLogic    // 游戏逻辑
+	playerMgr     *core.CPlayerManager // 玩家管理器
+	eventMgr      base.IEventManager   // 游戏事件管理器，向上层逻辑传递事件
+	lastCheckTime time.CustomTime      // 上次检测时间
+
+	//---------------------------------------
+	// 显示相关
+	cmdMgr      *CmdHandleManager // 命令处理管理器
+	camera      *Camera           // 摄像机
+	currMap     *Map              // 当前地图资源
+	uiMgr       *UIManager        // UI管理
+	playableMgr *PlayableManager  // 可播放管理器
+	myId        uint64            // 我的ID
+	myAcc       string            // 我的帐号
 }
 
 // 创建游戏
@@ -44,7 +51,7 @@ func NewGame() *Game {
 	g := &Game{
 		camera: &Camera{ViewPort: f64.Vec2{screenWidth, screenHeight}}, // 相机的视口范围与窗口屏幕大小一样
 	}
-	g.playerMgr = CreateCPlayerManager()
+	g.playerMgr = core.CreateCPlayerManager()
 	g.eventMgr = base.NewEventManager()
 	g.logic = common.NewGameLogic(g.eventMgr)
 	g.cmdMgr = CreateCmdHandleManager(g)
@@ -57,8 +64,8 @@ func NewGame() *Game {
 // 初始化
 func (g *Game) Init(conf *Config) error {
 	g.restart()
-	g.net = CreateNetClient(conf.ServerAddress)
-	g.msgHandler = CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
+	g.net = core.CreateNetClient(conf.ServerAddress)
+	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.msgHandler.Init()
 	g.registerEvents()
 	return nil
@@ -106,8 +113,8 @@ func (g *Game) Update() error {
 			g.logic.Start()
 		} else {
 			// 时间同步完成
-			if IsTimeSyncEnd() {
-				now := GetSyncCurrServTime() //time.Now()
+			if core.IsTimeSyncEnd() {
+				now := core.GetSyncCurrServTime() //time.Now()
 				if g.lastCheckTime.IsZero() {
 					g.lastCheckTime = now
 				} else {

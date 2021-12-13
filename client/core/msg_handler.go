@@ -1,4 +1,4 @@
-package main
+package core
 
 import (
 	"project_b/common"
@@ -45,11 +45,11 @@ func (h *MsgHandler) setNetEventHandles() {
 }
 
 func (h *MsgHandler) onConnect(sess gsnet.ISession) {
-	getLog().Info("connected")
+	Log().Info("connected")
 }
 
 func (h *MsgHandler) onDisconnect(sess gsnet.ISession, err error) {
-	getLog().Info("disconnected")
+	Log().Info("disconnected")
 }
 
 func (h *MsgHandler) onTick(sess gsnet.ISession, tick time.Duration) {
@@ -57,7 +57,7 @@ func (h *MsgHandler) onTick(sess gsnet.ISession, tick time.Duration) {
 }
 
 func (h *MsgHandler) onError(err error) {
-	getLog().Info("get error: %v", err)
+	Log().Info("get error: %v", err)
 }
 
 func (h *MsgHandler) registerNetMsgHandles() {
@@ -88,7 +88,7 @@ func (h *MsgHandler) onLoginAck(sess gsnet.ISession, data []byte) error {
 	}
 
 	if ack.Result != 0 {
-		getLog().Warn("Account %v login result: %v", ack.Account, ack.Result)
+		Log().Warn("Account %v login result: %v", ack.Account, ack.Result)
 		return nil
 	}
 
@@ -96,7 +96,7 @@ func (h *MsgHandler) onLoginAck(sess gsnet.ISession, data []byte) error {
 	// 直接发进入游戏的消息
 	err = h.net.SendEnterGameReq(string(ack.Account), string(ack.SessionToken))
 
-	getLog().Info("Account %v login", ack.Account)
+	Log().Info("Account %v login", ack.Account)
 
 	return err
 }
@@ -118,7 +118,7 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess gsnet.ISession, data []byte) erro
 		h.doPlayerEnter(tankInfo, false)
 	}
 
-	getLog().Info("my player entered game")
+	Log().Info("my player entered game")
 
 	return nil
 }
@@ -134,7 +134,7 @@ func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess gsnet.ISession, data []byte
 	// 向上层传递事件
 	h.invoker.InvokeEvent(EventIdPlayerEnterGameCompleted)
 
-	getLog().Info("my player entered game completed")
+	Log().Info("my player entered game completed")
 
 	return nil
 }
@@ -143,7 +143,7 @@ func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess gsnet.ISession, data []byte
 func (h *MsgHandler) onPlayerExitGameAck(sess gsnet.ISession, data []byte) error {
 	h.doPlayerExit(h.myId())
 
-	getLog().Info("my player exited game")
+	Log().Info("my player exited game")
 
 	return nil
 }
@@ -186,7 +186,7 @@ func (h *MsgHandler) onPlayerEnterGameSync(sess gsnet.ISession, data []byte) err
 
 	h.doPlayerEnter(sync.TankInfo, false)
 
-	getLog().Info("sync player (account: %v, player_id: %v) entered game", sync.TankInfo.Account, sync.TankInfo.PlayerId)
+	Log().Info("sync player (account: %v, player_id: %v) entered game", sync.TankInfo.Account, sync.TankInfo.PlayerId)
 
 	return nil
 }
@@ -201,7 +201,7 @@ func (h *MsgHandler) onPlayerExitGameSync(sess gsnet.ISession, data []byte) erro
 
 	h.doPlayerExit(sync.PlayerId)
 
-	getLog().Info("sync player (player_id: %v) exited game", sync.PlayerId)
+	Log().Info("sync player (player_id: %v) exited game", sync.PlayerId)
 
 	return nil
 }
@@ -215,7 +215,7 @@ func (h *MsgHandler) onPlayerTankChangeAck(sess gsnet.ISession, data []byte) err
 	}
 
 	if h.doTankChange(h.myId(), ack.ChangedTankInfo.Id) {
-		getLog().Info("my player changed tank to %v", ack.ChangedTankInfo.Id)
+		Log().Info("my player changed tank to %v", ack.ChangedTankInfo.Id)
 	}
 
 	return nil
@@ -230,7 +230,7 @@ func (h *MsgHandler) onPlayerTankChangeSync(sess gsnet.ISession, data []byte) er
 	}
 
 	if h.doTankChange(sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id) {
-		getLog().Info("sync player %v change tank to %v", sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id)
+		Log().Info("sync player %v change tank to %v", sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id)
 	}
 
 	return nil
@@ -245,7 +245,7 @@ func (h *MsgHandler) onPlayerTankRestoreAck(sess gsnet.ISession, data []byte) er
 	}
 
 	if h.doTankRestore(h.myId(), ack.TankId) {
-		getLog().Info("my player restored tank to %v", ack.TankId)
+		Log().Info("my player restored tank to %v", ack.TankId)
 	}
 
 	return nil
@@ -260,7 +260,7 @@ func (h *MsgHandler) onPlayerTankRestoreSync(sess gsnet.ISession, data []byte) e
 	}
 
 	if h.doTankRestore(sync.PlayerId, sync.TankId) {
-		getLog().Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
+		Log().Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
 	}
 
 	return nil
@@ -402,7 +402,7 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 func (h *MsgHandler) doTankRestore(playerId uint64, tankId int32) bool {
 	player := h.playerMgr.Get(playerId)
 	if player == nil {
-		getLog().Error("not found player %v to restore tank", playerId)
+		Log().Error("not found player %v to restore tank", playerId)
 		return false
 	}
 
