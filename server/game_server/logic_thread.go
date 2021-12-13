@@ -126,6 +126,11 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 	}
 
 	var ntf game_proto.MsgPlayerEnterGameFinishNtf
+	ntf.ServerTime, err = time.Now().MarshalBinary()
+	if err != nil {
+		return err
+	}
+
 	err = pd.send(uint32(game_proto.MsgPlayerEnterGameFinishNtf_Id), &ntf)
 	if err != nil {
 		return err

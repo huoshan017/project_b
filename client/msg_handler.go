@@ -4,9 +4,13 @@ import (
 	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/object"
+	custom_time "project_b/common/time"
+
+	"time"
+
+	//"project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_proto"
-	"time"
 
 	"github.com/huoshan017/gsnet"
 	"google.golang.org/protobuf/proto"
@@ -61,6 +65,7 @@ func (h *MsgHandler) registerNetMsgHandles() {
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerEnterGameAck_Id), h.onPlayerEnterGameAck)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerEnterGameFinishNtf_Id), h.onPlayerEnterGameFinishNtf)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerExitGameAck_Id), h.onPlayerExitGameAck)
+	h.net.RegisterHandle(uint32(game_proto.MsgTimeSyncAck_Id), h.onTimeSyncAck)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankAck_Id), h.onPlayerTankChangeAck)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankSync_Id), h.onPlayerTankChangeSync)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankAck_Id), h.onPlayerTankRestoreAck)
@@ -139,6 +144,34 @@ func (h *MsgHandler) onPlayerExitGameAck(sess gsnet.ISession, data []byte) error
 	h.doPlayerExit(h.myId())
 
 	getLog().Info("my player exited game")
+
+	return nil
+}
+
+// 时间同步处理
+func (h *MsgHandler) onTimeSyncAck(sess gsnet.ISession, data []byte) error {
+	var ack game_proto.MsgTimeSyncAck
+	err := proto.Unmarshal(data, &ack)
+	if err != nil {
+		return err
+	}
+
+	var st custom_time.CustomTime
+	err = st.UnmarshalBinary(ack.ServerTime)
+	if err != nil {
+		return err
+	}
+
+	now := custom_time.Now()
+	SetSyncRecvAndServerTime(now, st)
+
+	if IsTimeSyncEnd() {
+		h.invoker.InvokeEvent(EventIdTimeSyncEnd)
+	} else {
+		h.invoker.InvokeEvent(EventIdTimeSync)
+	}
+
+	gslog.Info("time sync client send time: %v, server time: %v, client recv time : %v, delay: %+v", GetSyncSendTime(), st, now, GetNetworkDelay())
 
 	return nil
 }

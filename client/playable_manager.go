@@ -2,7 +2,6 @@ package main
 
 import (
 	"project_b/common/object"
-	"project_b/common/time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -11,7 +10,6 @@ import (
 type PlayableManager struct {
 	playerTankPlayables map[uint64]*PlayableTank
 	enemyTankPlayables  map[int32]*PlayableTank
-	lastCheckTime       time.CustomTime
 }
 
 // 创建播放管理器
@@ -139,26 +137,20 @@ func (m *PlayableManager) StopAllTanksPlayable() {
 
 // 更新
 func (m *PlayableManager) Update(screen *ebiten.Image) {
-	var tick time.Duration
-	now := time.Now()
-	if !m.lastCheckTime.IsZero() {
-		tick = now.Sub(m.lastCheckTime)
-	}
-	m.UpdatePlayerTanksPlayable(tick, screen)
-	m.UpdatEnemyTanksPlayable(tick, screen)
-	m.lastCheckTime = now
+	m.UpdatePlayerTanksPlayable(screen)
+	m.UpdatEnemyTanksPlayable(screen)
 }
 
 // 更新玩家坦克动画
-func (m *PlayableManager) UpdatePlayerTanksPlayable(tick time.Duration, screen *ebiten.Image) {
+func (m *PlayableManager) UpdatePlayerTanksPlayable(screen *ebiten.Image) {
 	for _, p := range m.playerTankPlayables {
-		p.Update(tick, screen)
+		p.Update(screen)
 	}
 }
 
 // 更新敌人坦克动画
-func (m *PlayableManager) UpdatEnemyTanksPlayable(tick time.Duration, screen *ebiten.Image) {
+func (m *PlayableManager) UpdatEnemyTanksPlayable(screen *ebiten.Image) {
 	for _, p := range m.enemyTankPlayables {
-		p.Update(tick, screen)
+		p.Update(screen)
 	}
 }

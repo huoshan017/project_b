@@ -14,13 +14,14 @@ const (
 	EventIdOpLogin     = base.EventId(1)
 	EventIdOpEnterGame = base.EventId(2)
 
+	/* 时间同步事件 */
+	EventIdTimeSync    = base.EventId(10)
+	EventIdTimeSyncEnd = base.EventId(11)
+
 	/* 网络协议事件 */
-	// 进入游戏 参数：Account(string), PlayerId(uint64), TankInfo()
-	EventIdPlayerEnterGame = base.EventId(100)
-	// 进入游戏完成
-	EventIdPlayerEnterGameCompleted = base.EventId(101)
-	// 离开游戏
-	EventIdPlayerExitGame = base.EventId(102)
+	EventIdPlayerEnterGame          = base.EventId(100) // 进入游戏 参数：Account(string), PlayerId(uint64), TankInfo()
+	EventIdPlayerEnterGameCompleted = base.EventId(101) // 进入游戏完成
+	EventIdPlayerExitGame           = base.EventId(102) // 离开游戏
 
 	/* 游戏逻辑事件 */
 	EventIdTankMove     = base.EventId(200)  // 移动事件
@@ -37,6 +38,11 @@ func (g *Game) registerEvents() {
 	g.eventMgr.RegisterEvent(EventIdOpLogin, g.onEventReqLogin)
 	// 请求进入游戏
 	g.eventMgr.RegisterEvent(EventIdOpEnterGame, g.onEventReqEnterGame)
+
+	// 同步时间
+	g.eventMgr.RegisterEvent(EventIdTimeSync, g.onEventTimeSync)
+	// 同步时间结束
+	g.eventMgr.RegisterEvent(EventIdTimeSyncEnd, g.onEventTimeSyncEnd)
 
 	// 进入游戏
 	g.eventMgr.RegisterEvent(EventIdPlayerEnterGame, g.onEventPlayerEnterGame)
@@ -129,7 +135,7 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 	if g.myAcc == account {
 		g.myId = uid
 		// 游戏状态
-		g.mode = ModeGame
+		g.state = GameStateInGame
 		getLog().Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
 	} else {
 		getLog().Info("handle event: player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
@@ -138,6 +144,11 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 
 // 处理进入游戏完成
 func (g *Game) onEventPlayerEnterGameCompleted(args ...interface{}) {
+	// 准备同步服务器时间
+	if err := g.net.SendTimeSyncReq(); err != nil {
+		gslog.Error("handle event: send time sync request err: %v", err)
+		return
+	}
 	getLog().Info("handle event: my player (account: %v, uid: %v) enter game finished", g.myAcc, g.myId)
 }
 
@@ -154,6 +165,20 @@ func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 	g.playableMgr.RemovePlayerTankPlayable(uid)
 
 	getLog().Info("handle event: player (uid: %v) exited game", uid)
+}
+
+// 处理时间同步事件
+func (g *Game) onEventTimeSync(args ...interface{}) {
+	if err := g.net.SendTimeSyncReq(); err != nil {
+		gslog.Error("handle event: send time sync request err: %v", err)
+		return
+	}
+	gslog.Info("handle event: time sync")
+}
+
+// 处理时间同步结束事件
+func (g *Game) onEventTimeSyncEnd(args ...interface{}) {
+	gslog.Info("handle event: time sync end")
 }
 
 // 处理坦克移动事件

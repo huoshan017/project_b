@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
+	custom_time "project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_proto"
 	"project_b/utils"
+
 	"time"
 
 	"github.com/huoshan017/gsnet"
@@ -16,7 +18,7 @@ type GameMsgHandler struct {
 	gsnet.MsgHandler
 	service               *GameService
 	sess                  gsnet.ISession
-	lastCheckDiscDuration time.Duration
+	lastCheckDiscDuration custom_time.Duration
 }
 
 func CreateGameMsgHandler(args ...interface{}) gsnet.ISessionHandler {
@@ -49,9 +51,9 @@ func (h *GameMsgHandler) OnTick(sess gsnet.ISession, tick time.Duration) {
 	if sess != h.sess {
 		panic("sess must same to OnConnect")
 	}
-	h.lastCheckDiscDuration += tick
+	h.lastCheckDiscDuration += custom_time.Duration(tick)
 	// 0.5秒检测一次
-	if h.lastCheckDiscDuration >= time.Microsecond*500 {
+	if h.lastCheckDiscDuration >= custom_time.Duration(time.Microsecond)*500 {
 		p, err := h.toPlayer(sess)
 		if err != nil {
 			return
@@ -211,6 +213,30 @@ func (h *GameMsgHandler) onPlayerExitGameReq(sess gsnet.ISession, data []byte) e
 	return h.Send(uint32(game_proto.MsgPlayerExitGameAck_Id), &ack)
 }
 
+// 处理时间同步
+func (h *GameMsgHandler) onTimeSyncReq(sess gsnet.ISession, data []byte) error {
+	p, err := h.toPlayer(sess)
+	if err != nil {
+		return err
+	}
+	var req game_proto.MsgTimeSyncReq
+	err = proto.Unmarshal(data, &req)
+	if err != nil {
+		return err
+	}
+
+	now := custom_time.Now()
+	p.SetSessData("sync_server_time", now)
+	p.SetSessData("sync_client_time", req.ClientTime)
+
+	var ack game_proto.MsgTimeSyncAck
+	ack.ServerTime, err = now.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	return h.Send(uint32(game_proto.MsgTimeSyncAck_Id), &ack)
+}
+
 // 处理改变坦克
 func (h *GameMsgHandler) onPlayerChangeTankReq(sess gsnet.ISession, data []byte) error {
 	p, err := h.toPlayer(sess)
@@ -293,6 +319,7 @@ func (s *GameMsgHandler) registerHandles() {
 	s.RegisterHandle(uint32(game_proto.MsgAccountLoginGameReq_Id), s.onPlayerLoginReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerEnterGameReq_Id), s.onPlayerEnterGameReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerExitGameReq_Id), s.onPlayerExitGameReq)
+	s.RegisterHandle(uint32(game_proto.MsgTimeSyncReq_Id), s.onTimeSyncReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankReq_Id), s.onPlayerChangeTankReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankReq_Id), s.onPlayerRestoreTankReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), s.onPlayerTankMoveReq)

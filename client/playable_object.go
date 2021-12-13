@@ -15,7 +15,7 @@ type IPlayable interface {
 	Reset(object.IObject)
 	Play()
 	Stop()
-	Update(time.Duration, *ebiten.Image)
+	Update(*ebiten.Image)
 }
 
 // 可播放对象
@@ -141,7 +141,7 @@ func (po *PlayableMoveObject) Stop() {
 }
 
 // 更新
-func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
+func (po *PlayableMoveObject) Update(screen *ebiten.Image) {
 	if po.isMoving {
 		var duration time.Duration
 		now := time.Now()
@@ -170,7 +170,7 @@ func (po *PlayableMoveObject) Update(tick time.Duration, screen *ebiten.Image) {
 func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 	po.moveDir = args[0].(object.Direction)
 	po.currSpeed = args[1].(float64)
-	po.updateTime = args[2].(time.CustomTime)
+	po.updateTime = GetSyncCurrServTime() //args[2].(time.CustomTime)
 	po.isMoving = true
 	po.Play()
 }
@@ -179,7 +179,7 @@ func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
 	po.dx = args[0].(float64)
 	po.dy = args[1].(float64)
-	po.updateTime = args[2].(time.CustomTime)
+	po.updateTime = GetSyncCurrServTime() //args[2].(time.CustomTime)
 	po.op.GeoM.SetElement(0, 2, po.dx)
 	po.op.GeoM.SetElement(1, 2, po.dy)
 }

@@ -5,6 +5,6 @@ import (
 )
 
 type IGame interface {
-	GetMode() Mode
+	GetState() GameState
 	EventMgr() base.IEventManager
 }

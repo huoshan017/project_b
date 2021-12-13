@@ -224,12 +224,6 @@ func (o *MovableObject) Move(dir Direction) {
 		str := fmt.Sprintf("invalid object direction %v", dir)
 		panic(str)
 	}
-	/*if o.startMoveTime.IsZero() || !o.isMoving {
-		o.dir = dir
-		o.startMoveTime = timePoint
-		o.isMoving = true
-		o.moveEvent.Call(o.startMoveTime, dir, float64(o.CurrentSpeed()))
-	}*/
 	if o.state == stopped {
 		o.state = toMove
 		o.dir = dir
@@ -238,18 +232,6 @@ func (o *MovableObject) Move(dir Direction) {
 
 // 停止
 func (o *MovableObject) Stop() {
-	/*if !o.isMoving {
-		return
-	}
-	o.stopTime = timePoint
-	o.isMoving = false
-	d := mdFreeList.get()
-	d.dir = o.dir
-	d.speed = float64(o.CurrentSpeed())
-	d.duration = o.stopTime.Sub(o.startMoveTime)
-	o.moveDataList = append(o.moveDataList, d)
-	o.stopEvent.Call(o.stopTime)
-	*/
 	// 准备移动则直接停止
 	if o.state == toMove {
 		o.state = stopped
@@ -264,33 +246,13 @@ func (o *MovableObject) Stop() {
 
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
-	/*updated := false
-
-	if o.moveDataList != nil && len(o.moveDataList) > 0 {
-		for _, md := range o.moveDataList {
-			o.update(md)
-			mdFreeList.put(md)
-		}
-		o.moveDataList = o.moveDataList[:0]
-		updated = true
-	}
-
-	// 上一次移动还没停止
-	if o.startMoveTime.After(o.stopTime) {
-		now := time.Now()
-		var md = moveData{duration: now.Sub(o.startMoveTime), speed: float64(o.CurrentSpeed()), dir: o.dir}
-		o.update(&md)
-		o.startMoveTime = now
-		updated = true
-	}*/
-
 	if o.state == stopped {
 		return
 	}
 
 	if o.state == toMove {
 		o.state = isMoving
-		o.moveEvent.Call(o.dir, float64(o.CurrentSpeed()), time.Now())
+		o.moveEvent.Call(o.dir, float64(o.CurrentSpeed()))
 		return
 	}
 
@@ -308,30 +270,13 @@ func (o *MovableObject) Update(tick time.Duration) {
 		panic("invalid direction")
 	}
 
-	o.updateEvent.Call(o.x, o.y, time.Now())
+	o.updateEvent.Call(o.x, o.y)
 
 	if o.state == toStop {
 		o.state = stopped
 		o.stopEvent.Call()
 	}
 }
-
-// 内部更新函数
-/*func (o *MovableObject) update(md *moveData) {
-	distance := float64(md.speed) * float64(md.duration) / float64(time.Second)
-	switch md.dir {
-	case DirLeft:
-		o.x -= distance
-	case DirRight:
-		o.x += distance
-	case DirUp:
-		o.y -= distance
-	case DirDown:
-		o.y += distance
-	default:
-		panic("invalid direction")
-	}
-}*/
 
 // 注册移动事件
 func (o *MovableObject) RegisterMoveEventHandle(handle func(args ...interface{})) {

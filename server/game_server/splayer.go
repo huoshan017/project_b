@@ -2,6 +2,7 @@ package main
 
 import (
 	"project_b/common"
+	"project_b/common/time"
 	"project_b/common_data"
 	"sync/atomic"
 	"unsafe"
@@ -12,8 +13,9 @@ import (
 // 服务器玩家结构
 type SPlayer struct {
 	common.SPlayer
-	currChangedTankIdIndex int32 // 当前坦克索引
-	kicker                 *SamePlayerKickHandler
+	clientTime             time.CustomTime        // 客户端时间
+	currChangedTankIdIndex int32                  // 当前坦克索引
+	kicker                 *SamePlayerKickHandler // 踢人处理
 }
 
 // 创建SPlayer

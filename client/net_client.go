@@ -2,6 +2,7 @@ package main
 
 import (
 	"project_b/common/object"
+	custom_time "project_b/common/time"
 	"project_b/game_proto"
 
 	"google.golang.org/protobuf/proto"
@@ -45,6 +46,24 @@ func (c *NetClient) SendEnterGameReq(account, sessionToken string) error {
 		return err
 	}
 	return c.Send(uint32(game_proto.MsgPlayerEnterGameReq_Id), data)
+}
+
+func (c *NetClient) SendTimeSyncReq() error {
+	var req game_proto.MsgTimeSyncReq
+	// 当前时间序列化
+	now := custom_time.Now()
+	td, err := now.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	req.ClientTime = td
+	var data []byte
+	data, err = proto.Marshal(&req)
+	if err != nil {
+		return err
+	}
+	SetSyncSendTime(now)
+	return c.Send(uint32(game_proto.MsgTimeSyncReq_Id), data)
 }
 
 func (c *NetClient) SendTankMoveReq(dir object.Direction) error {

@@ -14,16 +14,16 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-type Mode int
+type GameState int
 
 const (
-	ModeMainMenu Mode = iota
-	ModeGame
-	ModeGameOver
+	GameStateMainMenu GameState = iota
+	GameStateInGame
+	GameStateOver
 )
 
 type Game struct {
-	mode          Mode
+	state         GameState
 	net           *NetClient         // 网络模块
 	msgHandler    *MsgHandler        // 消息处理器
 	logic         *common.GameLogic  // 游戏逻辑
@@ -75,8 +75,8 @@ func (g *Game) restart() {
 }
 
 // 当前模式
-func (g *Game) GetMode() Mode {
-	return g.mode
+func (g *Game) GetState() GameState {
+	return g.state
 }
 
 // 事件管理器
@@ -98,28 +98,31 @@ func (g *Game) Update() error {
 		}
 	}
 
-	switch g.mode {
-	case ModeMainMenu:
-	case ModeGame:
+	switch g.state {
+	case GameStateMainMenu:
+	case GameStateInGame:
 		if !g.logic.IsStart() {
 			g.loadMap()
 			g.logic.Start()
 		} else {
-			now := time.Now()
-			if g.lastCheckTime.IsZero() {
-				g.lastCheckTime = now
-			} else {
-				tick := now.Sub(g.lastCheckTime)
-				for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
-					g.logic.Update(common_data.GameLogicTick)
-					g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
+			// 时间同步完成
+			if IsTimeSyncEnd() {
+				now := GetSyncCurrServTime() //time.Now()
+				if g.lastCheckTime.IsZero() {
+					g.lastCheckTime = now
+				} else {
+					tick := now.Sub(g.lastCheckTime)
+					for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
+						g.logic.Update(common_data.GameLogicTick)
+						g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
+					}
 				}
+				g.handleInput()
 			}
-			g.handleInput()
 		}
-	case ModeGameOver:
+	case GameStateOver:
 		g.restart()
-		g.mode = ModeMainMenu
+		g.state = GameStateMainMenu
 	}
 	g.uiMgr.Update()
 	return nil
@@ -127,7 +130,7 @@ func (g *Game) Update() error {
 
 // 绘制
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.mode == ModeGame {
+	if g.state == GameStateInGame {
 		// 画场景
 		g.drawScene(screen)
 	}

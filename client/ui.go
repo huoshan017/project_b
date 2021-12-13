@@ -166,7 +166,7 @@ func (u *UIManager) Update() {
 }
 
 func (u *UIManager) Draw(screen *ebiten.Image) {
-	if u.owner.GetMode() == ModeMainMenu {
+	if u.owner.GetState() == GameStateMainMenu {
 		u.loginUI.Draw(screen)
 	}
 }

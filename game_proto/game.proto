@@ -17,7 +17,19 @@ message MsgAccountLoginGameAck {
     string Account = 1;
     string SessionToken = 2;
     uint32 Result = 3;
-    enum ProtoId {None = 0; Id = 2;}
+    enum ProtoId { None = 0; Id = 2; }
+}
+
+// 时间同步请求
+message MsgTimeSyncReq {
+    bytes ClientTime = 1;
+    enum ProtoId { None = 0; Id = 10; }
+}
+
+// 时间同步返回
+message MsgTimeSyncAck {
+    bytes ServerTime = 2;
+    enum ProtoId { None = 0; Id = 11; }
 }
 
 // 进入游戏请求
@@ -36,6 +48,7 @@ message MsgPlayerEnterGameAck {
 
 // 进入游戏结束通知
 message MsgPlayerEnterGameFinishNtf {
+    bytes ServerTime = 1; // 服务器时间
     enum ProtoId { None = 0; Id = 102; }
 }
 
