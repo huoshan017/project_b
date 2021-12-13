@@ -6,7 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"project_b/client/core"
+	core "project_b/client_core"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -43,6 +43,7 @@ func main() {
 	game := NewGame()
 	err := game.Init(&Config{ServerAddress: *ip_str})
 	if err != nil {
+		glog.Error("game init err: %v", err)
 		return
 	}
 	defer game.Uninit()
@@ -51,6 +52,6 @@ func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("ProjectB")
 	if err := ebiten.RunGame(game); err != nil {
-		panic(err)
+		glog.Error("game run err: ", err)
 	}
 }

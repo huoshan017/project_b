@@ -14,7 +14,7 @@ type frameConfig struct {
 var (
 	tankAnimOriginalConfig map[int32]*base.SpriteAnimConfig // 坦克动画初始配置map
 	tankFrameConfig        map[int32]*frameConfig           // 帧配置map
-	bulletAnimConfig       map[int32]*base.SpriteAnimConfig // 子弹动画配置map
+	//bulletAnimConfig       map[int32]*base.SpriteAnimConfig // 子弹动画配置map
 )
 
 // 初始化动画初始配置

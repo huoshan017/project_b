@@ -1,4 +1,4 @@
-package core
+package client_core
 
 import (
 	custom_time "project_b/common/time"

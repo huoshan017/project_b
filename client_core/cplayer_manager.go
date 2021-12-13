@@ -1,4 +1,4 @@
-package core
+package client_core
 
 type CPlayerManager struct {
 	players map[uint64]*CPlayer

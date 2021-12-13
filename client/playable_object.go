@@ -2,7 +2,7 @@ package main
 
 import (
 	"project_b/client/base"
-	"project_b/client/core"
+	core "project_b/client_core"
 	"project_b/common/object"
 	"project_b/common/time"
 

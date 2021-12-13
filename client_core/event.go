@@ -1,4 +1,4 @@
-package core
+package client_core
 
 import (
 	"project_b/common/base"

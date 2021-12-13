@@ -5,7 +5,7 @@ import (
 	"image/color"
 	"io/ioutil"
 
-	"project_b/client/core"
+	core "project_b/client_core"
 
 	"github.com/golang/freetype/truetype"
 

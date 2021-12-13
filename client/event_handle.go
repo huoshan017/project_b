@@ -3,7 +3,7 @@ package main
 import (
 	"reflect"
 
-	"project_b/client/core"
+	core "project_b/client_core"
 	"project_b/common/object"
 )
 
@@ -60,21 +60,21 @@ func (g *Game) onEventReqLogin(args ...interface{}) {
 	account, o = a.(string)
 	if !o {
 		t := reflect.TypeOf(a)
-		core.Log().Warn("account type must string on req login, this is %v", t)
+		glog.Warn("account type must string on req login, this is %v", t)
 		return
 	}
 	password, o = p.(string)
 	if !o {
-		core.Log().Warn("password type must string on req login")
+		glog.Warn("password type must string on req login")
 		return
 	}
 	err := g.net.SendLoginReq(account, password)
 	if err != nil {
-		core.Log().Warn("send login req err: %v", err)
+		glog.Warn("send login req err: %v", err)
 		return
 	}
 	g.myAcc = account
-	core.Log().Info("handle event: account %v password %v send login req", account, password)
+	glog.Info("handle event: account %v password %v send login req", account, password)
 }
 
 // 请求进入游戏
@@ -83,7 +83,7 @@ func (g *Game) onEventReqEnterGame(args ...interface{}) {
 	var o bool
 	account, o = args[0].(string)
 	if !o {
-		core.Log().Warn("account type must string on req enter game")
+		glog.Warn("account type must string on req enter game")
 		return
 	}
 	err := g.net.SendEnterGameReq(account, sessionToken)

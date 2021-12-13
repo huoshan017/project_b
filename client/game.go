@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"project_b/client/core"
+	core "project_b/client_core"
 	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/time"
