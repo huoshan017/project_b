@@ -8,7 +8,6 @@ import (
 
 	"time"
 
-	//"project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_proto"
 
@@ -45,11 +44,11 @@ func (h *MsgHandler) setNetEventHandles() {
 }
 
 func (h *MsgHandler) onConnect(sess gsnet.ISession) {
-	Log().Info("connected")
+	gslog.Info("connected")
 }
 
 func (h *MsgHandler) onDisconnect(sess gsnet.ISession, err error) {
-	Log().Info("disconnected")
+	gslog.Info("disconnected")
 }
 
 func (h *MsgHandler) onTick(sess gsnet.ISession, tick time.Duration) {
@@ -57,7 +56,7 @@ func (h *MsgHandler) onTick(sess gsnet.ISession, tick time.Duration) {
 }
 
 func (h *MsgHandler) onError(err error) {
-	Log().Info("get error: %v", err)
+	gslog.Info("get error: %v", err)
 }
 
 func (h *MsgHandler) registerNetMsgHandles() {
@@ -76,6 +75,8 @@ func (h *MsgHandler) registerNetMsgHandles() {
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), h.onPlayerTankStopMoveAck)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveSync_Id), h.onPlayerTankMoveSync)
 	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveSync_Id), h.onPlayerTankStopMoveSync)
+	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankUpdatePosAck_Id), h.onPlayerTankUpdatePosAck)
+	h.net.RegisterHandle(uint32(game_proto.MsgPlayerTankUpdatePosSync_Id), h.onPlayerTankUpdatePosSync)
 	h.net.RegisterHandle(uint32(game_proto.MsgErrorAck_Id), h.onErrorAck)
 }
 
@@ -88,7 +89,7 @@ func (h *MsgHandler) onLoginAck(sess gsnet.ISession, data []byte) error {
 	}
 
 	if ack.Result != 0 {
-		Log().Warn("Account %v login result: %v", ack.Account, ack.Result)
+		gslog.Warn("Account %v login result: %v", ack.Account, ack.Result)
 		return nil
 	}
 
@@ -96,7 +97,7 @@ func (h *MsgHandler) onLoginAck(sess gsnet.ISession, data []byte) error {
 	// 直接发进入游戏的消息
 	err = h.net.SendEnterGameReq(string(ack.Account), string(ack.SessionToken))
 
-	Log().Info("Account %v login", ack.Account)
+	gslog.Info("Account %v login", ack.Account)
 
 	return err
 }
@@ -118,7 +119,7 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess gsnet.ISession, data []byte) erro
 		h.doPlayerEnter(tankInfo, false)
 	}
 
-	Log().Info("my player entered game")
+	gslog.Info("my player entered game")
 
 	return nil
 }
@@ -134,7 +135,7 @@ func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess gsnet.ISession, data []byte
 	// 向上层传递事件
 	h.invoker.InvokeEvent(EventIdPlayerEnterGameCompleted)
 
-	Log().Info("my player entered game completed")
+	gslog.Info("my player entered game completed")
 
 	return nil
 }
@@ -143,7 +144,7 @@ func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess gsnet.ISession, data []byte
 func (h *MsgHandler) onPlayerExitGameAck(sess gsnet.ISession, data []byte) error {
 	h.doPlayerExit(h.myId())
 
-	Log().Info("my player exited game")
+	gslog.Info("my player exited game")
 
 	return nil
 }
@@ -186,7 +187,7 @@ func (h *MsgHandler) onPlayerEnterGameSync(sess gsnet.ISession, data []byte) err
 
 	h.doPlayerEnter(sync.TankInfo, false)
 
-	Log().Info("sync player (account: %v, player_id: %v) entered game", sync.TankInfo.Account, sync.TankInfo.PlayerId)
+	gslog.Info("sync player (account: %v, player_id: %v) entered game", sync.TankInfo.Account, sync.TankInfo.PlayerId)
 
 	return nil
 }
@@ -201,7 +202,7 @@ func (h *MsgHandler) onPlayerExitGameSync(sess gsnet.ISession, data []byte) erro
 
 	h.doPlayerExit(sync.PlayerId)
 
-	Log().Info("sync player (player_id: %v) exited game", sync.PlayerId)
+	gslog.Info("sync player (player_id: %v) exited game", sync.PlayerId)
 
 	return nil
 }
@@ -215,7 +216,7 @@ func (h *MsgHandler) onPlayerTankChangeAck(sess gsnet.ISession, data []byte) err
 	}
 
 	if h.doTankChange(h.myId(), ack.ChangedTankInfo.Id) {
-		Log().Info("my player changed tank to %v", ack.ChangedTankInfo.Id)
+		gslog.Info("my player changed tank to %v", ack.ChangedTankInfo.Id)
 	}
 
 	return nil
@@ -230,7 +231,7 @@ func (h *MsgHandler) onPlayerTankChangeSync(sess gsnet.ISession, data []byte) er
 	}
 
 	if h.doTankChange(sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id) {
-		Log().Info("sync player %v change tank to %v", sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id)
+		gslog.Info("sync player %v change tank to %v", sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id)
 	}
 
 	return nil
@@ -245,7 +246,7 @@ func (h *MsgHandler) onPlayerTankRestoreAck(sess gsnet.ISession, data []byte) er
 	}
 
 	if h.doTankRestore(h.myId(), ack.TankId) {
-		Log().Info("my player restored tank to %v", ack.TankId)
+		gslog.Info("my player restored tank to %v", ack.TankId)
 	}
 
 	return nil
@@ -260,7 +261,7 @@ func (h *MsgHandler) onPlayerTankRestoreSync(sess gsnet.ISession, data []byte) e
 	}
 
 	if h.doTankRestore(sync.PlayerId, sync.TankId) {
-		Log().Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
+		gslog.Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
 	}
 
 	return nil
@@ -286,6 +287,8 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess gsnet.ISession, data []byte) erro
 
 	h.logic.PlayerTankMove(sync.PlayerId, object.Direction(sync.MoveInfo.Direction))
 
+	gslog.Debug("Player %v move sync", sync.PlayerId)
+
 	return nil
 }
 
@@ -308,6 +311,49 @@ func (h *MsgHandler) onPlayerTankStopMoveSync(sess gsnet.ISession, data []byte) 
 	}
 
 	h.logic.PlayerTankStopMove(sync.PlayerId)
+
+	gslog.Debug("Player %v stop move sync", sync.PlayerId)
+
+	return nil
+}
+
+// 本玩家的坦克位置更新返回
+func (h *MsgHandler) onPlayerTankUpdatePosAck(sess gsnet.ISession, data []byte) error {
+	var ack game_proto.MsgPlayerTankUpdatePosAck
+	err := proto.Unmarshal(data, &ack)
+	if err != nil {
+		return err
+	}
+
+	switch ack.State {
+	case game_proto.MovementState_StartMove:
+	case game_proto.MovementState_Moving:
+	case game_proto.MovementState_ToStop:
+	}
+
+	gslog.Debug("My tank update pos ack: %v", &ack)
+
+	return nil
+}
+
+// 其他玩家坦克位置更新同步
+func (h *MsgHandler) onPlayerTankUpdatePosSync(sess gsnet.ISession, data []byte) error {
+	var sync game_proto.MsgPlayerTankUpdatePosSync
+	err := proto.Unmarshal(data, &sync)
+	if err != nil {
+		return err
+	}
+
+	switch sync.State {
+	case game_proto.MovementState_StartMove:
+		h.logic.PlayerTankMove(sync.PlayerId, object.Direction(sync.MoveInfo.Direction))
+	case game_proto.MovementState_Moving:
+
+	case game_proto.MovementState_ToStop:
+		h.logic.PlayerTankStopMove(sync.PlayerId)
+	}
+
+	gslog.Debug("Player %v update pos sync: %v", sync.PlayerId, &sync)
 
 	return nil
 }
@@ -393,7 +439,7 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 	h.logic.PlayerTankChange(playerId, common_data.TankConfigData[changedTankId])
 
 	// 向上传递事件
-	h.invoker.InvokeEvent(EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
+	h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
 
 	return true
 }
@@ -402,7 +448,7 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 func (h *MsgHandler) doTankRestore(playerId uint64, tankId int32) bool {
 	player := h.playerMgr.Get(playerId)
 	if player == nil {
-		Log().Error("not found player %v to restore tank", playerId)
+		gslog.Error("not found player %v to restore tank", playerId)
 		return false
 	}
 
@@ -410,7 +456,7 @@ func (h *MsgHandler) doTankRestore(playerId uint64, tankId int32) bool {
 	h.logic.PlayerTankRestore(playerId)
 
 	// 向上传递事件
-	h.invoker.InvokeEvent(EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
+	h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
 
 	return true
 }

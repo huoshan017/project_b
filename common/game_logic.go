@@ -15,11 +15,9 @@ type GameLogic struct {
 }
 
 // 创建游戏逻辑
-func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
-	gl := &GameLogic{eventMgr: eventMgr}
-	if gl.eventMgr == nil {
-		gl.eventMgr = base.NewEventManager()
-	}
+func NewGameLogic() *GameLogic {
+	gl := &GameLogic{}
+	gl.eventMgr = base.NewEventManager()
 	gl.scene = NewScene(gl.eventMgr)
 	return gl
 }
@@ -63,6 +61,16 @@ func (g *GameLogic) RegisterEvent(eid base.EventId, handle func(args ...interfac
 // 注销事件
 func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interface{})) {
 	g.eventMgr.UnregisterEvent(eid, handle)
+}
+
+// 注册坦克事件
+func (g *GameLogic) RegisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
+	g.scene.RegisterPlayerEvent(uid, eid, handle)
+}
+
+// 注销坦克事件
+func (g *GameLogic) UnregisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
+	g.scene.UnregisterPlayerEvent(uid, eid, handle)
 }
 
 // 获得玩家坦克

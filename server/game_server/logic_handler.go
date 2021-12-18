@@ -21,7 +21,7 @@ type GameLogicHandler struct {
 func CreateGameLogicHandler() *GameLogicHandler {
 	return &GameLogicHandler{
 		RequestHandler: *gproc.NewDefaultRequestHandler(),
-		logic:          common.NewGameLogic(nil),
+		logic:          common.NewGameLogic(),
 	}
 }
 

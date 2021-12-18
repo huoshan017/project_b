@@ -47,7 +47,7 @@ func GetNetworkAvgDelay() custom_time.Duration {
 	return ctime.GetAvgDelay()
 }
 
-func GetSyncCurrServTime() custom_time.CustomTime {
+func GetSyncServTime() custom_time.CustomTime {
 	delay := ctime.GetDelay()
 	if delay < 0 {
 		panic("network delay invalid")

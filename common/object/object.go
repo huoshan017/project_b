@@ -252,7 +252,10 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	if o.state == toMove {
 		o.state = isMoving
-		o.moveEvent.Call(o.dir, float64(o.CurrentSpeed()))
+		// args[0]: object.Pos
+		// args[1]: object.Direction
+		// args[2]: float64
+		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, float64(o.CurrentSpeed()))
 		return
 	}
 
@@ -270,11 +273,17 @@ func (o *MovableObject) Update(tick time.Duration) {
 		panic("invalid direction")
 	}
 
-	o.updateEvent.Call(o.x, o.y)
-
-	if o.state == toStop {
+	if o.state == isMoving {
+		// args[0]: object.Pos
+		// args[1]: object.Direction
+		// args[2]: float64
+		o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, float64(o.CurrentSpeed()))
+	} else if o.state == toStop {
 		o.state = stopped
-		o.stopEvent.Call()
+		// args[0]: object.Pos
+		// args[1]: object.Direction
+		// args[2]: float64
+		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, float64(o.CurrentSpeed()))
 	}
 }
 

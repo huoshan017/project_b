@@ -117,62 +117,86 @@ func (s *Scene) Update(tick time.Duration) {
 	}
 }
 
-func (s *Scene) RegisterPlayerTankEvent(uid uint64, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+func (s *Scene) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
 	tank, o := s.playerTanks[uid]
-	if o {
-		tank.RegisterMoveEventHandle(moveEventHandle)
-		tank.RegisterStopMoveEventHandle(stopEventHandle)
+	if !o {
+		return
+	}
+	switch eid {
+	case EventIdTankMove:
+		tank.RegisterMoveEventHandle(handle)
+	case EventIdTankStopMove:
+		tank.RegisterStopMoveEventHandle(handle)
+	case EventIdTankSetPos:
+		tank.RegisterUpdateEventHandle(handle)
 	}
 }
 
-func (s *Scene) UnregisterPlayerTankEvent(uid uint64, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+func (s *Scene) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
 	tank, o := s.playerTanks[uid]
-	if o {
-		tank.UnregisterMoveEventHandle(moveEventHandle)
-		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+	if !o {
+		return
+	}
+	switch eid {
+	case EventIdTankMove:
+		tank.UnregisterMoveEventHandle(handle)
+	case EventIdTankStopMove:
+		tank.UnregisterStopMoveEventHandle(handle)
+	case EventIdTankSetPos:
+		tank.UnregisterUpdateEventHandle(handle)
 	}
 }
 
-func (s *Scene) RegisterEnemyTankEvent(id int32, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+func (s *Scene) RegisterEnemyEvent(id int32, eid base.EventId, handle func(args ...interface{})) {
 	tank, o := s.enemyTanks[id]
-	if o {
-		tank.RegisterMoveEventHandle(moveEventHandle)
-		tank.RegisterStopMoveEventHandle(stopEventHandle)
+	if !o {
+		return
+	}
+	switch eid {
+	case EventIdTankMove:
+		tank.RegisterMoveEventHandle(handle)
+	case EventIdTankStopMove:
+		tank.RegisterStopMoveEventHandle(handle)
+	case EventIdTankSetPos:
+		tank.RegisterUpdateEventHandle(handle)
 	}
 }
 
-func (s *Scene) UnregisterEnemyTankEvent(id int32, moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
+func (s *Scene) UnregisterEnemyEvent(id int32, eid base.EventId, handle func(args ...interface{})) {
 	tank, o := s.enemyTanks[id]
-	if o {
-		tank.UnregisterMoveEventHandle(moveEventHandle)
-		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+	if !o {
+		return
+	}
+	switch eid {
+	case EventIdTankMove:
+		tank.UnregisterMoveEventHandle(handle)
+	case EventIdTankStopMove:
+		tank.UnregisterStopMoveEventHandle(handle)
+	case EventIdTankSetPos:
+		tank.UnregisterUpdateEventHandle(handle)
 	}
 }
 
-func (s *Scene) RegisterAllPlayersTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
-	for _, tank := range s.playerTanks {
-		tank.RegisterMoveEventHandle(moveEventHandle)
-		tank.RegisterStopMoveEventHandle(stopEventHandle)
+func (s *Scene) RegisterAllPlayersEvent(eid base.EventId, handle func(args ...interface{})) {
+	for id := range s.playerTanks {
+		s.RegisterPlayerEvent(id, eid, handle)
 	}
 }
 
-func (s *Scene) UnregisterAllPlayersTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
-	for _, tank := range s.playerTanks {
-		tank.UnregisterMoveEventHandle(moveEventHandle)
-		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+func (s *Scene) UnregisterAllPlayersEvent(eid base.EventId, handle func(args ...interface{})) {
+	for id := range s.playerTanks {
+		s.UnregisterPlayerEvent(id, eid, handle)
 	}
 }
 
-func (s *Scene) RegisterAllEnemiesTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
-	for _, tank := range s.enemyTanks {
-		tank.RegisterMoveEventHandle(moveEventHandle)
-		tank.RegisterStopMoveEventHandle(stopEventHandle)
+func (s *Scene) RegisterAllEnemiesEvent(eid base.EventId, handle func(args ...interface{})) {
+	for id := range s.enemyTanks {
+		s.RegisterEnemyEvent(id, eid, handle)
 	}
 }
 
-func (s *Scene) UnregisterAllEnemiesTankEvent(moveEventHandle func(args ...interface{}), stopEventHandle func(args ...interface{})) {
-	for _, tank := range s.enemyTanks {
-		tank.UnregisterMoveEventHandle(moveEventHandle)
-		tank.UnregisterStopMoveEventHandle(stopEventHandle)
+func (s *Scene) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args ...interface{})) {
+	for id := range s.enemyTanks {
+		s.UnregisterEnemyEvent(id, eid, handle)
 	}
 }

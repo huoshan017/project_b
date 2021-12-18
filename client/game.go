@@ -27,7 +27,7 @@ type Game struct {
 	state GameState
 
 	//---------------------------------------
-	// 纯逻辑
+	// 逻辑
 	net           *core.NetClient      // 网络模块
 	msgHandler    *core.MsgHandler     // 消息处理器
 	logic         *common.GameLogic    // 游戏逻辑
@@ -36,7 +36,7 @@ type Game struct {
 	lastCheckTime time.CustomTime      // 上次检测时间
 
 	//---------------------------------------
-	// 显示相关
+	// 表现相关
 	cmdMgr      *CmdHandleManager // 命令处理管理器
 	camera      *Camera           // 摄像机
 	currMap     *Map              // 当前地图资源
@@ -44,6 +44,11 @@ type Game struct {
 	playableMgr *PlayableManager  // 可播放管理器
 	myId        uint64            // 我的ID
 	myAcc       string            // 我的帐号
+
+	// --------------------------------------
+	// 事件处理
+	gameEvent2Handles   []event2Handle // 游戏事件
+	playerEvent2Handles []event2Handle // 玩家事件
 }
 
 // 创建游戏
@@ -53,7 +58,7 @@ func NewGame() *Game {
 	}
 	g.playerMgr = core.CreateCPlayerManager()
 	g.eventMgr = base.NewEventManager()
-	g.logic = common.NewGameLogic(g.eventMgr)
+	g.logic = common.NewGameLogic()
 	g.cmdMgr = CreateCmdHandleManager(g)
 	g.uiMgr = NewUIMgr(g)
 	g.uiMgr.Init()
@@ -114,7 +119,7 @@ func (g *Game) Update() error {
 		} else {
 			// 时间同步完成
 			if core.IsTimeSyncEnd() {
-				now := core.GetSyncCurrServTime() //time.Now()
+				now := core.GetSyncServTime() //time.Now()
 				if g.lastCheckTime.IsZero() {
 					g.lastCheckTime = now
 				} else {

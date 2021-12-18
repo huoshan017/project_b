@@ -4,50 +4,50 @@ import (
 	"reflect"
 
 	core "project_b/client_core"
+	"project_b/common"
+	"project_b/common/base"
 	"project_b/common/object"
+	"project_b/game_proto"
 )
+
+type event2Handle struct {
+	eid    base.EventId
+	handle func(args ...interface{})
+}
 
 // todo 发送协议的事件处理和设备输入的事件处理最好分开，方便做逻辑和显示分离
 // 注册事件
 func (g *Game) registerEvents() {
-	// 请求登录
-	g.eventMgr.RegisterEvent(core.EventIdOpLogin, g.onEventReqLogin)
-	// 请求进入游戏
-	g.eventMgr.RegisterEvent(core.EventIdOpEnterGame, g.onEventReqEnterGame)
+	// 游戏事件处理
+	g.gameEvent2Handles = []event2Handle{
+		{core.EventIdOpLogin, g.onEventReqLogin},                                  // 请求登录
+		{core.EventIdOpEnterGame, g.onEventReqEnterGame},                          // 请求进入游戏
+		{core.EventIdTimeSync, g.onEventTimeSync},                                 // 同步时间
+		{core.EventIdTimeSyncEnd, g.onEventTimeSyncEnd},                           // 同步时间结束
+		{core.EventIdPlayerEnterGame, g.onEventPlayerEnterGame},                   // 进入游戏
+		{core.EventIdPlayerEnterGameCompleted, g.onEventPlayerEnterGameCompleted}, // 进入游戏完成
+		{core.EventIdPlayerExitGame, g.onEventPlayerExitGame},                     // 退出游戏
+	}
 
-	// 同步时间
-	g.eventMgr.RegisterEvent(core.EventIdTimeSync, g.onEventTimeSync)
-	// 同步时间结束
-	g.eventMgr.RegisterEvent(core.EventIdTimeSyncEnd, g.onEventTimeSyncEnd)
+	// 玩家事件处理
+	g.playerEvent2Handles = []event2Handle{
+		{common.EventIdTankMove, g.onEventTankMove},         // 处理坦克移动
+		{common.EventIdTankStopMove, g.onEventTankStopMove}, // 处理坦克停止移动
+		{common.EventIdTankSetPos, g.onEventTankSetPos},     // 处理坦克位置更新
+		{common.EventIdTankChange, g.onEventTankChange},     // 处理坦克变化
+		{common.EventIdTankRestore, g.onEventTankRestore},   // 处理坦克恢复
+	}
 
-	// 进入游戏
-	g.eventMgr.RegisterEvent(core.EventIdPlayerEnterGame, g.onEventPlayerEnterGame)
-	// 进入游戏完成
-	g.eventMgr.RegisterEvent(core.EventIdPlayerEnterGameCompleted, g.onEventPlayerEnterGameCompleted)
-	// 退出游戏
-	g.eventMgr.RegisterEvent(core.EventIdPlayerExitGame, g.onEventPlayerExitGame)
-
-	// 坦克移动
-	g.eventMgr.RegisterEvent(core.EventIdTankMove, g.onEventTankMove)
-	// 坦克停止移动
-	g.eventMgr.RegisterEvent(core.EventIdTankStopMove, g.onEventTankStopMove)
-	// 坦克改变
-	g.eventMgr.RegisterEvent(core.EventIdTankChange, g.onEventTankChange)
-	// 坦克恢复
-	g.eventMgr.RegisterEvent(core.EventIdTankRestore, g.onEventTankRestore)
+	for _, e2h := range g.gameEvent2Handles {
+		g.eventMgr.RegisterEvent(e2h.eid, e2h.handle)
+	}
 }
 
 // 注销事件
 func (g *Game) unregisterEvents() {
-	g.eventMgr.UnregisterEvent(core.EventIdOpLogin, g.onEventReqLogin)
-	g.eventMgr.UnregisterEvent(core.EventIdOpEnterGame, g.onEventReqEnterGame)
-	g.eventMgr.UnregisterEvent(core.EventIdPlayerEnterGame, g.onEventPlayerEnterGame)
-	g.eventMgr.UnregisterEvent(core.EventIdPlayerEnterGameCompleted, g.onEventPlayerEnterGameCompleted)
-	g.eventMgr.UnregisterEvent(core.EventIdPlayerExitGame, g.onEventPlayerExitGame)
-	g.eventMgr.UnregisterEvent(core.EventIdTankMove, g.onEventTankMove)
-	g.eventMgr.UnregisterEvent(core.EventIdTankStopMove, g.onEventTankStopMove)
-	g.eventMgr.UnregisterEvent(core.EventIdTankChange, g.onEventTankChange)
-	g.eventMgr.UnregisterEvent(core.EventIdTankRestore, g.onEventTankRestore)
+	for _, e2h := range g.gameEvent2Handles {
+		g.eventMgr.UnregisterEvent(e2h.eid, e2h.handle)
+	}
 }
 
 // 请求登录
@@ -125,6 +125,12 @@ func (g *Game) onEventPlayerEnterGameCompleted(args ...interface{}) {
 		glog.Error("handle event: send time sync request err: %v", err)
 		return
 	}
+
+	// 注册本玩家场景事件
+	for _, e2h := range g.playerEvent2Handles {
+		g.logic.RegisterPlayerSceneEvent(g.myId, e2h.eid, e2h.handle)
+	}
+
 	glog.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.myAcc, g.myId)
 }
 
@@ -140,6 +146,11 @@ func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 	// 从播放管理器中删除
 	g.playableMgr.RemovePlayerTankPlayable(uid)
 
+	// 注销本玩家场景事件
+	for _, e2h := range g.playerEvent2Handles {
+		g.logic.UnregisterPlayerSceneEvent(g.myId, e2h.eid, e2h.handle)
+	}
+
 	glog.Info("handle event: player (uid: %v) exited game", uid)
 }
 
@@ -149,7 +160,7 @@ func (g *Game) onEventTimeSync(args ...interface{}) {
 		glog.Error("handle event: send time sync request err: %v", err)
 		return
 	}
-	glog.Info("handle event: time sync")
+	//glog.Info("handle event: time sync")
 }
 
 // 处理时间同步结束事件
@@ -158,15 +169,51 @@ func (g *Game) onEventTimeSyncEnd(args ...interface{}) {
 }
 
 // 处理坦克移动事件
+/**
+args[0]: object.Pos
+args[1]: object.Direction
+args[2]: float64
+*/
 func (g *Game) onEventTankMove(args ...interface{}) {
-	g.playableMgr.PlayPlayerTankPlayable(g.myId)
-	//log.Printf("handle event: my player move tank")
+	pos := args[0].(object.Pos)
+	dir := args[1].(object.Direction)
+	speed := args[2].(float64)
+	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_StartMove, pos, dir, speed)
+	if err != nil {
+		glog.Error("send tank move req err: %v", err)
+	}
 }
 
 // 处理坦克停止移动事件
+/**
+args[0]: object.Pos
+args[1]: object.Direction
+args[2]: float64
+*/
 func (g *Game) onEventTankStopMove(args ...interface{}) {
-	g.playableMgr.StopPlayerTankPlayable(g.myId)
-	//log.Printf("handle event: my player stop move tank")
+	pos := args[0].(object.Pos)
+	dir := args[1].(object.Direction)
+	speed := args[2].(float64)
+	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos, dir, speed)
+	if err != nil {
+		glog.Error("send tank stop move req err: %v", err)
+	}
+}
+
+// 处理坦克设置坐标事件
+/**
+args[0]: object.Pos
+args[1]: object.Direction
+args[2]: float64
+*/
+func (g *Game) onEventTankSetPos(args ...interface{}) {
+	pos := args[0].(object.Pos)
+	dir := args[1].(object.Direction)
+	speed := args[2].(float64)
+	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos, dir, speed)
+	if err != nil {
+		glog.Error("send tank update pos req err: %v", err)
+	}
 }
 
 // 处理坦克改变事件

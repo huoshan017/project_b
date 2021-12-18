@@ -169,26 +169,40 @@ func (po *PlayableMoveObject) Update(screen *ebiten.Image) {
 
 // 移动事件处理
 func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
-	po.moveDir = args[0].(object.Direction)
-	po.currSpeed = args[1].(float64)
-	po.updateTime = core.GetSyncCurrServTime() //args[2].(time.CustomTime)
+	pos := args[0].(object.Pos)
+	dir := args[1].(object.Direction)
+	speed := args[2].(float64)
+	po.onupdate(pos, dir, speed)
+	po.updateTime = core.GetSyncServTime() //args[2].(time.CustomTime)
 	po.isMoving = true
 	po.Play()
 }
 
 // 更新数据事件处理
 func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
-	po.dx = args[0].(float64)
-	po.dy = args[1].(float64)
-	po.updateTime = core.GetSyncCurrServTime() //args[2].(time.CustomTime)
-	po.op.GeoM.SetElement(0, 2, po.dx)
-	po.op.GeoM.SetElement(1, 2, po.dy)
+	pos := args[0].(object.Pos)
+	dir := args[1].(object.Direction)
+	speed := args[2].(float64)
+	po.onupdate(pos, dir, speed)
 }
 
 // 停止移动事件处理
 func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
+	pos := args[0].(object.Pos)
+	dir := args[1].(object.Direction)
+	speed := args[2].(float64)
+	po.onupdate(pos, dir, speed)
 	po.isMoving = false
 	po.Stop()
+}
+
+func (po *PlayableMoveObject) onupdate(pos object.Pos, dir object.Direction, speed float64) {
+	po.dx = pos.X
+	po.dy = pos.Y
+	po.op.GeoM.SetElement(0, 2, po.dx)
+	po.op.GeoM.SetElement(1, 2, po.dy)
+	po.moveDir = dir
+	po.currSpeed = speed
 }
 
 // 坦克播放对象

@@ -314,6 +314,24 @@ func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess gsnet.ISession, data []byt
 	return nil
 }
 
+// 坦克位置更新请求
+func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess gsnet.ISession, data []byte) error {
+	p, err := h.toPlayer(sess)
+	if err != nil {
+		return err
+	}
+
+	var req game_proto.MsgPlayerTankUpdatePosReq
+	err = proto.Unmarshal(data, &req)
+	if err != nil {
+		return err
+	}
+
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), &req)
+
+	return nil
+}
+
 // 内部函数，注册协议
 func (s *GameMsgHandler) registerHandles() {
 	s.RegisterHandle(uint32(game_proto.MsgAccountLoginGameReq_Id), s.onPlayerLoginReq)
@@ -324,6 +342,7 @@ func (s *GameMsgHandler) registerHandles() {
 	s.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankReq_Id), s.onPlayerRestoreTankReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), s.onPlayerTankMoveReq)
 	s.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), s.onPlayerTankStopMoveReq)
+	s.RegisterHandle(uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), s.onPlayerTankUpdatePosReq)
 }
 
 // 会话转成玩家

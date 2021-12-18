@@ -92,7 +92,7 @@ message MsgPlayerTankMoveReq {
 
 // 坦克移动返回
 message MsgPlayerTankMoveAck {
-    uint64 PlayerId = 1;
+    TankMoveInfo MoveInfo = 1;
     enum ProtoId {None = 0; Id = 201;}
 }
 
@@ -103,20 +103,47 @@ message MsgPlayerTankMoveSync {
     enum ProtoId {None = 0; Id = 202;}
 }
 
+// 单位移动状态
+enum MovementState { Idle = 0; StartMove = 1; Moving = 2; ToStop = 3; }
+
+// 坦克位置更新请求
+message MsgPlayerTankUpdatePosReq {
+    MovementState State = 1;
+    TankMoveInfo MoveInfo = 2;
+    enum ProtoId { None = 0; Id = 203; }
+}
+
+// 坦克位置更新返回
+message MsgPlayerTankUpdatePosAck {
+    MovementState State = 1;
+    TankMoveInfo MoveInfo = 2;
+    enum ProtoId { None = 0; Id = 204; }
+}
+
+// 坦克位置更新同步
+message MsgPlayerTankUpdatePosSync {
+    uint64 PlayerId = 1;
+    MovementState State = 2;
+    TankMoveInfo MoveInfo = 3;
+    enum ProtoId { None = 0; Id = 205; }
+}
+
 // 坦克停止移动请求
 message MsgPlayerTankStopMoveReq {
-    enum ProtoId { None = 0; Id = 203; }
+    TankMoveInfo MoveInfo = 1;
+    enum ProtoId { None = 0; Id = 206; }
 }
 
 // 坦克停止移动返回
 message MsgPlayerTankStopMoveAck {
-    enum ProtoId { None = 0; Id = 204; }
+    TankMoveInfo MoveInfo = 1;
+    enum ProtoId { None = 0; Id = 207; }
 }
 
 // 坦克停止移动同步
 message MsgPlayerTankStopMoveSync {
     uint64 PlayerId = 1;
-    enum ProtoId { None = 0; Id = 205; }
+    enum ProtoId { None = 0; Id = 208; }
 }
 
 // 改变坦克请求

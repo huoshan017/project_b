@@ -52,6 +52,6 @@ func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("ProjectB")
 	if err := ebiten.RunGame(game); err != nil {
-		glog.Error("game run err: ", err)
+		glog.Error("game run err: %v", err)
 	}
 }

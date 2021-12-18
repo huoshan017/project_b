@@ -40,7 +40,7 @@ type GameLogicThread struct {
 func CreateGameLogicThread() *GameLogicThread {
 	t := &GameLogicThread{
 		MsgLogicProc: *common.CreateMsgLogicProc(),
-		gameLogic:    common.NewGameLogic(nil),
+		gameLogic:    common.NewGameLogic(),
 	}
 	t.registerHandles()
 	return t
@@ -51,6 +51,7 @@ func (t *GameLogicThread) registerHandles() {
 	t.SetTickHandle(t.onTick, time.Duration(common_data.GameLogicTick))
 	t.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), t.onPlayerTankMoveReq)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), t.onPlayerTankStopMoveReq)
+	t.RegisterHandle(uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), t.onPlayerTankUpdatePosReq)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankReq_Id), t.onPlayerTankChange)
 	t.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankReq_Id), t.onPlayerTankRestore)
 }
@@ -165,7 +166,7 @@ func (t *GameLogicThread) onTick(tick time.Duration) {
 	t.gameLogic.Update(custom_time.Duration(tick))
 }
 
-// 坦克移动同步
+// 坦克移动
 func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
 	if pd == nil {
@@ -173,8 +174,11 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 		return nil
 	}
 	m := msg.(*game_proto.MsgPlayerTankMoveReq)
+
+	// 检测移动数据的合法性，计算当前位置
+	t.gameLogic.PlayerTankMove(pd.pid, object.Direction(m.MoveInfo.Direction))
+
 	var ack game_proto.MsgPlayerTankMoveAck
-	ack.PlayerId = pd.pid
 	err := pd.send(uint32(game_proto.MsgPlayerTankMoveAck_Id), &ack)
 	if err != nil {
 		return err
@@ -188,13 +192,49 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 	return err
 }
 
-// 坦克停止移动同步
+// 坦克移动设置位置
+func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg common.MsgData) error {
+	pd := t.getPlayerData(key)
+	if pd == nil {
+		gslog.Error("player %v not found in GameLogicThread", pd.pid)
+		return nil
+	}
+	m := msg.(*game_proto.MsgPlayerTankUpdatePosReq)
+
+	switch m.State {
+	case game_proto.MovementState_StartMove:
+	case game_proto.MovementState_Moving:
+	case game_proto.MovementState_ToStop:
+	}
+
+	var ack game_proto.MsgPlayerTankUpdatePosAck
+	ack.State = m.State
+	ack.MoveInfo = m.MoveInfo
+	err := pd.send(uint32(game_proto.MsgPlayerTankUpdatePosAck_Id), &ack)
+	if err != nil {
+		return err
+	}
+
+	if t.GetAgentCountNoLock() > 0 {
+		var sync game_proto.MsgPlayerTankUpdatePosSync
+		sync.PlayerId = pd.pid
+		sync.State = m.State
+		sync.MoveInfo = m.MoveInfo
+		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankUpdatePosSync_Id), &sync, pd.pid)
+	}
+	return err
+}
+
+// 坦克停止移动
 func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
 	if pd == nil {
 		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
 		return nil
 	}
+
+	t.gameLogic.PlayerTankStopMove(pd.pid)
+
 	var ack game_proto.MsgPlayerTankStopMoveAck
 	err := pd.send(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), &ack)
 	if err != nil {
