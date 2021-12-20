@@ -4,8 +4,8 @@ package game_proto;
 option go_package="../game_proto";
 
 message Pos {
-	double X = 1;
-	double Y = 2;
+	int32 X = 1;
+	int32 Y = 2;
 }
 
 // 坦克信息
@@ -14,14 +14,14 @@ message TankInfo {
 	int32 Level = 2;
 	Pos CurrPos = 3;
 	int32 Direction = 4;
-	float CurrSpeed = 5;
+	int32 CurrSpeed = 5;
 }
 
 // 坦克移动信息
 message TankMoveInfo {
 	Pos CurrPos = 1;
 	int32 Direction = 2;
-	float CurrSpeed = 3;
+	int32 CurrSpeed = 3;
 	int64 CurrTimeMilliseconds = 4;
 }
 

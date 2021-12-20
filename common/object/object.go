@@ -8,7 +8,7 @@ import (
 
 // 坐标位置
 type Pos struct {
-	X, Y float64 // 注意：x轴向右，y轴向上 为正方向
+	X, Y int32 // 注意：x轴向右，y轴向上 为正方向
 }
 
 // 矩形
@@ -21,7 +21,7 @@ type Rect struct {
 type object struct {
 	instId            uint64         // 实例id
 	staticInfo        *ObjStaticInfo // 静态常量数据
-	x, y              float64        // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
+	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 }
 
@@ -81,12 +81,12 @@ func (o object) Subtype() ObjSubType {
 }
 
 // 位置
-func (o object) Pos() (float64, float64) {
+func (o object) Pos() (int32, int32) {
 	return o.x, o.y
 }
 
 // 坐标位置，相对于父坐标系
-func (o *object) SetPos(x, y float64) {
+func (o *object) SetPos(x, y int32) {
 	o.x = x
 	o.y = y
 }
@@ -108,35 +108,35 @@ func (o object) Height() int32 {
 }
 
 // 左侧坐标（相对于父坐标系）
-func (o object) Left() float64 {
+func (o object) Left() int32 {
 	if o.changedStaticInfo != nil {
-		return o.x + float64(o.changedStaticInfo.x0)
+		return o.x + int32(o.changedStaticInfo.x0)
 	}
-	return o.x + float64(o.staticInfo.x0)
+	return o.x + int32(o.staticInfo.x0)
 }
 
 // 右侧坐标（相对于父坐标系）
-func (o object) Right() float64 {
+func (o object) Right() int32 {
 	if o.changedStaticInfo != nil {
-		return o.Left() + float64(o.changedStaticInfo.w)
+		return o.Left() + int32(o.changedStaticInfo.w)
 	}
-	return o.Left() + float64(o.staticInfo.w)
+	return o.Left() + int32(o.staticInfo.w)
 }
 
 // 顶部坐标（相对于父坐标系）
-func (o object) Top() float64 {
+func (o object) Top() int32 {
 	if o.changedStaticInfo != nil {
-		return o.Bottom() + float64(o.changedStaticInfo.h)
+		return o.Bottom() + int32(o.changedStaticInfo.h)
 	}
-	return o.Bottom() + float64(o.staticInfo.h)
+	return o.Bottom() + int32(o.staticInfo.h)
 }
 
 // 底部坐标（相对于父坐标系）
-func (o object) Bottom() float64 {
+func (o object) Bottom() int32 {
 	if o.changedStaticInfo != nil {
-		return o.y + float64(o.changedStaticInfo.y0)
+		return o.y + int32(o.changedStaticInfo.y0)
 	}
-	return o.y + float64(o.staticInfo.y0)
+	return o.y + int32(o.staticInfo.y0)
 }
 
 // 更新
@@ -157,7 +157,7 @@ const (
 type MovableObject struct {
 	object
 	dir   Direction       // 方向
-	speed float32         // 当前移动速度（米/秒）
+	speed int32           // 当前移动速度（米/秒）
 	state moveObjectState // 移动状态
 	//moveDataList []*moveData     // 移动数据队列
 	moveEvent   *base.Event // 移动事件
@@ -196,7 +196,7 @@ func (o *MovableObject) SetDir(dir Direction) {
 }
 
 // 设置当前速度
-func (o *MovableObject) SetCurrentSpeed(speed float32) {
+func (o *MovableObject) SetCurrentSpeed(speed int32) {
 	o.speed = speed
 }
 
@@ -206,7 +206,7 @@ func (o MovableObject) Dir() Direction {
 }
 
 // 配置速度
-func (o MovableObject) Speed() float32 {
+func (o MovableObject) Speed() int32 {
 	if o.changedStaticInfo != nil {
 		return o.changedStaticInfo.speed
 	}
@@ -214,7 +214,7 @@ func (o MovableObject) Speed() float32 {
 }
 
 // 当前速度
-func (o MovableObject) CurrentSpeed() float32 {
+func (o MovableObject) CurrentSpeed() int32 {
 	return o.speed
 }
 
@@ -254,21 +254,29 @@ func (o *MovableObject) Update(tick time.Duration) {
 		o.state = isMoving
 		// args[0]: object.Pos
 		// args[1]: object.Direction
-		// args[2]: float64
-		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, float64(o.CurrentSpeed()))
+		// args[2]: int32
+		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
 		return
 	}
 
-	distance := float64(o.CurrentSpeed()) * float64(tick) / float64(time.Second)
+	distance := (float64(o.CurrentSpeed()) * float64(tick) / float64(time.Second))
 	switch o.dir {
 	case DirLeft:
-		o.x -= distance
+		x := float64(o.x)
+		x -= distance
+		o.x = int32(x)
 	case DirRight:
-		o.x += distance
+		x := float64(o.x)
+		x += distance
+		o.x = int32(x)
 	case DirUp:
-		o.y -= distance
+		y := float64(o.y)
+		y -= distance
+		o.y = int32(y)
 	case DirDown:
-		o.y += distance
+		y := float64(o.y)
+		y += distance
+		o.y = int32(y)
 	default:
 		panic("invalid direction")
 	}
@@ -276,14 +284,14 @@ func (o *MovableObject) Update(tick time.Duration) {
 	if o.state == isMoving {
 		// args[0]: object.Pos
 		// args[1]: object.Direction
-		// args[2]: float64
-		o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, float64(o.CurrentSpeed()))
+		// args[2]: int32
+		o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
 	} else if o.state == toStop {
 		o.state = stopped
 		// args[0]: object.Pos
 		// args[1]: object.Direction
-		// args[2]: float64
-		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, float64(o.CurrentSpeed()))
+		// args[2]: int32
+		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
 	}
 }
 

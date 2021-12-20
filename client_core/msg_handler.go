@@ -17,12 +17,12 @@ import (
 
 type MsgHandler struct {
 	net       *NetClient
-	logic     *common.GameLogic
+	logic     *GameLogic
 	playerMgr *CPlayerManager
 	invoker   base.IEventInvoker
 }
 
-func CreateMsgHandler(net *NetClient, logic *common.GameLogic, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
+func CreateMsgHandler(net *NetClient, logic *GameLogic, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
 	return &MsgHandler{
 		net:       net,
 		logic:     logic,

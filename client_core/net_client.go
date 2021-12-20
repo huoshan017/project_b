@@ -77,12 +77,12 @@ func (c *NetClient) SendTankMoveReq(dir object.Direction) error {
 	return c.Send(uint32(game_proto.MsgPlayerTankMoveReq_Id), data)
 }
 
-func (c *NetClient) SendTankUpdatePosReq(state game_proto.MovementState, pos object.Pos, dir object.Direction, speed float64) error {
+func (c *NetClient) SendTankUpdatePosReq(state game_proto.MovementState, pos object.Pos, dir object.Direction, speed int32) error {
 	var req game_proto.MsgPlayerTankUpdatePosReq
 	req.State = game_proto.MovementState(state)
 	req.MoveInfo = &game_proto.TankMoveInfo{}
 	req.MoveInfo.CurrPos = &game_proto.Pos{X: pos.X, Y: pos.Y}
-	req.MoveInfo.CurrSpeed = float32(speed)
+	req.MoveInfo.CurrSpeed = speed
 	req.MoveInfo.Direction = int32(dir)
 	data, err := proto.Marshal(&req)
 	if err != nil {

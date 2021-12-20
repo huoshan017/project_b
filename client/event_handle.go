@@ -110,6 +110,7 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 
 	if g.myAcc == account {
 		g.myId = uid
+		g.logic.SetMyId(uid)
 		// 游戏状态
 		g.state = GameStateInGame
 		glog.Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
@@ -172,12 +173,12 @@ func (g *Game) onEventTimeSyncEnd(args ...interface{}) {
 /**
 args[0]: object.Pos
 args[1]: object.Direction
-args[2]: float64
+args[2]: int32
 */
 func (g *Game) onEventTankMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
-	speed := args[2].(float64)
+	speed := args[2].(int32)
 	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_StartMove, pos, dir, speed)
 	if err != nil {
 		glog.Error("send tank move req err: %v", err)
@@ -188,12 +189,12 @@ func (g *Game) onEventTankMove(args ...interface{}) {
 /**
 args[0]: object.Pos
 args[1]: object.Direction
-args[2]: float64
+args[2]: int32
 */
 func (g *Game) onEventTankStopMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
-	speed := args[2].(float64)
+	speed := args[2].(int32)
 	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos, dir, speed)
 	if err != nil {
 		glog.Error("send tank stop move req err: %v", err)
@@ -204,12 +205,12 @@ func (g *Game) onEventTankStopMove(args ...interface{}) {
 /**
 args[0]: object.Pos
 args[1]: object.Direction
-args[2]: float64
+args[2]: int32
 */
 func (g *Game) onEventTankSetPos(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
-	speed := args[2].(float64)
+	speed := args[2].(int32)
 	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos, dir, speed)
 	if err != nil {
 		glog.Error("send tank update pos req err: %v", err)

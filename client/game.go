@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	core "project_b/client_core"
-	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/time"
 	"project_b/common_data"
@@ -28,22 +27,23 @@ type Game struct {
 
 	//---------------------------------------
 	// 逻辑
-	net           *core.NetClient      // 网络模块
-	msgHandler    *core.MsgHandler     // 消息处理器
-	logic         *common.GameLogic    // 游戏逻辑
-	playerMgr     *core.CPlayerManager // 玩家管理器
-	eventMgr      base.IEventManager   // 游戏事件管理器，向上层逻辑传递事件
-	lastCheckTime time.CustomTime      // 上次检测时间
+	net           *core.NetClient        // 网络模块
+	msgHandler    *core.MsgHandler       // 消息处理器
+	logic         *core.GameLogic        // 游戏逻辑
+	cmdMgr        *core.CmdHandleManager // 命令处理管理器
+	playerMgr     *core.CPlayerManager   // 玩家管理器
+	eventMgr      base.IEventManager     // 游戏事件管理器，向上层逻辑传递事件
+	lastCheckTime time.CustomTime        // 上次检测时间
 
 	//---------------------------------------
 	// 表现相关
-	cmdMgr      *CmdHandleManager // 命令处理管理器
-	camera      *Camera           // 摄像机
-	currMap     *Map              // 当前地图资源
-	uiMgr       *UIManager        // UI管理
-	playableMgr *PlayableManager  // 可播放管理器
-	myId        uint64            // 我的ID
-	myAcc       string            // 我的帐号
+
+	camera      *Camera          // 摄像机
+	currMap     *Map             // 当前地图资源
+	uiMgr       *UIManager       // UI管理
+	playableMgr *PlayableManager // 可播放管理器
+	myId        uint64           // 我的ID
+	myAcc       string           // 我的帐号
 
 	// --------------------------------------
 	// 事件处理
@@ -58,8 +58,7 @@ func NewGame() *Game {
 	}
 	g.playerMgr = core.CreateCPlayerManager()
 	g.eventMgr = base.NewEventManager()
-	g.logic = common.NewGameLogic()
-	g.cmdMgr = CreateCmdHandleManager(g)
+	g.logic = core.CreateGameLogic()
 	g.uiMgr = NewUIMgr(g)
 	g.uiMgr.Init()
 	g.playableMgr = CreatePlayableManager()
@@ -70,6 +69,7 @@ func NewGame() *Game {
 func (g *Game) Init(conf *Config) error {
 	g.restart()
 	g.net = core.CreateNetClient(conf.ServerAddress)
+	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.msgHandler.Init()
 	g.registerEvents()

@@ -85,9 +85,9 @@ type PlayableMoveObject struct {
 	anims      []*base.SpriteAnim
 	isMoving   bool             // 是否正在移动
 	moveDir    object.Direction // 移动方向
-	currSpeed  float64          // 当前速度
+	currSpeed  int32            // 当前速度
 	updateTime time.CustomTime  // 更新时间点
-	dx, dy     float64          // 目标点坐标，负数表示已经到达过该点
+	dx, dy     int32            // 目标点坐标，负数表示已经到达过该点
 }
 
 // 创建可移动物体的播放对象
@@ -150,7 +150,7 @@ func (po *PlayableMoveObject) Update(screen *ebiten.Image) {
 		po.updateTime = now
 		dx := po.op.GeoM.Element(0, 2)
 		dy := po.op.GeoM.Element(1, 2)
-		d := po.currSpeed * float64(duration) / float64(time.Second)
+		d := float64(po.currSpeed) * float64(duration) / float64(time.Second)
 		switch po.moveDir {
 		case object.DirLeft:
 			po.op.GeoM.SetElement(0, 2, dx-d)
@@ -171,7 +171,7 @@ func (po *PlayableMoveObject) Update(screen *ebiten.Image) {
 func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
-	speed := args[2].(float64)
+	speed := args[2].(int32)
 	po.onupdate(pos, dir, speed)
 	po.updateTime = core.GetSyncServTime() //args[2].(time.CustomTime)
 	po.isMoving = true
@@ -182,7 +182,7 @@ func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
-	speed := args[2].(float64)
+	speed := args[2].(int32)
 	po.onupdate(pos, dir, speed)
 }
 
@@ -190,17 +190,17 @@ func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
 func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
-	speed := args[2].(float64)
+	speed := args[2].(int32)
 	po.onupdate(pos, dir, speed)
 	po.isMoving = false
 	po.Stop()
 }
 
-func (po *PlayableMoveObject) onupdate(pos object.Pos, dir object.Direction, speed float64) {
+func (po *PlayableMoveObject) onupdate(pos object.Pos, dir object.Direction, speed int32) {
 	po.dx = pos.X
 	po.dy = pos.Y
-	po.op.GeoM.SetElement(0, 2, po.dx)
-	po.op.GeoM.SetElement(1, 2, po.dy)
+	po.op.GeoM.SetElement(0, 2, float64(po.dx))
+	po.op.GeoM.SetElement(1, 2, float64(po.dy))
 	po.moveDir = dir
 	po.currSpeed = speed
 }
@@ -236,7 +236,7 @@ func (pt *PlayableTank) Uninit() {
 func (pt *PlayableTank) onChange(args ...interface{}) {
 	info := args[0].(*object.ObjStaticInfo)
 	level := args[1].(int32)
-	pt.currSpeed = (float64)(info.Speed())
+	pt.currSpeed = (info.Speed())
 	pt.changeAnim(GetTankAnimConfig(info.Id(), level))
 	pt.Play()
 }
