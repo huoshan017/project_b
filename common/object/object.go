@@ -26,8 +26,9 @@ type object struct {
 }
 
 // 初始化
-func (o *object) Init() {
-
+func (o *object) Init(instId uint64, staticInfo *ObjStaticInfo) {
+	o.instId = instId
+	o.staticInfo = staticInfo
 }
 
 // 反初始化
@@ -176,6 +177,21 @@ func NewMovableObject(instId uint64, staticInfo *ObjStaticInfo) *MovableObject {
 		updateEvent: base.NewEvent(),
 	}
 	return o
+}
+
+// 初始化
+func (o *MovableObject) Init(instId uint64, staticInfo *ObjStaticInfo) {
+	o.object.Init(instId, staticInfo)
+	o.dir = staticInfo.dir
+	o.speed = staticInfo.speed
+	o.moveEvent = base.NewEvent()
+	o.stopEvent = base.NewEvent()
+	o.updateEvent = base.NewEvent()
+}
+
+// 反初始化
+func (o *MovableObject) Uninit() {
+
 }
 
 // 改变静态信息
@@ -338,6 +354,16 @@ func NewVehicle(instId uint64, staticInfo *ObjStaticInfo) *Vehicle {
 	return o
 }
 
+// 初始化
+func (v *Vehicle) Init(instId uint64, staticInfo *ObjStaticInfo) {
+	v.MovableObject.Init(instId, staticInfo)
+}
+
+// 反初始化
+func (v *Vehicle) Uninit() {
+
+}
+
 // 坦克
 type Tank struct {
 	Vehicle
@@ -352,6 +378,18 @@ func NewTank(instId uint64, staticInfo *ObjStaticInfo) *Tank {
 		level:       1,
 		changeEvent: base.NewEvent(),
 	}
+}
+
+// 初始化
+func (t *Tank) Init(instId uint64, staticInfo *ObjStaticInfo) {
+	t.Vehicle.Init(instId, staticInfo)
+	t.level = 1
+	t.changeEvent = base.NewEvent()
+}
+
+// 反初始化
+func (t *Tank) Uninit() {
+
 }
 
 // 等级

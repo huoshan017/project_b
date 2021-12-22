@@ -99,25 +99,26 @@ func (t *GameLogicThread) PlayerResetHandler(pid uint64, sessHandler *GameMsgHan
 func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 	// 同步其他玩家和敌人
 	var ack game_proto.MsgPlayerEnterGameAck
-	tankList := t.gameLogic.GetPlayerTanks()
-	for pid, tank := range tankList {
-		if pd.pid == pid { // 自己
+	tankList := t.gameLogic.GetPlayerTankList()
+	gslog.Debug("!!!! tankList: %+v", tankList)
+	for _, tank := range tankList {
+		if pd.pid == tank.PlayerId { // 自己
 			ack.SelfTankInfo = &game_proto.PlayerAccountTankInfo{}
 			ack.SelfTankInfo.Account = pd.account
 			ack.SelfTankInfo.PlayerId = pd.pid
 			ack.SelfTankInfo.TankInfo = &game_proto.TankInfo{}
-			utils.TankInfo2ProtoInfo(tank, ack.SelfTankInfo.TankInfo)
+			utils.TankInfo2ProtoInfo(tank.Tank, ack.SelfTankInfo.TankInfo)
 		} else { // 别人
 			playerTankInfo := &game_proto.PlayerAccountTankInfo{}
-			p := t.getPlayerData(pid)
+			p := t.getPlayerData(tank.PlayerId)
 			if p == nil {
-				gslog.Warn("not found player data by pid %v", pid)
+				gslog.Warn("not found player data by pid %v", tank.PlayerId)
 				continue
 			}
 			playerTankInfo.Account = p.account
 			playerTankInfo.PlayerId = p.pid
 			playerTankInfo.TankInfo = &game_proto.TankInfo{}
-			utils.TankInfo2ProtoInfo(tank, playerTankInfo.TankInfo)
+			utils.TankInfo2ProtoInfo(p.tank, playerTankInfo.TankInfo)
 			ack.OtherPlayerTankInfoList = append(ack.OtherPlayerTankInfoList, playerTankInfo)
 		}
 	}

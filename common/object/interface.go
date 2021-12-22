@@ -4,21 +4,21 @@ import "project_b/common/time"
 
 // 物体接口
 type IObject interface {
-	Init()                     // 初始化
-	Uninit()                   // 反初始化
-	InstId() uint64            // 实例id
-	Id() int32                 // 注意：这是配置id
-	Type() ObjectType          // 类型
-	Subtype() ObjSubType       // 子类型
-	SetPos(x, y int32)         // 设置位置
-	Pos() (x, y int32)         // 位置
-	Width() int32              // 宽度
-	Height() int32             // 高度
-	Left() int32               // 左坐标
-	Right() int32              // 右坐标
-	Top() int32                // 上坐标
-	Bottom() int32             // 下坐标
-	Update(tick time.Duration) // 更新
+	Init(uint64, *ObjStaticInfo) // 初始化
+	Uninit()                     // 反初始化
+	InstId() uint64              // 实例id
+	Id() int32                   // 注意：这是配置id
+	Type() ObjectType            // 类型
+	Subtype() ObjSubType         // 子类型
+	SetPos(x, y int32)           // 设置位置
+	Pos() (x, y int32)           // 位置
+	Width() int32                // 宽度
+	Height() int32               // 高度
+	Left() int32                 // 左坐标
+	Right() int32                // 右坐标
+	Top() int32                  // 上坐标
+	Bottom() int32               // 下坐标
+	Update(tick time.Duration)   // 更新
 }
 
 // 可移动的物体接口

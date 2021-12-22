@@ -78,14 +78,9 @@ func (g *GameLogic) GetPlayerTank(uid uint64) *object.Tank {
 	return g.scene.GetPlayerTank(uid)
 }
 
-// 获得所有玩家坦克列表
-func (g *GameLogic) GetPlayerTankList() []*object.Tank {
+// 获得玩家坦克列表
+func (g *GameLogic) GetPlayerTankList() []TankKV {
 	return g.scene.GetPlayerTankList()
-}
-
-// 获得所有玩家坦克
-func (g *GameLogic) GetPlayerTanks() map[uint64]*object.Tank {
-	return g.scene.GetPlayerTanks()
 }
 
 // 玩家坦克进入
@@ -101,18 +96,8 @@ func (g *GameLogic) PlayerTankLeave(uid uint64) {
 }
 
 // 获得敌人坦克
-func (g *GameLogic) GetEnemyTank(id int32) *object.Tank {
+func (g *GameLogic) GetEnemyTank(id uint64) *object.Tank {
 	return g.scene.GetEnemyTank(id)
-}
-
-// 获得所有敌人坦克列表
-func (g *GameLogic) GetEnemyTankList() []*object.Tank {
-	return g.scene.GetEnemyTankList()
-}
-
-// 获得所有敌人坦克
-func (g *GameLogic) GetEnemyTanks() map[int32]*object.Tank {
-	return g.scene.GetEnemyTanks()
 }
 
 // 玩家坦克移动
