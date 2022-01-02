@@ -1,5 +1,9 @@
 package game_map
 
+import (
+	"project_b/common_data"
+)
+
 const (
 	tileSize = 16
 )
@@ -175,14 +179,20 @@ var (
 var MapConfigArray = []Config{
 	// map1
 	{
-		Layers: mapData1,
-		Width:  1600,
-		Height: 1600,
+		Layers:             mapData1,
+		Width:              1600,
+		Height:             1600,
+		PlayerTankInitData: *common_data.PlayerTankInitData,
+		PlayerTankInitRect: common_data.PlayerTankInitRect,
+		PlayerMaxCount:     100,
 	},
 	// map2
 	{
-		Layers: mapData2,
-		Width:  480,
-		Height: 320,
+		Layers:             mapData2,
+		Width:              480,
+		Height:             320,
+		PlayerTankInitData: *common_data.PlayerTankInitData,
+		PlayerTankInitRect: common_data.PlayerTankInitRect,
+		PlayerMaxCount:     10,
 	},
 }

@@ -60,7 +60,11 @@ func (t *GameLogicThread) registerHandles() {
 func (t *GameLogicThread) PlayerEnter(pid uint64, data *playerData) {
 	t.PushAgent(pid, data, func(d interface{}) error {
 		pd := d.(*playerData)
-		t.gameLogic.PlayerTankEnter(pid, pd.tank)
+		if pd.tank == nil {
+			t.gameLogic.NewPlayerEnter(pid)
+		} else {
+			t.gameLogic.PlayerEnterWithTank(pid, pd.tank)
+		}
 		return t.onPlayerTankEnterReq(pd)
 	})
 }
@@ -72,7 +76,7 @@ func (t *GameLogicThread) PlayerLeave(pid uint64) {
 	}
 	t.DeleteAgent(pid, d, func(agentKey interface{}) error {
 		pid := agentKey.(uint64)
-		t.gameLogic.PlayerTankLeave(pid)
+		t.gameLogic.PlayerLeave(pid)
 		var err error
 		pd := t.getPlayerData(agentKey)
 		if pd != nil {
@@ -89,8 +93,8 @@ func (t *GameLogicThread) PlayerResetHandler(pid uint64, sessHandler *GameMsgHan
 		pid:         pid,
 	}
 	t.UpdateAgent(pid, d, func(data interface{}) error {
-		t.gameLogic.PlayerTankLeave(pid)
-		t.gameLogic.PlayerTankEnter(pid, tank)
+		t.gameLogic.PlayerLeave(pid)
+		t.gameLogic.PlayerEnterWithTank(pid, tank)
 		return nil
 	})
 }
@@ -107,7 +111,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 			ack.SelfTankInfo.Account = pd.account
 			ack.SelfTankInfo.PlayerId = pd.pid
 			ack.SelfTankInfo.TankInfo = &game_proto.TankInfo{}
-			utils.TankInfo2ProtoInfo(tank.Tank, ack.SelfTankInfo.TankInfo)
+			utils.TankObj2ProtoInfo(tank.Tank, ack.SelfTankInfo.TankInfo)
 		} else { // 别人
 			playerTankInfo := &game_proto.PlayerAccountTankInfo{}
 			p := t.getPlayerData(tank.PlayerId)
@@ -118,7 +122,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 			playerTankInfo.Account = p.account
 			playerTankInfo.PlayerId = p.pid
 			playerTankInfo.TankInfo = &game_proto.TankInfo{}
-			utils.TankInfo2ProtoInfo(p.tank, playerTankInfo.TankInfo)
+			utils.TankObj2ProtoInfo(p.tank, playerTankInfo.TankInfo)
 			ack.OtherPlayerTankInfoList = append(ack.OtherPlayerTankInfoList, playerTankInfo)
 		}
 	}
@@ -145,7 +149,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 		sync.TankInfo.Account = pd.account
 		sync.TankInfo.PlayerId = pd.pid
 		sync.TankInfo.TankInfo = &game_proto.TankInfo{}
-		utils.TankInfo2ProtoInfo(pd.tank, sync.TankInfo.TankInfo)
+		utils.TankObj2ProtoInfo(pd.tank, sync.TankInfo.TankInfo)
 		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerEnterGameSync_Id), &sync, pd.pid)
 	}
 	return err
@@ -193,6 +197,29 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 	return err
 }
 
+// 坦克停止移动
+func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg common.MsgData) error {
+	pd := t.getPlayerData(key)
+	if pd == nil {
+		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
+		return nil
+	}
+
+	t.gameLogic.PlayerTankStopMove(pd.pid)
+
+	var ack game_proto.MsgPlayerTankStopMoveAck
+	err := pd.send(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), &ack)
+	if err != nil {
+		return err
+	}
+	if t.GetAgentCountNoLock() > 0 {
+		var sync game_proto.MsgPlayerTankStopMoveSync
+		sync.PlayerId = pd.pid
+		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankStopMoveSync_Id), &sync, pd.pid)
+	}
+	return err
+}
+
 // 坦克移动设置位置
 func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
@@ -226,29 +253,6 @@ func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg comm
 	return err
 }
 
-// 坦克停止移动
-func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg common.MsgData) error {
-	pd := t.getPlayerData(key)
-	if pd == nil {
-		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
-		return nil
-	}
-
-	t.gameLogic.PlayerTankStopMove(pd.pid)
-
-	var ack game_proto.MsgPlayerTankStopMoveAck
-	err := pd.send(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), &ack)
-	if err != nil {
-		return err
-	}
-	if t.GetAgentCountNoLock() > 0 {
-		var sync game_proto.MsgPlayerTankStopMoveSync
-		sync.PlayerId = pd.pid
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankStopMoveSync_Id), &sync, pd.pid)
-	}
-	return err
-}
-
 // 玩家坦克改变
 func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
@@ -267,7 +271,7 @@ func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.Msg
 
 	tank := t.gameLogic.GetPlayerTank(pd.pid)
 	ack.ChangedTankInfo = &game_proto.TankInfo{}
-	utils.TankInfo2ProtoInfo(tank, ack.ChangedTankInfo)
+	utils.TankObj2ProtoInfo(tank, ack.ChangedTankInfo)
 	gslog.Info("player %v changed tank to %v", pd.pid, tank.Id())
 	err := pd.send(uint32(game_proto.MsgPlayerChangeTankAck_Id), &ack)
 	if err != nil {

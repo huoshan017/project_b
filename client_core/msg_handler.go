@@ -409,7 +409,7 @@ func (h *MsgHandler) doPlayerEnter(p *game_proto.PlayerAccountTankInfo, isMe boo
 	}
 
 	// 玩家坦克进入主逻辑
-	h.logic.PlayerTankEnter(p.PlayerId, cplayer.GetTank())
+	h.logic.PlayerEnterWithTank(p.PlayerId, cplayer.GetTank())
 
 	// 向上层传递事件
 	h.invoker.InvokeEvent(EventIdPlayerEnterGame, p.Account, p.PlayerId, cplayer.GetTank())
@@ -421,7 +421,7 @@ func (h *MsgHandler) doPlayerExit(playerId uint64) {
 	h.playerMgr.Remove(playerId)
 
 	// 坦克离开主逻辑
-	h.logic.PlayerTankLeave(playerId)
+	h.logic.PlayerLeave(playerId)
 
 	// 向上传递事件
 	h.invoker.InvokeEvent(EventIdPlayerExitGame, playerId)

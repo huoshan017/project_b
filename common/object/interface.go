@@ -4,9 +4,9 @@ import "project_b/common/time"
 
 // 物体接口
 type IObject interface {
-	Init(uint64, *ObjStaticInfo) // 初始化
+	Init(uint32, *ObjStaticInfo) // 初始化
 	Uninit()                     // 反初始化
-	InstId() uint64              // 实例id
+	InstId() uint32              // 实例id
 	Id() int32                   // 注意：这是配置id
 	Type() ObjectType            // 类型
 	Subtype() ObjSubType         // 子类型
@@ -21,6 +21,11 @@ type IObject interface {
 	Update(tick time.Duration)   // 更新
 }
 
+// 静态物体接口
+type IStaticObject interface {
+	IObject
+}
+
 // 可移动的物体接口
 type IMovableObject interface {
 	IObject
@@ -28,6 +33,7 @@ type IMovableObject interface {
 	Speed() int32        // 速度
 	CurrentSpeed() int32 // 当前速度
 	Move(Direction)      // 移动
+	IsMoving() bool      // 是否在移动
 
 	// ----------------------------------
 	// 事件接口

@@ -3,9 +3,7 @@ package main
 import (
 	"errors"
 	custom_time "project_b/common/time"
-	"project_b/common_data"
 	"project_b/game_proto"
-	"project_b/utils"
 
 	"time"
 
@@ -176,14 +174,8 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess gsnet.ISession, data []byte) 
 			// 加入玩家管理器
 			h.service.playerMgr.Add(p)
 			p.SetToken(string(req.SessionToken))
-			// 初始化坦克
-			p.InitTank(common_data.PlayerTankInitData)
-			tank := p.GetTank()
-			// 随机坦克位置
-			pos := utils.RandomPosInRect(common_data.PlayerTankInitRect)
-			tank.SetPos(pos.X, pos.Y)
 			// 把玩家加入游戏逻辑线程
-			h.service.gameLogicThread.PlayerEnter(p.Id(), &playerData{tank: tank, sessHandler: h, pid: p.Id(), account: p.Account()})
+			h.service.gameLogicThread.PlayerEnter(p.Id(), &playerData{sessHandler: h, pid: p.Id(), account: p.Account()})
 			// 玩家进入
 			p.Entered()
 			// 把玩家对象设置到会话

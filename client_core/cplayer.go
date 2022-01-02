@@ -2,6 +2,7 @@ package client_core
 
 import (
 	"project_b/common"
+	"project_b/common/object"
 	"project_b/game_proto"
 	"project_b/utils"
 )
@@ -20,6 +21,7 @@ func NewCPlayer(acc string, id uint64, net *NetClient) *CPlayer {
 }
 
 func (p *CPlayer) InitTankFromProto(tankProtoInfo *game_proto.TankInfo) {
-	tank := utils.TankProtoInfo2Info(p.Id(), tankProtoInfo)
+	tank := &object.Tank{}
+	utils.TankProtoInfo2Obj(tankProtoInfo, tank)
 	p.SetTank(tank)
 }

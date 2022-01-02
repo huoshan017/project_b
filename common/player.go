@@ -83,9 +83,9 @@ func (p *Player) IsLeft() bool {
 }
 
 // 初始化坦克
-func (p *Player) InitTank(info *object.ObjStaticInfo) {
-	p.tank = object.NewTank(p.id, info)
-}
+//func (p *Player) InitTank(info *object.ObjStaticInfo) {
+//	p.tank = object.NewTank(p.id, info)
+//}
 
 // 设置玩家坦克
 func (p *Player) SetTank(tank *object.Tank) {

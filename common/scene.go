@@ -7,19 +7,22 @@ import (
 	"project_b/common/object"
 	"project_b/common/time"
 	"project_b/game_map"
+	"project_b/utils"
 )
 
-type TankKV struct {
+type PlayerTankKV struct {
 	PlayerId uint64
 	Tank     *object.Tank
 }
 
 // 场景结构必须在单个goroutine中执行
 type Scene struct {
-	gmap           *game_map.Config
-	eventMgr       base.IEventManager
-	playerTankList *ds.MapListUnion
-	enemyTankList  *ds.MapListUnion
+	gmap                *game_map.Config
+	eventMgr            base.IEventManager
+	playerTankList      *ds.MapListUnion
+	enemyTankList       *ds.MapListUnion
+	playerTankListCache []PlayerTankKV
+	objFactory          *object.ObjectFactory
 }
 
 func NewScene(eventMgr base.IEventManager) *Scene {
@@ -27,6 +30,7 @@ func NewScene(eventMgr base.IEventManager) *Scene {
 		eventMgr:       eventMgr,
 		playerTankList: ds.NewMapListUnion(),
 		enemyTankList:  ds.NewMapListUnion(),
+		objFactory:     object.NewObjectFactory(true),
 	}
 }
 
@@ -34,33 +38,46 @@ func (s *Scene) LoadMap(m *game_map.Config) {
 	s.gmap = m
 }
 
-func (s *Scene) GetPlayerTank(id uint64) *object.Tank {
-	v, o := s.playerTankList.Get(id)
+func (s *Scene) GetPlayerTank(pid uint64) *object.Tank {
+	v, o := s.playerTankList.Get(pid)
 	if !o {
 		return nil
 	}
 	return v.(*object.Tank)
 }
 
-func (s *Scene) AddPlayerTank(id uint64, tank *object.Tank) {
-	s.playerTankList.Add(id, tank)
+func (s *Scene) NewPlayerTank(pid uint64) *object.Tank {
+	tank := s.objFactory.NewTank(&s.gmap.PlayerTankInitData)
+	// 随机并设置坦克位置
+	pos := utils.RandomPosInRect(s.gmap.PlayerTankInitRect)
+	tank.SetPos(pos.X, pos.Y)
+	// 加入到玩家坦克列表
+	s.playerTankList.Add(pid, tank)
+	return tank
 }
 
-func (s *Scene) RemovePlayerTank(id uint64) {
-	s.playerTankList.Remove(id)
+func (s *Scene) AddPlayerTank(pid uint64, tank *object.Tank) {
+	s.playerTankList.Add(pid, tank)
 }
 
-func (s *Scene) GetPlayerTankList() []TankKV {
-	var l []TankKV
+func (s *Scene) RemovePlayerTank(pid uint64) {
+	tank := s.playerTankList.Remove(pid)
+	s.objFactory.RecycleTank(tank.(*object.Tank))
+}
+
+func (s *Scene) GetPlayerTankList() []PlayerTankKV {
+	if s.playerTankListCache != nil && len(s.playerTankListCache) > 0 {
+		s.playerTankListCache = s.playerTankListCache[:0]
+	}
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
 		k, v := s.playerTankList.GetByIndex(i)
-		l = append(l, TankKV{
+		s.playerTankListCache = append(s.playerTankListCache, PlayerTankKV{
 			PlayerId: k.(uint64),
 			Tank:     v.(*object.Tank),
 		})
 	}
-	return l
+	return s.playerTankListCache
 }
 
 func (s *Scene) PlayerTankMove(uid uint64, dir object.Direction) {
@@ -99,12 +116,12 @@ func (s *Scene) PlayerTankRestore(uid uint64) int32 {
 	return tank.Id()
 }
 
-func (s *Scene) AddEnemyTank(id uint64, tank *object.Tank) {
-	s.enemyTankList.Add(id, tank)
+func (s *Scene) AddEnemyTank(instId uint32, tank *object.Tank) {
+	s.enemyTankList.Add(instId, tank)
 }
 
-func (s *Scene) GetEnemyTank(id uint64) *object.Tank {
-	v, o := s.enemyTankList.Get(id)
+func (s *Scene) GetEnemyTank(instId uint32) *object.Tank {
+	v, o := s.enemyTankList.Get(instId)
 	if !o {
 		return nil
 	}
@@ -158,8 +175,8 @@ func (s *Scene) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(
 	}
 }
 
-func (s *Scene) RegisterEnemyEvent(id uint64, eid base.EventId, handle func(args ...interface{})) {
-	tank := s.GetPlayerTank(id)
+func (s *Scene) RegisterEnemyEvent(instId uint32, eid base.EventId, handle func(args ...interface{})) {
+	tank := s.GetEnemyTank(instId)
 	if tank == nil {
 		return
 	}
@@ -173,8 +190,8 @@ func (s *Scene) RegisterEnemyEvent(id uint64, eid base.EventId, handle func(args
 	}
 }
 
-func (s *Scene) UnregisterEnemyEvent(id uint64, eid base.EventId, handle func(args ...interface{})) {
-	tank := s.GetPlayerTank(id)
+func (s *Scene) UnregisterEnemyEvent(instId uint32, eid base.EventId, handle func(args ...interface{})) {
+	tank := s.GetEnemyTank(instId)
 	if tank == nil {
 		return
 	}
@@ -191,31 +208,31 @@ func (s *Scene) UnregisterEnemyEvent(id uint64, eid base.EventId, handle func(ar
 func (s *Scene) RegisterAllPlayersEvent(eid base.EventId, handle func(args ...interface{})) {
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
-		tank, _ := s.playerTankList.GetByIndex(i)
-		s.RegisterPlayerEvent(tank.(*object.Tank).InstId(), eid, handle)
+		pid, _ := s.playerTankList.GetByIndex(i)
+		s.RegisterPlayerEvent(pid.(uint64), eid, handle)
 	}
 }
 
 func (s *Scene) UnregisterAllPlayersEvent(eid base.EventId, handle func(args ...interface{})) {
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
-		tank, _ := s.playerTankList.GetByIndex(i)
-		s.UnregisterPlayerEvent(tank.(*object.Tank).InstId(), eid, handle)
+		pid, _ := s.playerTankList.GetByIndex(i)
+		s.UnregisterPlayerEvent(pid.(uint64), eid, handle)
 	}
 }
 
 func (s *Scene) RegisterAllEnemiesEvent(eid base.EventId, handle func(args ...interface{})) {
 	count := s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
-		tank, _ := s.enemyTankList.GetByIndex(i)
-		s.RegisterEnemyEvent(tank.(*object.Tank).InstId(), eid, handle)
+		instId, _ := s.enemyTankList.GetByIndex(i)
+		s.RegisterEnemyEvent(instId.(uint32), eid, handle)
 	}
 }
 
 func (s *Scene) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args ...interface{})) {
 	count := s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
-		tank, _ := s.enemyTankList.GetByIndex(i)
-		s.UnregisterEnemyEvent(tank.(*object.Tank).InstId(), eid, handle)
+		instId, _ := s.enemyTankList.GetByIndex(i)
+		s.UnregisterEnemyEvent(instId.(uint32), eid, handle)
 	}
 }

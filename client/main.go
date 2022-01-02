@@ -40,8 +40,8 @@ func main() {
 
 	glog = core.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
 
-	game := NewGame()
-	err := game.Init(&Config{ServerAddress: *ip_str})
+	game := NewGame(&Config{ServerAddress: *ip_str})
+	err := game.Init()
 	if err != nil {
 		glog.Error("game init err: %v", err)
 		return

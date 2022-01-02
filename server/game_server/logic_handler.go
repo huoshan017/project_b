@@ -2,9 +2,7 @@ package main
 
 import (
 	"project_b/common"
-	"project_b/common/object"
 	custom_time "project_b/common/time"
-	"project_b/common_data"
 
 	"time"
 
@@ -46,7 +44,7 @@ func (h *GameLogicHandler) onPlayerTankEnterSync(sender gproc.ISender, args inte
 		gslog.Fatal("Must msg type %v", args)
 		return
 	}
-	h.logic.PlayerTankEnter(msg.playerId, object.NewTank(msg.playerId, common_data.PlayerTankInitData))
+	h.logic.NewPlayerEnter(msg.playerId)
 }
 
 // 玩家坦克离开同步
@@ -56,7 +54,7 @@ func (h *GameLogicHandler) onPlayerTankLeaveSync(sender gproc.ISender, args inte
 		gslog.Fatal("Must msg type: MsgPlayerTankLeaveSync")
 		return
 	}
-	h.logic.PlayerTankLeave(msg.playerId)
+	h.logic.PlayerLeave(msg.playerId)
 }
 
 // 玩家坦克移动同步

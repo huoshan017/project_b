@@ -52,27 +52,27 @@ type Game struct {
 }
 
 // 创建游戏
-func NewGame() *Game {
+func NewGame(conf *Config) *Game {
 	g := &Game{
 		camera: &Camera{ViewPort: f64.Vec2{screenWidth, screenHeight}}, // 相机的视口范围与窗口屏幕大小一样
 	}
+	g.net = core.CreateNetClient(conf.ServerAddress)
+	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
+	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.playerMgr = core.CreateCPlayerManager()
-	g.eventMgr = base.NewEventManager()
 	g.logic = core.CreateGameLogic()
+	g.eventMgr = base.NewEventManager()
 	g.uiMgr = NewUIMgr(g)
-	g.uiMgr.Init()
 	g.playableMgr = CreatePlayableManager()
 	return g
 }
 
 // 初始化
-func (g *Game) Init(conf *Config) error {
-	g.restart()
-	g.net = core.CreateNetClient(conf.ServerAddress)
-	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
-	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
+func (g *Game) Init() error {
+	g.uiMgr.Init()
 	g.msgHandler.Init()
 	g.registerEvents()
+	g.restart()
 	return nil
 }
 
@@ -125,11 +125,11 @@ func (g *Game) Update() error {
 				} else {
 					tick := now.Sub(g.lastCheckTime)
 					for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
+						g.handleInput()
 						g.logic.Update(common_data.GameLogicTick)
 						g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
 					}
 				}
-				g.handleInput()
 			}
 		}
 	case GameStateOver:

@@ -6,25 +6,25 @@ import (
 	"project_b/game_proto"
 )
 
-func TankInfo2ProtoInfo(info *object.Tank, protoInfo *game_proto.TankInfo) {
-	protoInfo.Id = info.Id()
-	protoInfo.Level = info.Level()
-	x, y := info.Pos()
+func TankObj2ProtoInfo(obj *object.Tank, protoInfo *game_proto.TankInfo) {
+	protoInfo.Id = obj.Id()
+	protoInfo.InstId = obj.InstId()
+	protoInfo.Level = obj.Level()
+	x, y := obj.Pos()
 	if protoInfo.CurrPos == nil {
 		protoInfo.CurrPos = &game_proto.Pos{}
 	}
 	protoInfo.CurrPos.X = x
 	protoInfo.CurrPos.Y = y
-	protoInfo.Direction = int32(info.Dir())
-	protoInfo.CurrSpeed = info.CurrentSpeed()
+	protoInfo.Direction = int32(obj.Dir())
+	protoInfo.CurrSpeed = obj.CurrentSpeed()
 }
 
-func TankProtoInfo2Info(instId uint64, protoInfo *game_proto.TankInfo) *object.Tank {
+func TankProtoInfo2Obj(protoInfo *game_proto.TankInfo, obj *object.Tank) {
 	td := common_data.TankConfigData[protoInfo.Id]
-	tankObj := object.NewTank(instId, td)
-	tankObj.SetLevel(protoInfo.Level)
-	tankObj.SetPos(protoInfo.CurrPos.X, protoInfo.CurrPos.Y)
-	tankObj.SetDir(object.Direction(protoInfo.Direction))
-	tankObj.SetCurrentSpeed(protoInfo.CurrSpeed)
-	return tankObj
+	obj.Init(protoInfo.InstId, td)
+	obj.SetLevel(protoInfo.Level)
+	obj.SetPos(protoInfo.CurrPos.X, protoInfo.CurrPos.Y)
+	obj.SetDir(object.Direction(protoInfo.Direction))
+	obj.SetCurrentSpeed(protoInfo.CurrSpeed)
 }

@@ -13,7 +13,8 @@ import (
 var ErrKickDuplicatePlayer = errors.New("game service example: kick duplicate player")
 
 type config struct {
-	addr string
+	addr     string
+	mapIndex int32
 }
 
 type GameService struct {
@@ -80,7 +81,7 @@ func main() {
 	flag.Parse()
 
 	gameService := NewGameService()
-	if !gameService.Init(&config{addr: *ip_str}) {
+	if !gameService.Init(&config{addr: *ip_str, mapIndex: 0}) {
 		return
 	}
 

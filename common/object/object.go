@@ -8,7 +8,7 @@ import (
 
 // 坐标位置
 type Pos struct {
-	X, Y int32 // 注意：x轴向右，y轴向上 为正方向
+	X, Y int32 // 注意：x轴向右，y轴向下 为正方向
 }
 
 // 矩形
@@ -19,14 +19,14 @@ type Rect struct {
 
 // 物体结构
 type object struct {
-	instId            uint64         // 实例id
+	instId            uint32         // 实例id
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 }
 
 // 初始化
-func (o *object) Init(instId uint64, staticInfo *ObjStaticInfo) {
+func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.instId = instId
 	o.staticInfo = staticInfo
 }
@@ -54,7 +54,7 @@ func (o *object) RestoreStaticInfo() {
 }
 
 // 实例id
-func (o object) InstId() uint64 {
+func (o object) InstId() uint32 {
 	return o.instId
 }
 
@@ -140,11 +140,28 @@ func (o object) Bottom() int32 {
 	return o.y + int32(o.staticInfo.y0)
 }
 
+// 静态物体
+type StaticObject struct {
+	object
+}
+
+// 创建静态物体
+func NewStaticObject(instId uint32, info *ObjStaticInfo) *StaticObject {
+	obj := &StaticObject{
+		object: object{
+			instId:     instId,
+			staticInfo: info,
+		},
+	}
+	return obj
+}
+
 // 更新
-func (o object) Update() {
+func (o *StaticObject) Update(tick time.Duration) {
 
 }
 
+// 可移动物体状态
 type moveObjectState int32
 
 const (
@@ -167,7 +184,7 @@ type MovableObject struct {
 }
 
 // 创建可移动物体
-func NewMovableObject(instId uint64, staticInfo *ObjStaticInfo) *MovableObject {
+func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 	o := &MovableObject{
 		object:      object{instId: instId, staticInfo: staticInfo},
 		dir:         staticInfo.dir,
@@ -180,7 +197,7 @@ func NewMovableObject(instId uint64, staticInfo *ObjStaticInfo) *MovableObject {
 }
 
 // 初始化
-func (o *MovableObject) Init(instId uint64, staticInfo *ObjStaticInfo) {
+func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
 	o.dir = staticInfo.dir
 	o.speed = staticInfo.speed
@@ -260,6 +277,11 @@ func (o *MovableObject) Stop() {
 	}
 }
 
+// 是否正在移动
+func (o *MovableObject) IsMoving() bool {
+	return o.state == isMoving
+}
+
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
 	if o.state == stopped {
@@ -275,7 +297,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 		return
 	}
 
-	distance := (float64(o.CurrentSpeed()) * float64(tick) / float64(time.Second))
+	distance := float64(int64(o.CurrentSpeed())*int64(tick)) / float64(time.Second)
 	switch o.dir {
 	case DirLeft:
 		x := float64(o.x)
@@ -347,7 +369,7 @@ type Vehicle struct {
 }
 
 // 创建车辆
-func NewVehicle(instId uint64, staticInfo *ObjStaticInfo) *Vehicle {
+func NewVehicle(instId uint32, staticInfo *ObjStaticInfo) *Vehicle {
 	o := &Vehicle{
 		MovableObject: *NewMovableObject(instId, staticInfo),
 	}
@@ -355,7 +377,7 @@ func NewVehicle(instId uint64, staticInfo *ObjStaticInfo) *Vehicle {
 }
 
 // 初始化
-func (v *Vehicle) Init(instId uint64, staticInfo *ObjStaticInfo) {
+func (v *Vehicle) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	v.MovableObject.Init(instId, staticInfo)
 }
 
@@ -372,7 +394,7 @@ type Tank struct {
 }
 
 // 创建坦克
-func NewTank(instId uint64, staticInfo *ObjStaticInfo) *Tank {
+func NewTank(instId uint32, staticInfo *ObjStaticInfo) *Tank {
 	return &Tank{
 		Vehicle:     *NewVehicle(instId, staticInfo),
 		level:       1,
@@ -381,7 +403,7 @@ func NewTank(instId uint64, staticInfo *ObjStaticInfo) *Tank {
 }
 
 // 初始化
-func (t *Tank) Init(instId uint64, staticInfo *ObjStaticInfo) {
+func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	t.Vehicle.Init(instId, staticInfo)
 	t.level = 1
 	t.changeEvent = base.NewEvent()
@@ -423,4 +445,27 @@ func (t *Tank) RegisterChangeEventHandle(handle func(args ...interface{})) {
 // 注销变化事件
 func (t *Tank) UnregisterChangeEventHandle(handle func(args ...interface{})) {
 	t.changeEvent.Unregister(handle)
+}
+
+// 子弹
+type Bullet struct {
+	MovableObject
+}
+
+// 创建车辆
+func NewBullet(instId uint32, staticInfo *ObjStaticInfo) *Bullet {
+	o := &Bullet{
+		MovableObject: *NewMovableObject(instId, staticInfo),
+	}
+	return o
+}
+
+// 初始化
+func (v *Bullet) Init(instId uint32, staticInfo *ObjStaticInfo) {
+	v.MovableObject.Init(instId, staticInfo)
+}
+
+// 反初始化
+func (v *Bullet) Uninit() {
+
 }

@@ -11,10 +11,11 @@ message Pos {
 // 坦克信息
 message TankInfo {
 	int32 Id = 1;
-	int32 Level = 2;
-	Pos CurrPos = 3;
-	int32 Direction = 4;
-	int32 CurrSpeed = 5;
+	uint32 InstId = 2;
+	int32 Level = 3;
+	Pos CurrPos = 4;
+	int32 Direction = 5;
+	int32 CurrSpeed = 6;
 }
 
 // 坦克移动信息

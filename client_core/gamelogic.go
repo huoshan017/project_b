@@ -20,6 +20,10 @@ func (l *GameLogic) SetMyId(id uint64) {
 	l.myId = id
 }
 
+func (l *GameLogic) GetMyId() uint64 {
+	return l.myId
+}
+
 func (l *GameLogic) MyPlayerTankMove(moveDir object.Direction) {
 	l.GameLogic.PlayerTankMove(l.myId, moveDir)
 }

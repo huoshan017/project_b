@@ -7,6 +7,7 @@ const (
 	ObjTypeNone    = ObjectType(0) // 无物体
 	ObjTypeStatic  = ObjectType(1) // 静止物体
 	ObjTypeMovable = ObjectType(2) // 可移动物体
+	ObjTypeEnumMax = 3
 )
 
 // 静止物体类型
@@ -21,15 +22,17 @@ const (
 	StaticObjWater         = StaticObjType(5) // 水
 	StaticObjHome          = StaticObjType(6) // 基地
 	StaticObjHomeDestroyed = StaticObjType(7) // 被摧毁的基地
+	StaticObjEnumMax       = 8
 )
 
 // 可移动物体类型
 type MovableObjType int
 
 const (
-	MovableObjNone   = MovableObjType(0) // 无
-	MovableObjTank   = MovableObjType(1) // 坦克
-	MovableObjBullet = MovableObjType(2) // 子弹
+	MovableObjNone    = MovableObjType(0) // 无
+	MovableObjTank    = MovableObjType(1) // 坦克
+	MovableObjBullet  = MovableObjType(2) // 子弹
+	MovableObjEnumMax = 3
 )
 
 // 物体子类型
@@ -62,6 +65,5 @@ const (
 
 // 其他常量
 const (
-	Delta                  = 0.00001 // 浮点数精度
-	DefaultMinMoveDistance = 1       // 默认最小移动距离
+	DefaultMinMoveDistance = 1 // 默认最小移动距离
 )
