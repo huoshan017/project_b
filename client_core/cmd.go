@@ -1,6 +1,7 @@
 package client_core
 
 import (
+	"project_b/common/log"
 	"project_b/common/object"
 )
 
@@ -71,6 +72,7 @@ func (m *CmdHandleManager) handleMove(args ...interface{}) {
 
 // 停止移动命令
 func (m *CmdHandleManager) handleStopMove(args ...interface{}) {
+	log.Debug("handleStopMove")
 	m.logic.MyPlayerTankStopMove()
 	// todo 在GameLogic中触发停止事件
 	//m.game.eventMgr.InvokeEvent(EventIdTankStopMove)

@@ -52,6 +52,7 @@ func (f *ObjectFactory) NewStaticObject(info *ObjStaticInfo) *StaticObject {
 		obj = NewStaticObject(id, info)
 	} else {
 		obj = f.freeStaticObjs[l-1]
+		obj.Init(id, info)
 		f.freeStaticObjs = f.freeStaticObjs[:l-1]
 	}
 	f.objMap[id] = obj
@@ -66,6 +67,7 @@ func (f *ObjectFactory) RecycleStaticObject(obj *StaticObject) bool {
 	if _, o := f.objMap[obj.InstId()]; !o {
 		return false
 	}
+	obj.Uninit()
 	if f.isRecycleObjId {
 		f.freeObjIds = append(f.freeObjIds, obj.InstId())
 	}

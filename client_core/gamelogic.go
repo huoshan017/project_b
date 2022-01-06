@@ -25,9 +25,9 @@ func (l *GameLogic) GetMyId() uint64 {
 }
 
 func (l *GameLogic) MyPlayerTankMove(moveDir object.Direction) {
-	l.GameLogic.PlayerTankMove(l.myId, moveDir)
+	l.PlayerTankMove(l.myId, moveDir)
 }
 
 func (l *GameLogic) MyPlayerTankStopMove() {
-	l.GameLogic.PlayerTankStopMove(l.myId)
+	l.PlayerTankStopMove(l.myId)
 }

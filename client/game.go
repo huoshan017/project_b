@@ -57,11 +57,11 @@ func NewGame(conf *Config) *Game {
 		camera: &Camera{ViewPort: f64.Vec2{screenWidth, screenHeight}}, // 相机的视口范围与窗口屏幕大小一样
 	}
 	g.net = core.CreateNetClient(conf.ServerAddress)
-	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
-	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
-	g.playerMgr = core.CreateCPlayerManager()
 	g.logic = core.CreateGameLogic()
+	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
+	g.playerMgr = core.CreateCPlayerManager()
 	g.eventMgr = base.NewEventManager()
+	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = NewUIMgr(g)
 	g.playableMgr = CreatePlayableManager()
 	return g
@@ -125,13 +125,13 @@ func (g *Game) Update() error {
 				} else {
 					tick := now.Sub(g.lastCheckTime)
 					for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
-						g.handleInput()
 						g.logic.Update(common_data.GameLogicTick)
 						g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
 					}
 				}
 			}
 		}
+		g.handleInput()
 	case GameStateOver:
 		g.restart()
 		g.state = GameStateMainMenu

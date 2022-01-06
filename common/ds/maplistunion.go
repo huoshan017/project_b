@@ -8,7 +8,7 @@ type kvPair struct {
 // map和list组合体
 type MapListUnion struct {
 	key2index map[interface{}]int32 // 关键字到索引
-	list      []kvPair              // 保存值
+	list      []kvPair              // 保存kv对
 }
 
 func NewMapListUnion() *MapListUnion {

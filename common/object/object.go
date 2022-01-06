@@ -3,6 +3,7 @@ package object
 import (
 	"fmt"
 	"project_b/common/base"
+	"project_b/common/log"
 	"project_b/common/time"
 )
 
@@ -260,6 +261,7 @@ func (o *MovableObject) Move(dir Direction) {
 	if o.state == stopped {
 		o.state = toMove
 		o.dir = dir
+		log.Debug("@@@ object %v stopped => to move", o.instId)
 	}
 }
 
@@ -268,11 +270,13 @@ func (o *MovableObject) Stop() {
 	// 准备移动则直接停止
 	if o.state == toMove {
 		o.state = stopped
+		log.Debug("@@@ object %v to move => stopped", o.instId)
 		return
 	}
 	// 正在移动则准备停止
 	if o.state == isMoving {
 		o.state = toStop
+		log.Debug("@@@ object %v moving => to stop", o.instId)
 		return
 	}
 }
@@ -294,6 +298,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 		// args[1]: object.Direction
 		// args[2]: int32
 		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		log.Debug("@@@ object %v to move => moving", o.instId)
 		return
 	}
 
@@ -330,6 +335,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 		// args[1]: object.Direction
 		// args[2]: int32
 		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
 }
 

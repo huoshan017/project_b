@@ -42,11 +42,18 @@ func CreateGameLogicThread() *GameLogicThread {
 		MsgLogicProc: *common.CreateMsgLogicProc(),
 		gameLogic:    common.NewGameLogic(),
 	}
-	t.registerHandles()
+	t.init()
 	return t
 }
 
 // 初始化
+func (t *GameLogicThread) init() {
+	t.registerHandles()
+	// todo 临时代码，初始化时载入第一张地图
+	t.gameLogic.LoadMap(0)
+}
+
+// 注册处理器
 func (t *GameLogicThread) registerHandles() {
 	t.SetTickHandle(t.onTick, time.Duration(common_data.GameLogicTick))
 	t.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), t.onPlayerTankMoveReq)

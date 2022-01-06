@@ -331,7 +331,7 @@ func (h *MsgHandler) onPlayerTankUpdatePosAck(sess gsnet.ISession, data []byte) 
 	case game_proto.MovementState_ToStop:
 	}
 
-	gslog.Debug("My tank update pos ack: %v", &ack)
+	//gslog.Debug("My tank update pos ack: %v", &ack)
 
 	return nil
 }

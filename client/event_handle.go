@@ -15,8 +15,8 @@ type event2Handle struct {
 	handle func(args ...interface{})
 }
 
-// todo 发送协议的事件处理和设备输入的事件处理最好分开，方便做逻辑和显示分离
 // 注册事件
+// todo 发送协议的事件处理和设备输入的事件处理最好分开，方便做逻辑和显示分离
 func (g *Game) registerEvents() {
 	// 游戏事件处理
 	g.gameEvent2Handles = []event2Handle{
@@ -50,7 +50,11 @@ func (g *Game) unregisterEvents() {
 	}
 }
 
-// 请求登录
+/**
+请求登录
+args[0]: account string
+args[1]: password string
+*/
 func (g *Game) onEventReqLogin(args ...interface{}) {
 	var account string
 	var password string
@@ -77,7 +81,10 @@ func (g *Game) onEventReqLogin(args ...interface{}) {
 	glog.Info("handle event: account %v password %v send login req", account, password)
 }
 
-// 请求进入游戏
+/**
+请求进入游戏
+args[0]: account string
+*/
 func (g *Game) onEventReqEnterGame(args ...interface{}) {
 	var account, sessionToken string
 	var o bool
@@ -94,7 +101,11 @@ func (g *Game) onEventReqEnterGame(args ...interface{}) {
 	glog.Info("handle event: account %v send enter game req", account)
 }
 
-// 处理玩家进入游戏事件
+/**
+处理玩家进入游戏事件
+args[0]: account(string)
+args[1]: uid(uint64)
+*/
 func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 	if len(args) < 3 {
 		glog.Warn("onEventEnterGame event args length cant less than 3")
@@ -119,7 +130,9 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 	}
 }
 
-// 处理进入游戏完成
+/**
+处理进入游戏完成
+*/
 func (g *Game) onEventPlayerEnterGameCompleted(args ...interface{}) {
 	// 准备同步服务器时间
 	if err := g.net.SendTimeSyncReq(); err != nil {
@@ -135,7 +148,10 @@ func (g *Game) onEventPlayerEnterGameCompleted(args ...interface{}) {
 	glog.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.myAcc, g.myId)
 }
 
-// 处理玩家离开游戏事件
+/**
+处理玩家离开游戏事件
+args[0]: uid(uint64)
+*/
 func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 	if len(args) < 1 {
 		glog.Warn("onEventPlayerExitGame event args length cant less 1")
@@ -155,7 +171,9 @@ func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 	glog.Info("handle event: player (uid: %v) exited game", uid)
 }
 
-// 处理时间同步事件
+/**
+处理时间同步事件
+*/
 func (g *Game) onEventTimeSync(args ...interface{}) {
 	if err := g.net.SendTimeSyncReq(); err != nil {
 		glog.Error("handle event: send time sync request err: %v", err)
@@ -164,16 +182,18 @@ func (g *Game) onEventTimeSync(args ...interface{}) {
 	//glog.Info("handle event: time sync")
 }
 
-// 处理时间同步结束事件
+/**
+处理时间同步结束事件
+*/
 func (g *Game) onEventTimeSyncEnd(args ...interface{}) {
 	glog.Info("handle event: time sync end")
 }
 
-// 处理坦克移动事件
 /**
-args[0]: object.Pos
-args[1]: object.Direction
-args[2]: int32
+处理坦克移动事件
+args[0]: pos(object.Pos)
+args[1]: direction(object.Direction)
+args[2]: speed(int32)
 */
 func (g *Game) onEventTankMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
@@ -185,8 +205,8 @@ func (g *Game) onEventTankMove(args ...interface{}) {
 	}
 }
 
-// 处理坦克停止移动事件
 /**
+处理坦克停止移动事件
 args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
@@ -201,8 +221,8 @@ func (g *Game) onEventTankStopMove(args ...interface{}) {
 	}
 }
 
-// 处理坦克设置坐标事件
 /**
+处理坦克设置坐标事件
 args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
@@ -217,7 +237,11 @@ func (g *Game) onEventTankSetPos(args ...interface{}) {
 	}
 }
 
-// 处理坦克改变事件
+/**
+处理坦克改变事件
+args[0]: uint64
+args[1]: *object.Tank
+*/
 func (g *Game) onEventTankChange(args ...interface{}) {
 	if len(args) < 2 {
 		glog.Error("onEventTankChange event need 3 args")
@@ -228,7 +252,11 @@ func (g *Game) onEventTankChange(args ...interface{}) {
 	glog.Info("handle event: player %v changed tank to %v", pid, tank.Id())
 }
 
-// 处理坦克恢复事件
+/**
+处理坦克恢复事件
+args[0]: uint64
+args[1]: *object.Tank
+*/
 func (g *Game) onEventTankRestore(args ...interface{}) {
 	if len(args) < 2 {
 		glog.Error("onEventTankRestore event need 3 args")
