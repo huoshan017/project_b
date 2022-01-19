@@ -33,7 +33,8 @@ func (m *Map) Load(mapIndex int32) bool {
 	return true
 }
 
-func (m *Map) Draw() {
+// 绘制到一个矩形窗口，这里是逻辑坐标
+func (m *Map) Draw(left, top, width, height int32) {
 	tileSize := m.tileSize
 	worldSizeX := m.config.Width / tileSize
 	worldSizeY := m.config.Height / tileSize

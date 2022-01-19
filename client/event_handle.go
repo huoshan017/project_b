@@ -15,9 +15,43 @@ type event2Handle struct {
 	handle func(args ...interface{})
 }
 
+type EventHandles struct {
+	net         *core.NetClient
+	eventMgr    base.IEventManager
+	logic       *core.GameLogic
+	playableMgr *PlayableManager
+	gameData    *GameData
+	// --------------------------------------
+	// 事件处理
+	gameEvent2Handles   []event2Handle // 游戏事件
+	playerEvent2Handles []event2Handle // 玩家事件
+}
+
+func CreateEventHandles(net *core.NetClient, eventMgr base.IEventManager, logic *core.GameLogic, playableMgr *PlayableManager, gameData *GameData) *EventHandles {
+	eh := &EventHandles{
+		net:         net,
+		eventMgr:    eventMgr,
+		logic:       logic,
+		playableMgr: playableMgr,
+		gameData:    gameData,
+	}
+	eh.registerEvents()
+	return eh
+}
+
+// 初始化
+func (g *EventHandles) Init() {
+	g.registerEvents()
+}
+
+// 反初始化
+func (g *EventHandles) Uninit() {
+	g.unregisterEvents()
+}
+
 // 注册事件
 // todo 发送协议的事件处理和设备输入的事件处理最好分开，方便做逻辑和显示分离
-func (g *Game) registerEvents() {
+func (g *EventHandles) registerEvents() {
 	// 游戏事件处理
 	g.gameEvent2Handles = []event2Handle{
 		{core.EventIdOpLogin, g.onEventReqLogin},                                  // 请求登录
@@ -44,7 +78,7 @@ func (g *Game) registerEvents() {
 }
 
 // 注销事件
-func (g *Game) unregisterEvents() {
+func (g *EventHandles) unregisterEvents() {
 	for _, e2h := range g.gameEvent2Handles {
 		g.eventMgr.UnregisterEvent(e2h.eid, e2h.handle)
 	}
@@ -55,7 +89,7 @@ func (g *Game) unregisterEvents() {
 args[0]: account string
 args[1]: password string
 */
-func (g *Game) onEventReqLogin(args ...interface{}) {
+func (g *EventHandles) onEventReqLogin(args ...interface{}) {
 	var account string
 	var password string
 	var o bool
@@ -77,7 +111,7 @@ func (g *Game) onEventReqLogin(args ...interface{}) {
 		glog.Warn("send login req err: %v", err)
 		return
 	}
-	g.myAcc = account
+	g.gameData.myAcc = account
 	glog.Info("handle event: account %v password %v send login req", account, password)
 }
 
@@ -85,7 +119,7 @@ func (g *Game) onEventReqLogin(args ...interface{}) {
 请求进入游戏
 args[0]: account string
 */
-func (g *Game) onEventReqEnterGame(args ...interface{}) {
+func (g *EventHandles) onEventReqEnterGame(args ...interface{}) {
 	var account, sessionToken string
 	var o bool
 	account, o = args[0].(string)
@@ -106,7 +140,7 @@ func (g *Game) onEventReqEnterGame(args ...interface{}) {
 args[0]: account(string)
 args[1]: uid(uint64)
 */
-func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
+func (g *EventHandles) onEventPlayerEnterGame(args ...interface{}) {
 	if len(args) < 3 {
 		glog.Warn("onEventEnterGame event args length cant less than 3")
 		return
@@ -119,11 +153,11 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 	// 加入播放管理
 	g.playableMgr.AddPlayerTankPlayable(uid, tank)
 
-	if g.myAcc == account {
-		g.myId = uid
+	if g.gameData.myAcc == account {
+		g.gameData.myId = uid
 		g.logic.SetMyId(uid)
 		// 游戏状态
-		g.state = GameStateInGame
+		g.gameData.state = GameStateInGame
 		glog.Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
 	} else {
 		glog.Info("handle event: player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
@@ -133,7 +167,7 @@ func (g *Game) onEventPlayerEnterGame(args ...interface{}) {
 /**
 处理进入游戏完成
 */
-func (g *Game) onEventPlayerEnterGameCompleted(args ...interface{}) {
+func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...interface{}) {
 	// 准备同步服务器时间
 	if err := g.net.SendTimeSyncReq(); err != nil {
 		glog.Error("handle event: send time sync request err: %v", err)
@@ -142,17 +176,17 @@ func (g *Game) onEventPlayerEnterGameCompleted(args ...interface{}) {
 
 	// 注册本玩家场景事件
 	for _, e2h := range g.playerEvent2Handles {
-		g.logic.RegisterPlayerSceneEvent(g.myId, e2h.eid, e2h.handle)
+		g.logic.RegisterPlayerSceneEvent(g.gameData.myId, e2h.eid, e2h.handle)
 	}
 
-	glog.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.myAcc, g.myId)
+	glog.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.gameData.myAcc, g.gameData.myId)
 }
 
 /**
 处理玩家离开游戏事件
 args[0]: uid(uint64)
 */
-func (g *Game) onEventPlayerExitGame(args ...interface{}) {
+func (g *EventHandles) onEventPlayerExitGame(args ...interface{}) {
 	if len(args) < 1 {
 		glog.Warn("onEventPlayerExitGame event args length cant less 1")
 		return
@@ -165,7 +199,7 @@ func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 
 	// 注销本玩家场景事件
 	for _, e2h := range g.playerEvent2Handles {
-		g.logic.UnregisterPlayerSceneEvent(g.myId, e2h.eid, e2h.handle)
+		g.logic.UnregisterPlayerSceneEvent(g.gameData.myId, e2h.eid, e2h.handle)
 	}
 
 	glog.Info("handle event: player (uid: %v) exited game", uid)
@@ -174,7 +208,7 @@ func (g *Game) onEventPlayerExitGame(args ...interface{}) {
 /**
 处理时间同步事件
 */
-func (g *Game) onEventTimeSync(args ...interface{}) {
+func (g *EventHandles) onEventTimeSync(args ...interface{}) {
 	if err := g.net.SendTimeSyncReq(); err != nil {
 		glog.Error("handle event: send time sync request err: %v", err)
 		return
@@ -185,7 +219,7 @@ func (g *Game) onEventTimeSync(args ...interface{}) {
 /**
 处理时间同步结束事件
 */
-func (g *Game) onEventTimeSyncEnd(args ...interface{}) {
+func (g *EventHandles) onEventTimeSyncEnd(args ...interface{}) {
 	glog.Info("handle event: time sync end")
 }
 
@@ -195,7 +229,7 @@ args[0]: pos(object.Pos)
 args[1]: direction(object.Direction)
 args[2]: speed(int32)
 */
-func (g *Game) onEventTankMove(args ...interface{}) {
+func (g *EventHandles) onEventTankMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
@@ -211,7 +245,7 @@ args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
 */
-func (g *Game) onEventTankStopMove(args ...interface{}) {
+func (g *EventHandles) onEventTankStopMove(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
@@ -227,7 +261,7 @@ args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
 */
-func (g *Game) onEventTankSetPos(args ...interface{}) {
+func (g *EventHandles) onEventTankSetPos(args ...interface{}) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
@@ -242,7 +276,7 @@ func (g *Game) onEventTankSetPos(args ...interface{}) {
 args[0]: uint64
 args[1]: *object.Tank
 */
-func (g *Game) onEventTankChange(args ...interface{}) {
+func (g *EventHandles) onEventTankChange(args ...interface{}) {
 	if len(args) < 2 {
 		glog.Error("onEventTankChange event need 3 args")
 		return
@@ -257,7 +291,7 @@ func (g *Game) onEventTankChange(args ...interface{}) {
 args[0]: uint64
 args[1]: *object.Tank
 */
-func (g *Game) onEventTankRestore(args ...interface{}) {
+func (g *EventHandles) onEventTankRestore(args ...interface{}) {
 	if len(args) < 2 {
 		glog.Error("onEventTankRestore event need 3 args")
 		return

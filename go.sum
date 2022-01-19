@@ -53,6 +53,8 @@ github.com/huoshan017/gsnet v0.0.0-20211205085829-048768423769 h1:p7dn6o4nKs6nW7
 github.com/huoshan017/gsnet v0.0.0-20211205085829-048768423769/go.mod h1:/9XIwNcpkoNEy1MP005PlYkfVXM4u/Oo1xjC9HhFFvA=
 github.com/huoshan017/gsnet v0.0.0-20211218095200-d6884596fb26 h1:0SowBd1bjU3jNdPQk/+mdgTNjOP1nHdYQqDT9DEg3Jo=
 github.com/huoshan017/gsnet v0.0.0-20211218095200-d6884596fb26/go.mod h1:/9XIwNcpkoNEy1MP005PlYkfVXM4u/Oo1xjC9HhFFvA=
+github.com/huoshan017/gsnet v0.0.0-20220105033049-6685200adcf9 h1:2nnsTGeL+tUhw47SiXsixA6TtbvD66f1FRJdrg3DXZM=
+github.com/huoshan017/gsnet v0.0.0-20220105033049-6685200adcf9/go.mod h1:/9XIwNcpkoNEy1MP005PlYkfVXM4u/Oo1xjC9HhFFvA=
 github.com/jakecoffman/cp v1.0.0/go.mod h1:JjY/Fp6d8E1CHnu74gWNnU0+b9VzEdUVPoJxg2PsTQg=
 github.com/jakecoffman/cp v1.1.0/go.mod h1:JjY/Fp6d8E1CHnu74gWNnU0+b9VzEdUVPoJxg2PsTQg=
 github.com/jfreymuth/oggvorbis v1.0.1/go.mod h1:NqS+K+UXKje0FUYUPosyQ+XTVvjmVjps1aEZH1sumIk=

@@ -22,9 +22,13 @@ const (
 	GameStateOver
 )
 
-type Game struct {
+type GameData struct {
 	state GameState
+	myId  uint64 // 我的ID
+	myAcc string // 我的帐号
+}
 
+type Game struct {
 	//---------------------------------------
 	// 逻辑
 	net           *core.NetClient        // 网络模块
@@ -38,17 +42,12 @@ type Game struct {
 	//---------------------------------------
 	// 表现相关
 
-	camera      *Camera          // 摄像机
-	currMap     *Map             // 当前地图资源
-	uiMgr       *UIManager       // UI管理
-	playableMgr *PlayableManager // 可播放管理器
-	myId        uint64           // 我的ID
-	myAcc       string           // 我的帐号
-
-	// --------------------------------------
-	// 事件处理
-	gameEvent2Handles   []event2Handle // 游戏事件
-	playerEvent2Handles []event2Handle // 玩家事件
+	camera       *Camera          // 摄像机
+	currMap      *Map             // 当前地图资源
+	uiMgr        *UIManager       // UI管理
+	playableMgr  *PlayableManager // 可播放管理器
+	eventHandles *EventHandles    // 事件处理
+	gameData     GameData         // 其他游戏数据
 }
 
 // 创建游戏
@@ -64,6 +63,7 @@ func NewGame(conf *Config) *Game {
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = NewUIMgr(g)
 	g.playableMgr = CreatePlayableManager()
+	g.eventHandles = CreateEventHandles(g.net, g.eventMgr, g.logic, g.playableMgr, &g.gameData)
 	return g
 }
 
@@ -71,14 +71,14 @@ func NewGame(conf *Config) *Game {
 func (g *Game) Init() error {
 	g.uiMgr.Init()
 	g.msgHandler.Init()
-	g.registerEvents()
+	g.eventHandles.Init()
 	g.restart()
 	return nil
 }
 
 // 反初始化
 func (g *Game) Uninit() {
-	g.unregisterEvents()
+	g.eventHandles.Uninit()
 }
 
 // 重新开始
@@ -88,7 +88,7 @@ func (g *Game) restart() {
 
 // 当前模式
 func (g *Game) GetState() GameState {
-	return g.state
+	return g.gameData.state
 }
 
 // 事件管理器
@@ -110,7 +110,7 @@ func (g *Game) Update() error {
 		}
 	}
 
-	switch g.state {
+	switch g.gameData.state {
 	case GameStateMainMenu:
 	case GameStateInGame:
 		if !g.logic.IsStart() {
@@ -134,7 +134,7 @@ func (g *Game) Update() error {
 		g.handleInput()
 	case GameStateOver:
 		g.restart()
-		g.state = GameStateMainMenu
+		g.gameData.state = GameStateMainMenu
 	}
 	g.uiMgr.Update()
 	return nil
@@ -142,7 +142,7 @@ func (g *Game) Update() error {
 
 // 绘制
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.state == GameStateInGame {
+	if g.gameData.state == GameStateInGame {
 		// 画场景
 		g.drawScene(screen)
 	}
@@ -163,7 +163,7 @@ func (g *Game) loadMap() {
 func (g *Game) drawScene(screen *ebiten.Image) {
 	if g.currMap != nil {
 		// 先画地图场景
-		g.currMap.Draw()
+		g.currMap.Draw(0, 0, 0, 0)
 		// 再画物体
 		g.playableMgr.Update(g.currMap.GetImage())
 		// 渲染到屏幕

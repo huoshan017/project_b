@@ -173,6 +173,7 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess gsnet.ISession, data []byte) 
 			p = NewSPlayer(req.Account, pid, sess)
 			// 加入玩家管理器
 			h.service.playerMgr.Add(p)
+			// 保存会话令牌
 			p.SetToken(string(req.SessionToken))
 			// 把玩家加入游戏逻辑线程
 			h.service.gameLogicThread.PlayerEnter(p.Id(), &playerData{sessHandler: h, pid: p.Id(), account: p.Account()})
