@@ -85,7 +85,7 @@ func (p *MsgLogicProc) SetErrorHandle(handle func(err error)) {
 }
 
 // 压入代理
-func (t *MsgLogicProc) PushAgent(key AgentKey, data interface{}, handle func(interface{}) error) {
+func (t *MsgLogicProc) AddAgent(key AgentKey, data interface{}, handle func(interface{}) error) {
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}

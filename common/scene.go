@@ -6,6 +6,7 @@ import (
 	"project_b/common/log"
 	"project_b/common/object"
 	"project_b/common/time"
+	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/utils"
 )
@@ -18,6 +19,7 @@ type PlayerTankKV struct {
 // 场景结构必须在单个goroutine中执行
 type Scene struct {
 	gmap                *game_map.Config
+	tileObjectArray     [][]*object.StaticObject
 	eventMgr            base.IEventManager
 	playerTankList      *ds.MapListUnion
 	enemyTankList       *ds.MapListUnion
@@ -34,8 +36,49 @@ func NewScene(eventMgr base.IEventManager) *Scene {
 	}
 }
 
-func (s *Scene) LoadMap(m *game_map.Config) {
+func (s *Scene) LoadMap(m *game_map.Config) bool {
+	// 载入地图
+	if s.tileObjectArray == nil {
+		s.tileObjectArray = make([][]*object.StaticObject, len(m.Layers))
+	}
+	// 地图载入前事件
+	s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
+	for i := 0; i < len(s.tileObjectArray); i++ {
+		s.tileObjectArray[i] = make([]*object.StaticObject, len(m.Layers[i]))
+		for j := 0; j < len(s.tileObjectArray[i]); j++ {
+			st := object.StaticObjType(m.Layers[i][j])
+			s.tileObjectArray[i][j] = s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
+			if s.tileObjectArray[i][j] == nil {
+				log.Error("Can't create static object %v by map layer (%v, %v) in loading map", st, i, j)
+				continue
+			}
+		}
+	}
 	s.gmap = m
+	// 地图载入完成事件
+	s.eventMgr.InvokeEvent(EventIdMapLoaded, m.Id, s.tileObjectArray)
+	log.Info("Load map %v done", m.Id)
+	return true
+}
+
+func (s *Scene) UnloadMap() {
+	if s.tileObjectArray == nil {
+		return
+	}
+	// 地图卸载前事件
+	s.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
+	for i := 0; i < len(s.tileObjectArray); i++ {
+		if s.tileObjectArray[i] == nil {
+			continue
+		}
+		for j := 0; j <= len(s.tileObjectArray[i]); j++ {
+			s.objFactory.RecycleStaticObject(s.tileObjectArray[i][j])
+			s.tileObjectArray[i][j] = nil
+		}
+	}
+	// 地图卸载后事件
+	s.eventMgr.InvokeEvent(EventIdMapUnloaded)
+	s.tileObjectArray = nil
 }
 
 func (s *Scene) GetPlayerTank(pid uint64) *object.Tank {
@@ -145,6 +188,17 @@ func (s *Scene) Update(tick time.Duration) {
 	}
 }
 
+// 注册事件
+func (s *Scene) RegisterEvent(eid base.EventId, handle func(args ...interface{})) {
+	s.eventMgr.RegisterEvent(eid, handle)
+}
+
+// 注销事件
+func (s *Scene) UnregisterEvent(eid base.EventId, handle func(args ...interface{})) {
+	s.eventMgr.UnregisterEvent(eid, handle)
+}
+
+// 注册玩家事件
 func (s *Scene) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
 	tank := s.GetPlayerTank(uid)
 	if tank == nil {
@@ -160,6 +214,7 @@ func (s *Scene) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(ar
 	}
 }
 
+// 注销玩家事件
 func (s *Scene) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
 	tank := s.GetPlayerTank(uid)
 	if tank == nil {

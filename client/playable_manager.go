@@ -136,21 +136,21 @@ func (m *PlayableManager) StopAllTanksPlayable() {
 }
 
 // 更新
-func (m *PlayableManager) Update(screen *ebiten.Image) {
-	m.UpdatePlayerTanksPlayable(screen)
-	m.UpdatEnemyTanksPlayable(screen)
+func (m *PlayableManager) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	m.DrawPlayerTanksPlayable(screen, op)
+	m.DrawEnemyTanksPlayable(screen, op)
 }
 
 // 更新玩家坦克动画
-func (m *PlayableManager) UpdatePlayerTanksPlayable(screen *ebiten.Image) {
+func (m *PlayableManager) DrawPlayerTanksPlayable(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	for _, p := range m.playerTankPlayables {
-		p.Update(screen)
+		p.Draw(screen, op)
 	}
 }
 
 // 更新敌人坦克动画
-func (m *PlayableManager) UpdatEnemyTanksPlayable(screen *ebiten.Image) {
+func (m *PlayableManager) DrawEnemyTanksPlayable(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	for _, p := range m.enemyTankPlayables {
-		p.Update(screen)
+		p.Draw(screen, op)
 	}
 }

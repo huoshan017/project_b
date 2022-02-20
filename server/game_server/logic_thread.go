@@ -40,17 +40,23 @@ type GameLogicThread struct {
 func CreateGameLogicThread() *GameLogicThread {
 	t := &GameLogicThread{
 		MsgLogicProc: *common.CreateMsgLogicProc(),
-		gameLogic:    common.NewGameLogic(),
+		gameLogic:    common.NewGameLogic(nil),
 	}
 	t.init()
 	return t
+}
+
+// 线程关闭
+func (t *GameLogicThread) Close() {
+	t.gameLogic.End()
+	t.MsgLogicProc.Close()
 }
 
 // 初始化
 func (t *GameLogicThread) init() {
 	t.registerHandles()
 	// todo 临时代码，初始化时载入第一张地图
-	t.gameLogic.LoadMap(0)
+	t.gameLogic.LoadMap(1)
 }
 
 // 注册处理器
@@ -65,7 +71,7 @@ func (t *GameLogicThread) registerHandles() {
 
 // 玩家进入游戏主逻辑
 func (t *GameLogicThread) PlayerEnter(pid uint64, data *playerData) {
-	t.PushAgent(pid, data, func(d interface{}) error {
+	t.AddAgent(pid, data, func(d interface{}) error {
 		pd := d.(*playerData)
 		if pd.tank == nil {
 			t.gameLogic.NewPlayerEnter(pid)

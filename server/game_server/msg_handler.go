@@ -51,7 +51,7 @@ func (h *GameMsgHandler) OnTick(sess gsnet.ISession, tick time.Duration) {
 	}
 	h.lastCheckDiscDuration += custom_time.Duration(tick)
 	// 0.5秒检测一次
-	if h.lastCheckDiscDuration >= custom_time.Duration(time.Microsecond)*500 {
+	if h.lastCheckDiscDuration >= custom_time.Duration(time.Millisecond)*500 {
 		p, err := h.toPlayer(sess)
 		if err != nil {
 			return

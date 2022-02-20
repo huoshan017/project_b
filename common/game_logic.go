@@ -23,17 +23,20 @@ type GameLogic struct {
 }
 
 // 创建游戏逻辑
-func NewGameLogic() *GameLogic {
+func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
 	gl := &GameLogic{}
-	gl.eventMgr = base.NewEventManager()
+	if eventMgr == nil {
+		eventMgr = base.NewEventManager()
+	}
+	gl.eventMgr = eventMgr
 	gl.scene = NewScene(gl.eventMgr)
 	return gl
 }
 
 // 载入地图
-func (g *GameLogic) LoadMap(mapIndex int32) {
-	m := game_map.MapConfigArray[mapIndex]
-	g.scene.LoadMap(&m)
+func (g *GameLogic) LoadMap(mapId int32) bool {
+	m := game_map.MapConfigArray[mapId]
+	return g.scene.LoadMap(m)
 }
 
 // 地图索引
@@ -87,6 +90,16 @@ func (g *GameLogic) RegisterEvent(eid base.EventId, handle func(args ...interfac
 // 注销事件
 func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interface{})) {
 	g.eventMgr.UnregisterEvent(eid, handle)
+}
+
+// 注册场景事件
+func (g *GameLogic) RegisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
+	g.scene.RegisterEvent(eid, handle)
+}
+
+// 注销场景事件
+func (g *GameLogic) UnregisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
+	g.scene.UnregisterEvent(eid, handle)
 }
 
 // 注册坦克事件

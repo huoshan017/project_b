@@ -2,11 +2,10 @@ package main
 
 import (
 	"flag"
-	_ "image/png"
 	"log"
 	"math/rand"
 	"os"
-	core "project_b/client_core"
+	"project_b/client/base"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -17,16 +16,17 @@ func init() {
 }
 
 const (
-	screenWidth  = 1280
-	screenHeight = 720
+	screenWidth  = 640
+	screenHeight = 480
 )
 
 type Config struct {
-	ServerAddress string
+	cameraFov     int32
+	serverAddress string
 }
 
 var (
-	glog *core.Logger
+	glog *base.Logger
 )
 
 func main() {
@@ -38,9 +38,11 @@ func main() {
 	ip_str := flag.String("ip", "", "ip set")
 	flag.Parse()
 
-	glog = core.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
+	initResources()
 
-	game := NewGame(&Config{ServerAddress: *ip_str})
+	glog = base.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
+
+	game := NewGame(&Config{cameraFov: 120, serverAddress: *ip_str})
 	err := game.Init()
 	if err != nil {
 		glog.Error("game init err: %v", err)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	_ "image/png"
 	"log"
 	"strings"
 
@@ -38,13 +39,13 @@ func init() {
 	//    This also works on browsers.
 	img, _, err := image.Decode(bytes.NewReader(images.UI_png))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("load UI_png data err: %v", err)
 	}
 	uiImage = ebiten.NewImageFromImage(img)
 
 	tt, err := opentype.Parse(goregular.TTF)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("parse goregular.TTF err: %v", err)
 	}
 	uiFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
 		Size:    12,
@@ -52,7 +53,7 @@ func init() {
 		Hinting: font.HintingFull,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("NewFace err: %v", err)
 	}
 	b, _, _ := uiFont.GlyphBounds('M')
 	uiFontMHeight = (b.Max.Y - b.Min.Y).Ceil()

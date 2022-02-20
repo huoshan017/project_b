@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
-	core "project_b/client_core"
+	client_base "project_b/client/base"
+	"project_b/client/core"
 	"project_b/common/base"
 	"project_b/common/time"
 	"project_b/common_data"
-
-	"golang.org/x/image/math/f64"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -42,28 +41,29 @@ type Game struct {
 	//---------------------------------------
 	// 表现相关
 
-	camera       *Camera          // 摄像机
-	currMap      *Map             // 当前地图资源
-	uiMgr        *UIManager       // UI管理
-	playableMgr  *PlayableManager // 可播放管理器
-	eventHandles *EventHandles    // 事件处理
-	gameData     GameData         // 其他游戏数据
+	viewport      *client_base.Viewport // 视口
+	camera        *client_base.Camera   // 摄像机
+	playableScene *PlayableScene        // 场景绘制
+	uiMgr         *UIManager            // UI管理
+	eventHandles  *EventHandles         // 事件处理
+	gameData      GameData              // 其他游戏数据
 }
 
 // 创建游戏
 func NewGame(conf *Config) *Game {
 	g := &Game{
-		camera: &Camera{ViewPort: f64.Vec2{screenWidth, screenHeight}}, // 相机的视口范围与窗口屏幕大小一样
+		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
-	g.net = core.CreateNetClient(conf.ServerAddress)
-	g.logic = core.CreateGameLogic()
+	g.net = core.CreateNetClient(conf.serverAddress)
+	g.eventMgr = base.NewEventManager()
+	g.logic = core.CreateGameLogic(g.eventMgr)
 	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
 	g.playerMgr = core.CreateCPlayerManager()
-	g.eventMgr = base.NewEventManager()
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = NewUIMgr(g)
-	g.playableMgr = CreatePlayableManager()
-	g.eventHandles = CreateEventHandles(g.net, g.eventMgr, g.logic, g.playableMgr, &g.gameData)
+	g.playableScene = CreatePlayableScene()
+	g.camera = client_base.CreateCamera(g.viewport, conf.cameraFov)
+	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
 	return g
 }
 
@@ -83,7 +83,8 @@ func (g *Game) Uninit() {
 
 // 重新开始
 func (g *Game) restart() {
-	g.logic.LoadMap(0)
+	//g.logic.LoadMap(mapIdList[g.logic.MapIndex()])
+	g.gameData.state = 0
 }
 
 // 当前模式
@@ -117,19 +118,7 @@ func (g *Game) Update() error {
 			g.loadMap()
 			g.logic.Start()
 		} else {
-			// 时间同步完成
-			if core.IsTimeSyncEnd() {
-				now := core.GetSyncServTime() //time.Now()
-				if g.lastCheckTime.IsZero() {
-					g.lastCheckTime = now
-				} else {
-					tick := now.Sub(g.lastCheckTime)
-					for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
-						g.logic.Update(common_data.GameLogicTick)
-						g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
-					}
-				}
-			}
+			g.update()
 		}
 		g.handleInput()
 	case GameStateOver:
@@ -142,40 +131,47 @@ func (g *Game) Update() error {
 
 // 绘制
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.gameData.state == GameStateInGame {
+	if g.gameData.state == GameStateInGame && g.logic.IsStart() {
 		// 画场景
-		g.drawScene(screen)
+		g.camera.Draw(screen)
+		// 显示帧数
+		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.CurrentTPS()))
 	}
-
 	// 画UI
 	g.uiMgr.Draw(screen)
 }
 
 // 载入地图
 func (g *Game) loadMap() {
-	if g.currMap == nil {
-		g.currMap = &Map{}
-		g.currMap.Load(g.logic.MapIndex())
+	mapId := mapIdList[g.logic.MapIndex()]
+	if g.logic.LoadMap(mapId) {
+		g.camera.SetScene(g.playableScene)
+		mapInfo := mapInfoArray[mapId]
+		g.camera.MoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
+		g.camera.ChangeHeight(mapInfo.cameraHeight)
 	}
 }
 
-// 画场景
-func (g *Game) drawScene(screen *ebiten.Image) {
-	if g.currMap != nil {
-		// 先画地图场景
-		g.currMap.Draw(0, 0, 0, 0)
-		// 再画物体
-		g.playableMgr.Update(g.currMap.GetImage())
-		// 渲染到屏幕
-		g.camera.Render(g.currMap.GetImage(), screen)
-		// 显示帧数
-		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.CurrentTPS()))
+// 更新
+func (g *Game) update() {
+	// 时间同步完成
+	if client_base.IsTimeSyncEnd() {
+		now := client_base.GetSyncServTime()
+		if g.lastCheckTime.IsZero() {
+			g.lastCheckTime = now
+		} else {
+			tick := now.Sub(g.lastCheckTime)
+			for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
+				g.logic.Update(common_data.GameLogicTick)
+				g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
+			}
+		}
 	}
 }
 
 // 处理输入
 func (g *Game) handleInput() {
-	pressedKey := inpututil.PressedKeys()
+	pressedKey := inpututil.AppendPressedKeys(nil)
 	for _, pk := range pressedKey {
 		if c, o := keyPressed2CmdMap[pk]; o {
 			g.cmdMgr.Handle(c.cmd, c.args...)

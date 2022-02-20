@@ -3,7 +3,7 @@ package main
 import (
 	"reflect"
 
-	core "project_b/client_core"
+	"project_b/client/core"
 	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/object"
@@ -16,26 +16,24 @@ type event2Handle struct {
 }
 
 type EventHandles struct {
-	net         *core.NetClient
-	eventMgr    base.IEventManager
-	logic       *core.GameLogic
-	playableMgr *PlayableManager
-	gameData    *GameData
+	net           *core.NetClient
+	logic         *core.GameLogic
+	playableScene *PlayableScene
+	gameData      *GameData
 	// --------------------------------------
 	// 事件处理
 	gameEvent2Handles   []event2Handle // 游戏事件
 	playerEvent2Handles []event2Handle // 玩家事件
 }
 
-func CreateEventHandles(net *core.NetClient, eventMgr base.IEventManager, logic *core.GameLogic, playableMgr *PlayableManager, gameData *GameData) *EventHandles {
+// 创建EventHandles
+func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableScene *PlayableScene, gameData *GameData) *EventHandles {
 	eh := &EventHandles{
-		net:         net,
-		eventMgr:    eventMgr,
-		logic:       logic,
-		playableMgr: playableMgr,
-		gameData:    gameData,
+		net:           net,
+		logic:         logic,
+		playableScene: playableScene,
+		gameData:      gameData,
 	}
-	eh.registerEvents()
 	return eh
 }
 
@@ -52,8 +50,12 @@ func (g *EventHandles) Uninit() {
 // 注册事件
 // todo 发送协议的事件处理和设备输入的事件处理最好分开，方便做逻辑和显示分离
 func (g *EventHandles) registerEvents() {
-	// 游戏事件处理
-	g.gameEvent2Handles = []event2Handle{
+	// 玩家事件处理
+	g.playerEvent2Handles = []event2Handle{
+		{common.EventIdBeforeMapLoad, g.onEventBeforeMapLoad},                     // 地圖載入前
+		{common.EventIdMapLoaded, g.onEventMapLoaded},                             // 地圖載入完成
+		{common.EventIdBeforeMapUnload, g.onEventBeforeMapUnload},                 // 地圖卸載前
+		{common.EventIdMapUnloaded, g.onEventMapUnloaded},                         // 地圖卸載後
 		{core.EventIdOpLogin, g.onEventReqLogin},                                  // 请求登录
 		{core.EventIdOpEnterGame, g.onEventReqEnterGame},                          // 请求进入游戏
 		{core.EventIdTimeSync, g.onEventTimeSync},                                 // 同步时间
@@ -63,8 +65,8 @@ func (g *EventHandles) registerEvents() {
 		{core.EventIdPlayerExitGame, g.onEventPlayerExitGame},                     // 退出游戏
 	}
 
-	// 玩家事件处理
-	g.playerEvent2Handles = []event2Handle{
+	// 游戏事件处理
+	g.gameEvent2Handles = []event2Handle{
 		{common.EventIdTankMove, g.onEventTankMove},         // 处理坦克移动
 		{common.EventIdTankStopMove, g.onEventTankStopMove}, // 处理坦克停止移动
 		{common.EventIdTankSetPos, g.onEventTankSetPos},     // 处理坦克位置更新
@@ -72,15 +74,15 @@ func (g *EventHandles) registerEvents() {
 		{common.EventIdTankRestore, g.onEventTankRestore},   // 处理坦克恢复
 	}
 
-	for _, e2h := range g.gameEvent2Handles {
-		g.eventMgr.RegisterEvent(e2h.eid, e2h.handle)
+	for _, e2h := range g.playerEvent2Handles {
+		g.logic.RegisterEvent(e2h.eid, e2h.handle)
 	}
 }
 
 // 注销事件
 func (g *EventHandles) unregisterEvents() {
-	for _, e2h := range g.gameEvent2Handles {
-		g.eventMgr.UnregisterEvent(e2h.eid, e2h.handle)
+	for _, e2h := range g.playerEvent2Handles {
+		g.logic.UnregisterEvent(e2h.eid, e2h.handle)
 	}
 }
 
@@ -150,8 +152,8 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...interface{}) {
 	uid := args[1].(uint64)
 	tank := args[2].(*object.Tank)
 
-	// 加入播放管理
-	g.playableMgr.AddPlayerTankPlayable(uid, tank)
+	// 加入播放场景
+	g.playableScene.AddPlayerTankPlayable(uid, tank)
 
 	if g.gameData.myAcc == account {
 		g.gameData.myId = uid
@@ -174,8 +176,8 @@ func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...interface{}) {
 		return
 	}
 
-	// 注册本玩家场景事件
-	for _, e2h := range g.playerEvent2Handles {
+	// 注册本游戏场景事件
+	for _, e2h := range g.gameEvent2Handles {
 		g.logic.RegisterPlayerSceneEvent(g.gameData.myId, e2h.eid, e2h.handle)
 	}
 
@@ -194,11 +196,11 @@ func (g *EventHandles) onEventPlayerExitGame(args ...interface{}) {
 
 	uid := args[0].(uint64)
 
-	// 从播放管理器中删除
-	g.playableMgr.RemovePlayerTankPlayable(uid)
+	// 从播放场景中删除
+	g.playableScene.RemovePlayerTankPlayable(uid)
 
-	// 注销本玩家场景事件
-	for _, e2h := range g.playerEvent2Handles {
+	// 注销本游戏场景事件
+	for _, e2h := range g.gameEvent2Handles {
 		g.logic.UnregisterPlayerSceneEvent(g.gameData.myId, e2h.eid, e2h.handle)
 	}
 
@@ -217,10 +219,43 @@ func (g *EventHandles) onEventTimeSync(args ...interface{}) {
 }
 
 /**
-处理时间同步结束事件
-*/
+ *处理时间同步结束事件
+ */
 func (g *EventHandles) onEventTimeSyncEnd(args ...interface{}) {
 	glog.Info("handle event: time sync end")
+}
+
+/**
+ * 处理载入地图前事件
+ */
+func (g *EventHandles) onEventBeforeMapLoad(args ...interface{}) {
+
+}
+
+/**
+ * 处理地图载入完成事件
+ */
+func (eh *EventHandles) onEventMapLoaded(args ...interface{}) {
+	mapId := args[0].(int32)
+	objArray := args[1].([][]*object.StaticObject)
+	if !eh.playableScene.LoadMap(mapId, objArray) {
+		glog.Error("playable scene load map %v failed", mapId)
+		return
+	}
+}
+
+/**
+ * 处理地图卸载前事件
+ */
+func (g *EventHandles) onEventBeforeMapUnload(args ...interface{}) {
+
+}
+
+/**
+ * 处理地图卸载后事件
+ */
+func (g *EventHandles) onEventMapUnloaded(args ...interface{}) {
+
 }
 
 /**

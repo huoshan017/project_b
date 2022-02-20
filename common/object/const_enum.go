@@ -18,8 +18,8 @@ const (
 	StaticObjBrick         = StaticObjType(1) // 砖块
 	StaticObjIron          = StaticObjType(2) // 铁
 	StaticObjGrass         = StaticObjType(3) // 草
-	StaticObjIce           = StaticObjType(4) // 冰
-	StaticObjWater         = StaticObjType(5) // 水
+	StaticObjWater         = StaticObjType(4) // 水
+	StaticObjIce           = StaticObjType(5) // 冰
 	StaticObjHome          = StaticObjType(6) // 基地
 	StaticObjHomeDestroyed = StaticObjType(7) // 被摧毁的基地
 	StaticObjEnumMax       = 8
@@ -45,9 +45,28 @@ const (
 	ObjSubTypeIce           = ObjSubType(StaticObjIce)
 	ObjSubTypeWater         = ObjSubType(StaticObjWater)
 	ObjSubTypeHome          = ObjSubType(StaticObjHome)
-	ObjSubTypeHomeDestroyed = StaticObjType(StaticObjHomeDestroyed)
+	ObjSubTypeHomeDestroyed = ObjSubType(StaticObjHomeDestroyed)
 	ObjSubTypeTank          = ObjSubType(MovableObjTank)
 	ObjSubTypeBullet        = ObjSubType(MovableObjBullet)
+)
+
+// 对象所有者类型
+type ObjOwnerType int
+
+const (
+	OwnerNone      = ObjOwnerType(0) // 无所有者或者系统所有
+	OwnerPlayer    = ObjOwnerType(1) // 玩家
+	OwnerAI        = ObjOwnerType(2) // AI
+	OwnerAI4Player = ObjOwnerType(3) // 玩家拥有的AI对象
+)
+
+// 相对关系类型
+type RelationType int
+
+const (
+	RelationNeutral = RelationType(0) // 中立
+	RelationOwn     = RelationType(1) // 我方
+	RelationEnemy   = RelationType(2) // 敌方
 )
 
 // 方向

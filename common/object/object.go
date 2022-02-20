@@ -7,20 +7,33 @@ import (
 	"project_b/common/time"
 )
 
+/*******************************
+				^ y
+				|
+				|
+				|              x
+------------------------------->
+				|
+				|
+				|
+				|
+*******************************/
+
 // 坐标位置
 type Pos struct {
-	X, Y int32 // 注意：x轴向右，y轴向下 为正方向
+	X, Y int32 // 注意：x轴向右，y轴向上 为正方向
 }
 
 // 矩形
 type Rect struct {
-	LeftTop     Pos // 左上
-	RightBottom Pos // 右下
+	LeftBottom Pos // 左上
+	RightTop   Pos // 右下
 }
 
 // 物体结构
 type object struct {
 	instId            uint32         // 实例id
+	ownerType         ObjOwnerType   // 所有制类型，可被动态临时改变，所以需要在对象中另外缓存
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
@@ -29,6 +42,7 @@ type object struct {
 // 初始化
 func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.instId = instId
+	o.ownerType = staticInfo.ownerType
 	o.staticInfo = staticInfo
 }
 
@@ -80,6 +94,11 @@ func (o object) Type() ObjectType {
 // 子类型
 func (o object) Subtype() ObjSubType {
 	return o.staticInfo.subType
+}
+
+// 所有者类型
+func (o object) OwnerType() ObjOwnerType {
+	return o.ownerType
 }
 
 // 位置
@@ -187,7 +206,7 @@ type MovableObject struct {
 // 创建可移动物体
 func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 	o := &MovableObject{
-		object:      object{instId: instId, staticInfo: staticInfo},
+		object:      object{instId: instId, ownerType: staticInfo.ownerType, staticInfo: staticInfo},
 		dir:         staticInfo.dir,
 		speed:       staticInfo.speed,
 		moveEvent:   base.NewEvent(),

@@ -4,11 +4,14 @@ import (
 	"project_b/common/object"
 )
 
+// 地图配置，坐标系x轴朝上y轴朝右
 type Config struct {
-	Layers             [][]int              // 地图数据
-	Width              int                  // 宽度
-	Height             int                  // 长度
+	Id                 int32                // Id
+	Layers             [][]int32            // 地图数据
+	X, Y               int32                // 左下角坐标
+	Width              int32                // 宽度
+	Height             int32                // 长度
 	PlayerTankInitData object.ObjStaticInfo // 玩家坦克配置信息
 	PlayerTankInitRect object.Rect          // 玩家坦克出现位置范围矩形
-	PlayerMaxCount     int                  // 最大玩家数
+	PlayerMaxCount     int32                // 最大玩家数
 }

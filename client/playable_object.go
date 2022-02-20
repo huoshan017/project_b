@@ -2,26 +2,15 @@ package main
 
 import (
 	"project_b/client/base"
-	core "project_b/client_core"
 	"project_b/common/object"
 	"project_b/common/time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// 可播放接口
-type IPlayable interface {
-	Init()
-	Uninit()
-	Reset(object.IObject)
-	Play()
-	Stop()
-	Update(*ebiten.Image)
-}
-
 // 可播放对象
 type PlayableObject struct {
-	IPlayable
+	base.IPlayable
 	op   *ebiten.DrawImageOptions
 	obj  object.IObject
 	anim base.SpriteAnim
@@ -69,17 +58,31 @@ func (po *PlayableObject) Stop() {
 }
 
 // 更新
-func (po *PlayableObject) Update(tick time.Duration, screen *ebiten.Image) {
+func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	x, y := po.obj.Pos()
 	x0 := po.op.GeoM.Element(0, 2)
 	y0 := po.op.GeoM.Element(1, 2)
+	// 顯示根據邏輯數據插值
 	po.op.GeoM.Translate(float64(x)-x0, float64(y)-y0)
+	po.op.GeoM.Concat(op.GeoM)
 	po.anim.Update(screen, po.op)
+}
+
+// 可播放的静态对象
+type PlayableStaticObject struct {
+	PlayableObject
+}
+
+// 创建静态物体的播放对象
+func NewPlayableStaticObject(sobj object.IStaticObject, animConfig *StaticObjectAnimConfig) *PlayableStaticObject {
+	return &PlayableStaticObject{
+		PlayableObject: *NewPlayableObject(sobj.(object.IObject), animConfig.AnimConfig),
+	}
 }
 
 // 可移动物体的播放对象，有四个方向的动画
 type PlayableMoveObject struct {
-	IPlayable
+	base.IPlayable
 	op         *ebiten.DrawImageOptions
 	mobj       object.IMovableObject
 	anims      []*base.SpriteAnim
@@ -91,7 +94,7 @@ type PlayableMoveObject struct {
 }
 
 // 创建可移动物体的播放对象
-func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *ObjectAnimConfig) *PlayableMoveObject {
+func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObjectAnimConfig) *PlayableMoveObject {
 	op := &ebiten.DrawImageOptions{}
 	x, y := mobj.Pos()
 	op.GeoM.Translate(float64(x), float64(y))
@@ -105,7 +108,7 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *ObjectAnimCon
 }
 
 // 改变动画
-func (po *PlayableMoveObject) changeAnim(animConfig *ObjectAnimConfig) {
+func (po *PlayableMoveObject) changeAnim(animConfig *MovableObjectAnimConfig) {
 	po.anims = []*base.SpriteAnim{
 		nil,
 		base.NewSpriteAnim(animConfig.AnimConfig[object.DirLeft]),
@@ -142,7 +145,7 @@ func (po *PlayableMoveObject) Stop() {
 }
 
 // 更新
-func (po *PlayableMoveObject) Update(screen *ebiten.Image) {
+func (po *PlayableMoveObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	if po.isMoving {
 		var duration time.Duration
 		now := time.Now()
@@ -164,6 +167,7 @@ func (po *PlayableMoveObject) Update(screen *ebiten.Image) {
 			return
 		}
 	}
+	po.op.GeoM.Concat(op.GeoM)
 	po.anims[po.moveDir].Update(screen, po.op)
 }
 
@@ -173,7 +177,7 @@ func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
 	po.onupdate(pos, dir, speed)
-	po.updateTime = core.GetSyncServTime() //args[2].(time.CustomTime)
+	po.updateTime = base.GetSyncServTime() //args[2].(time.CustomTime)
 	po.isMoving = true
 	po.Play()
 }
@@ -212,7 +216,7 @@ type PlayableTank struct {
 }
 
 // 创建坦克播放对象
-func NewPlayableTank(tank object.ITank, animConfig *ObjectAnimConfig) *PlayableTank {
+func NewPlayableTank(tank object.ITank, animConfig *MovableObjectAnimConfig) *PlayableTank {
 	pt := &PlayableTank{
 		PlayableMoveObject: *NewPlayableMoveObject(tank, animConfig),
 		tankObj:            tank,

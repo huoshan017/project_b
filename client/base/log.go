@@ -1,4 +1,4 @@
-package client_core
+package base
 
 import "project_b/common/log"
 
@@ -10,7 +10,7 @@ var gslog *Logger
 
 func InitLog(fileName string, maxSize, maxBackups, maxAge int, compress, consoleOutput bool, logLevel int) *Logger {
 	if gslog == nil {
-		gslog = &Logger {
+		gslog = &Logger{
 			Logger: *log.NewWithConfig(&log.LogConfig{
 				Filename:      fileName,      // "./log/client.log",
 				MaxSize:       maxSize,       // 2,

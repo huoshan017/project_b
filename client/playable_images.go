@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "image/png"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -27,14 +28,39 @@ var (
 
 func initImages() {
 	imgPtrList := []**ebiten.Image{
-		&bonus_img, &bore_img, &bullet_img, &enemy_img, &explode1_img, &explode2_img, &flag_img, &gameover_img,
-		&misc_img, &num_img, &player1_img, &player2_img, &shield_img, &splash_img, &tile_img,
+		&bonus_img,
+		&bore_img,
+		&bullet_img,
+		&enemy_img,
+		&explode1_img,
+		&explode2_img,
+		&flag_img,
+		&gameover_img,
+		&misc_img,
+		&num_img,
+		&player1_img,
+		&player2_img,
+		&shield_img,
+		&splash_img,
+		&tile_img,
 	}
 
 	imgPathList := []string{
-		"png/bonus.png", "png/bore.png", "png/bullet.png", "png/enemy.png", "png/explode1.png", "png/explode2.png",
-		"png/flag.png", "png/gameover.png", "png/misc.png", "png/num.png", "png/player1.png", "png/player2.png", "png/shield.png",
-		"png/splash.png", "png/tile.png",
+		"png/bonus.png",
+		"png/bore.png",
+		"png/bullet.png",
+		"png/enemy.png",
+		"png/explode1.png",
+		"png/explode2.png",
+		"png/flag.png",
+		"png/gameover.png",
+		"png/misc.png",
+		"png/num.png",
+		"png/player1.png",
+		"png/player2.png",
+		"png/shield.png",
+		"png/splash.png",
+		"png/tile.png",
 	}
 
 	var err error
@@ -42,7 +68,9 @@ func initImages() {
 		img := imgPtrList[i]
 		*img, _, err = ebitenutil.NewImageFromFile(imgPathList[i])
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("load png %v err: %v", imgPathList[i], err)
+		} else {
+			log.Printf("load png %v done", imgPathList[i])
 		}
 	}
 }

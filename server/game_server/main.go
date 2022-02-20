@@ -60,6 +60,11 @@ func (s *GameService) Start() {
 	s.net.Start()
 }
 
+func (s *GameService) End() {
+	s.gameLogicThread.Close()
+	s.net.End()
+}
+
 var gslog *log.Logger
 
 func main() {
@@ -84,6 +89,7 @@ func main() {
 	if !gameService.Init(&config{addr: *ip_str, mapIndex: 0}) {
 		return
 	}
+	defer gameService.End()
 
 	gslog.Info("game service started")
 

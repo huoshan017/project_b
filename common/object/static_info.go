@@ -2,13 +2,14 @@ package object
 
 // 物体静态信息
 type ObjStaticInfo struct {
-	id      int32 // 配置id
-	typ     ObjectType
-	subType ObjSubType
-	x0, y0  int32 // 统一：矩形左下角相对于位于局部坐标系的坐标
-	w, h    int32 // 宽度高度
-	dir     Direction
-	speed   int32
+	id        int32 // 配置id
+	typ       ObjectType
+	subType   ObjSubType
+	ownerType ObjOwnerType // 所有者类型
+	x0, y0    int32        // 统一：矩形左下角相对于位于局部坐标系的坐标
+	w, h      int32        // 宽度高度
+	dir       Direction
+	speed     int32
 }
 
 // 创建物体静态信息
