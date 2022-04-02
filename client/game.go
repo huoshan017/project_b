@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	client_base "project_b/client/base"
-	"project_b/client/core"
+	core "project_b/client_core"
 	"project_b/common/base"
 	"project_b/common/time"
 	"project_b/common_data"
@@ -35,7 +35,7 @@ type Game struct {
 	logic         *core.GameLogic        // 游戏逻辑
 	cmdMgr        *core.CmdHandleManager // 命令处理管理器
 	playerMgr     *core.CPlayerManager   // 玩家管理器
-	eventMgr      base.IEventManager     // 游戏事件管理器，向上层逻辑传递事件
+	eventMgr      *base.EventManager     // 游戏事件管理器，向上层逻辑传递事件
 	lastCheckTime time.CustomTime        // 上次检测时间
 
 	//---------------------------------------
@@ -155,8 +155,8 @@ func (g *Game) loadMap() {
 // 更新
 func (g *Game) update() {
 	// 时间同步完成
-	if client_base.IsTimeSyncEnd() {
-		now := client_base.GetSyncServTime()
+	if core.IsTimeSyncEnd() {
+		now := core.GetSyncServTime()
 		if g.lastCheckTime.IsZero() {
 			g.lastCheckTime = now
 		} else {

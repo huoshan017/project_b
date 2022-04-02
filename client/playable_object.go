@@ -2,6 +2,7 @@ package main
 
 import (
 	"project_b/client/base"
+	core "project_b/client_core"
 	"project_b/common/object"
 	"project_b/common/time"
 
@@ -177,7 +178,7 @@ func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
 	po.onupdate(pos, dir, speed)
-	po.updateTime = base.GetSyncServTime() //args[2].(time.CustomTime)
+	po.updateTime = core.GetSyncServTime() //args[2].(time.CustomTime)
 	po.isMoving = true
 	po.Play()
 }

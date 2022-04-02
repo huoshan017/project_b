@@ -2,24 +2,22 @@ package main
 
 import (
 	"project_b/common"
-	"project_b/common/time"
 	"project_b/common_data"
 	"sync/atomic"
 	"unsafe"
 
-	"github.com/huoshan017/gsnet"
+	gsnet_msg "github.com/huoshan017/gsnet/msg"
 )
 
 // 服务器玩家结构
 type SPlayer struct {
 	common.SPlayer
-	clientTime             time.CustomTime        // 客户端时间
 	currChangedTankIdIndex int32                  // 当前坦克索引
 	kicker                 *SamePlayerKickHandler // 踢人处理
 }
 
 // 创建SPlayer
-func NewSPlayer(acc string, id uint64, sess gsnet.ISession) *SPlayer {
+func NewSPlayer(acc string, id uint64, sess *gsnet_msg.MsgSession) *SPlayer {
 	p := &SPlayer{
 		SPlayer:                *common.NewSPlayer(acc, id, sess),
 		currChangedTankIdIndex: -1, // 初始化成-1，因为每次使用时肯定会加上1，所以可以保证为非负数
@@ -28,7 +26,7 @@ func NewSPlayer(acc string, id uint64, sess gsnet.ISession) *SPlayer {
 }
 
 // 重置会话
-func (p *SPlayer) ResetSess(sess gsnet.ISession) {
+func (p *SPlayer) ResetSess(sess *gsnet_msg.MsgSession) {
 	p.SPlayer.ResetSess(sess)
 }
 

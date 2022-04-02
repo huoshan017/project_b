@@ -1,7 +1,7 @@
 package main
 
 import (
-	"project_b/client/core"
+	core "project_b/client_core"
 	"project_b/common/object"
 
 	"github.com/hajimehoshi/ebiten/v2"

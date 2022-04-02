@@ -9,25 +9,28 @@ import (
 	"project_b/utils"
 	"time"
 
+	gsnet_msg "github.com/huoshan017/gsnet/msg"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // 局部玩家数据
 type playerData struct {
-	tank        *object.Tank
-	sessHandler *GameMsgHandler
-	pid         uint64
-	account     string
+	tank    *object.Tank
+	sess    *gsnet_msg.MsgSession
+	pid     uint64
+	account string
 }
 
 // 发送消息
 func (d *playerData) send(msgid uint32, msg protoreflect.ProtoMessage) error {
-	return d.sessHandler.Send(msgid, msg)
+	return d.sess.SendMsg(gsnet_msg.MsgIdType(msgid), msg)
 }
 
 // 发送错误
 func (d *playerData) sendError(err game_proto.ErrorId) error {
-	return d.sessHandler.SendError(err)
+	return d.sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgErrorAck_Id), &game_proto.MsgErrorAck{
+		Error: err,
+	})
 }
 
 // 游戏逻辑线程
@@ -93,7 +96,7 @@ func (t *GameLogicThread) PlayerLeave(pid uint64) {
 		var err error
 		pd := t.getPlayerData(agentKey)
 		if pd != nil {
-			err = t.onPlayerTankLeaveReq(pid, pd.sessHandler)
+			err = t.onPlayerTankLeaveReq(pid)
 		}
 		return err
 	})
@@ -102,8 +105,7 @@ func (t *GameLogicThread) PlayerLeave(pid uint64) {
 // 重置玩家的会话处理器
 func (t *GameLogicThread) PlayerResetHandler(pid uint64, sessHandler *GameMsgHandler, tank *object.Tank) {
 	d := &playerData{
-		sessHandler: sessHandler,
-		pid:         pid,
+		pid: pid,
 	}
 	t.UpdateAgent(pid, d, func(data interface{}) error {
 		t.gameLogic.PlayerLeave(pid)
@@ -169,7 +171,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 }
 
 // 坦克离开
-func (t *GameLogicThread) onPlayerTankLeaveReq(pid uint64, sessHandler *GameMsgHandler) error {
+func (t *GameLogicThread) onPlayerTankLeaveReq(pid uint64) error {
 	var err error
 	if t.GetAgentCountNoLock() > 1 {
 		var sync game_proto.MsgPlayerExitGameSync

@@ -7,35 +7,30 @@ import (
 
 	"time"
 
-	"github.com/huoshan017/gsnet"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
+	gsnet_msg "github.com/huoshan017/gsnet/msg"
 )
 
 type GameMsgHandler struct {
-	gsnet.MsgHandler
 	service               *GameService
-	sess                  gsnet.ISession
+	sess                  *gsnet_msg.MsgSession
 	lastCheckDiscDuration custom_time.Duration
 }
 
-func CreateGameMsgHandler(args ...interface{}) gsnet.ISessionHandler {
+func CreateGameMsgHandler(owner *GameService) *GameMsgHandler {
 	h := &GameMsgHandler{}
-	h.MsgHandler = *gsnet.NewMsgHandler(&gsnet.DefaultMsgProto{})
-	h.service = args[0].(*GameService)
-	h.registerHandles()
+	h.service = owner
 	return h
 }
 
 // 连接事件
-func (h *GameMsgHandler) OnConnect(sess gsnet.ISession) {
+func (h *GameMsgHandler) OnConnect(sess *gsnet_msg.MsgSession) {
 	// 连接后把会话缓存起来
 	h.sess = sess
 	gslog.Info("new session %v connected", sess.GetId())
 }
 
 // 断开事件
-func (h *GameMsgHandler) OnDisconnect(sess gsnet.ISession, err error) {
+func (h *GameMsgHandler) OnDisconnect(sess *gsnet_msg.MsgSession, err error) {
 	if sess != h.sess {
 		panic("sess must same to OnConnect")
 	}
@@ -45,7 +40,7 @@ func (h *GameMsgHandler) OnDisconnect(sess gsnet.ISession, err error) {
 }
 
 // 定时器事件
-func (h *GameMsgHandler) OnTick(sess gsnet.ISession, tick time.Duration) {
+func (h *GameMsgHandler) OnTick(sess *gsnet_msg.MsgSession, tick time.Duration) {
 	if sess != h.sess {
 		panic("sess must same to OnConnect")
 	}
@@ -69,29 +64,19 @@ func (h *GameMsgHandler) OnError(err error) {
 	gslog.Info("get error: %v", err)
 }
 
-// 发送协议
-func (h *GameMsgHandler) Send(msgid uint32, msg protoreflect.ProtoMessage) error {
-	d, e := proto.Marshal(msg)
-	if e != nil {
-		return e
-	}
-	return h.MsgHandler.Send(h.sess, msgid, d)
-}
-
 // 发送错误码
 func (h *GameMsgHandler) SendError(err game_proto.ErrorId) error {
-	return h.Send(uint32(game_proto.MsgErrorAck_Id), &game_proto.MsgErrorAck{
+	return h.sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgErrorAck_Id), &game_proto.MsgErrorAck{
 		Error: err,
 	})
 }
 
 // todo 暂时在这里处理登录，有了登录服务器再说
-func (h *GameMsgHandler) onPlayerLoginReq(sess gsnet.ISession, data []byte) error {
-	var req game_proto.MsgAccountLoginGameReq
-	err := proto.Unmarshal(data, &req)
-	result := uint32(0)
-	if err != nil {
-		return err
+func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+	req, o := msg.(*game_proto.MsgAccountLoginGameReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgAccountLoginGameReq")
+		return nil
 	}
 
 	var e game_proto.ErrorId
@@ -112,19 +97,16 @@ func (h *GameMsgHandler) onPlayerLoginReq(sess gsnet.ISession, data []byte) erro
 
 	var ack game_proto.MsgAccountLoginGameAck
 	ack.Account = req.Account
-	ack.Result = result
-	if result == 0 {
-		gslog.Info("player (account: %v, session: %v) login", req.Account, sess.GetId())
-	}
-	return h.Send(uint32(game_proto.MsgAccountLoginGameAck_Id), &ack)
+	gslog.Info("player (account: %v, session: %v) login", req.Account, sess.GetId())
+	return sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameAck_Id), &ack)
 }
 
 // 处理进入游戏
-func (h *GameMsgHandler) onPlayerEnterGameReq(sess gsnet.ISession, data []byte) error {
-	var req game_proto.MsgPlayerEnterGameReq
-	err := proto.Unmarshal(data, &req)
-	if err != nil {
-		return err
+func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+	req, o := msg.(*game_proto.MsgPlayerEnterGameReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgPlayerEnterGameReq")
+		return nil
 	}
 
 	var p *SPlayer
@@ -176,7 +158,7 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess gsnet.ISession, data []byte) 
 			// 保存会话令牌
 			p.SetToken(string(req.SessionToken))
 			// 把玩家加入游戏逻辑线程
-			h.service.gameLogicThread.PlayerEnter(p.Id(), &playerData{sessHandler: h, pid: p.Id(), account: p.Account()})
+			h.service.gameLogicThread.PlayerEnter(p.Id(), &playerData{sess: sess, pid: p.Id(), account: p.Account()})
 			// 玩家进入
 			p.Entered()
 			// 把玩家对象设置到会话
@@ -194,7 +176,7 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess gsnet.ISession, data []byte) 
 }
 
 // 处理退出游戏
-func (h *GameMsgHandler) onPlayerExitGameReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onPlayerExitGameReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -203,19 +185,19 @@ func (h *GameMsgHandler) onPlayerExitGameReq(sess gsnet.ISession, data []byte) e
 	h.service.playerMgr.Remove(p.Id())
 	gslog.Info("player (account: %v, player_id: %v, session: %v) exit game", p.Account(), p.Id(), sess.GetId())
 	var ack game_proto.MsgPlayerExitGameAck
-	return h.Send(uint32(game_proto.MsgPlayerExitGameAck_Id), &ack)
+	return sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameAck_Id), &ack)
 }
 
 // 处理时间同步
-func (h *GameMsgHandler) onTimeSyncReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onTimeSyncReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
 	}
-	var req game_proto.MsgTimeSyncReq
-	err = proto.Unmarshal(data, &req)
-	if err != nil {
-		return err
+	req, o := msg.(*game_proto.MsgTimeSyncReq)
+	if !o {
+		gslog.Warn("cant transfer type to *game_proto.MsgTimeSyncReq")
+		return nil
 	}
 
 	now := custom_time.Now()
@@ -227,20 +209,20 @@ func (h *GameMsgHandler) onTimeSyncReq(sess gsnet.ISession, data []byte) error {
 	if err != nil {
 		return err
 	}
-	return h.Send(uint32(game_proto.MsgTimeSyncAck_Id), &ack)
+	return sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgTimeSyncAck_Id), &ack)
 }
 
 // 处理改变坦克
-func (h *GameMsgHandler) onPlayerChangeTankReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
 	}
 
-	var req game_proto.MsgPlayerChangeTankReq
-	err = proto.Unmarshal(data, &req)
-	if err != nil {
-		return err
+	req, o := msg.(*game_proto.MsgPlayerChangeTankReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgPlayerChangeTankReq")
+		return nil
 	}
 
 	tankId := p.GetChangeTankId()
@@ -253,16 +235,16 @@ func (h *GameMsgHandler) onPlayerChangeTankReq(sess gsnet.ISession, data []byte)
 }
 
 // 处理恢复坦克
-func (h *GameMsgHandler) onPlayerRestoreTankReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onPlayerRestoreTankReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
 	}
 
-	var req game_proto.MsgPlayerRestoreTankReq
-	err = proto.Unmarshal(data, &req)
-	if err != nil {
-		return err
+	req, o := msg.(*game_proto.MsgPlayerRestoreTankReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankReq")
+		return nil
 	}
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerRestoreTankReq_Id), &req)
 
@@ -272,16 +254,16 @@ func (h *GameMsgHandler) onPlayerRestoreTankReq(sess gsnet.ISession, data []byte
 }
 
 // 坦克移动请求
-func (h *GameMsgHandler) onPlayerTankMoveReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onPlayerTankMoveReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
 	}
 
-	var sync game_proto.MsgPlayerTankMoveReq
-	err = proto.Unmarshal(data, &sync)
-	if err != nil {
-		return err
+	sync, o := msg.(*game_proto.MsgPlayerTankMoveReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgPlayerTankMoveReq")
+		return nil
 	}
 
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankMoveReq_Id), &sync)
@@ -290,16 +272,16 @@ func (h *GameMsgHandler) onPlayerTankMoveReq(sess gsnet.ISession, data []byte) e
 }
 
 // 坦克停止移动请求
-func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
 	}
 
-	var req game_proto.MsgPlayerTankStopMoveReq
-	err = proto.Unmarshal(data, &req)
-	if err != nil {
-		return err
+	req, o := msg.(*game_proto.MsgPlayerTankStopMoveReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgPlayerTankStopMoveReq")
+		return nil
 	}
 
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankStopMoveReq_Id), &req)
@@ -308,16 +290,16 @@ func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess gsnet.ISession, data []byt
 }
 
 // 坦克位置更新请求
-func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess gsnet.ISession, data []byte) error {
+func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
 	}
 
-	var req game_proto.MsgPlayerTankUpdatePosReq
-	err = proto.Unmarshal(data, &req)
-	if err != nil {
-		return err
+	req, o := msg.(*game_proto.MsgPlayerTankUpdatePosReq)
+	if !o {
+		gslog.Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosReq")
+		return nil
 	}
 
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), &req)
@@ -325,21 +307,23 @@ func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess gsnet.ISession, data []by
 	return nil
 }
 
-// 内部函数，注册协议
-func (s *GameMsgHandler) registerHandles() {
-	s.RegisterHandle(uint32(game_proto.MsgAccountLoginGameReq_Id), s.onPlayerLoginReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerEnterGameReq_Id), s.onPlayerEnterGameReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerExitGameReq_Id), s.onPlayerExitGameReq)
-	s.RegisterHandle(uint32(game_proto.MsgTimeSyncReq_Id), s.onTimeSyncReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerChangeTankReq_Id), s.onPlayerChangeTankReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerRestoreTankReq_Id), s.onPlayerRestoreTankReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerTankMoveReq_Id), s.onPlayerTankMoveReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerTankStopMoveReq_Id), s.onPlayerTankStopMoveReq)
-	s.RegisterHandle(uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), s.onPlayerTankUpdatePosReq)
+func (s *GameMsgHandler) getMsgId2HandleMap() map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error {
+	var msgid2HandleMap = map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error{
+		gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameReq_Id):    s.onPlayerLoginReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameReq_Id):     s.onPlayerEnterGameReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameReq_Id):      s.onPlayerExitGameReq,
+		gsnet_msg.MsgIdType(game_proto.MsgTimeSyncReq_Id):            s.onTimeSyncReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankReq_Id):    s.onPlayerChangeTankReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankReq_Id):   s.onPlayerRestoreTankReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveReq_Id):      s.onPlayerTankMoveReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveReq_Id):  s.onPlayerTankStopMoveReq,
+		gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosReq_Id): s.onPlayerTankUpdatePosReq,
+	}
+	return msgid2HandleMap
 }
 
 // 会话转成玩家
-func (h *GameMsgHandler) toPlayer(sess gsnet.ISession) (*SPlayer, error) {
+func (h *GameMsgHandler) toPlayer(sess *gsnet_msg.MsgSession) (*SPlayer, error) {
 	d := sess.GetData("player")
 	if d == nil {
 		return nil, errors.New("game_service: no invalid session")
@@ -352,8 +336,8 @@ func (h *GameMsgHandler) toPlayer(sess gsnet.ISession) (*SPlayer, error) {
 }
 
 // 玩家断开后
-func (h *GameMsgHandler) afterPlayerDisconnect(playerSess gsnet.ISession) {
-	d := playerSess.GetData("player")
+func (h *GameMsgHandler) afterPlayerDisconnect(sess *gsnet_msg.MsgSession) {
+	d := sess.GetData("player")
 	if p, o := d.(*SPlayer); o {
 		pid := p.Id()
 		// 离开游戏逻辑线程
@@ -367,6 +351,6 @@ func (h *GameMsgHandler) afterPlayerDisconnect(playerSess gsnet.ISession) {
 		if kicker != nil {
 			kicker.NotifyDisconnectEnd()
 		}
-		gslog.Info("player (account: %v, player_id: %v, session: %v) disconnect", p.Account(), pid, playerSess.GetId())
+		gslog.Info("player (account: %v, player_id: %v, session: %v) disconnect", p.Account(), pid, sess.GetId())
 	}
 }

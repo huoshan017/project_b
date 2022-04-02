@@ -3,14 +3,14 @@ package main
 //#include "./net_client_capi.h"
 import "C"
 import (
-	"project_b/client/core"
+	"project_b/client_core"
 	"project_b/common/object"
 	"project_b/game_proto"
 )
 
 //export net_client_new
 func net_client_new(address *C.char) C.netclient_handle_t {
-	id := NewObjectId(core.CreateNetClient(C.GoString(address)))
+	id := NewObjectId(client_core.CreateNetClient(C.GoString(address)))
 	return C.netclient_handle_t(id)
 }
 
@@ -21,7 +21,7 @@ func net_client_delete(h C.netclient_handle_t) {
 
 //export net_client_send_login_req
 func net_client_send_login_req(h C.netclient_handle_t, account *C.char, password *C.char) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -34,7 +34,7 @@ func net_client_send_login_req(h C.netclient_handle_t, account *C.char, password
 
 //export net_client_send_game_enter_req
 func net_client_send_game_enter_req(h C.netclient_handle_t, account *C.char, session_token *C.char) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -47,7 +47,7 @@ func net_client_send_game_enter_req(h C.netclient_handle_t, account *C.char, ses
 
 //export net_client_send_time_sync_req
 func net_client_send_time_sync_req(h C.netclient_handle_t) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -60,7 +60,7 @@ func net_client_send_time_sync_req(h C.netclient_handle_t) C.int {
 
 //export net_client_send_tank_move_req
 func net_client_send_tank_move_req(h C.netclient_handle_t, dir C.int) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -73,7 +73,7 @@ func net_client_send_tank_move_req(h C.netclient_handle_t, dir C.int) C.int {
 
 //export net_client_send_tank_update_pos_req
 func net_client_send_tank_update_pos_req(h C.netclient_handle_t, state C.int, x, y, dir, speed C.int) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -86,7 +86,7 @@ func net_client_send_tank_update_pos_req(h C.netclient_handle_t, state C.int, x,
 
 //export net_client_send_tank_stop_move_req
 func net_client_send_tank_stop_move_req(h C.netclient_handle_t) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -99,7 +99,7 @@ func net_client_send_tank_stop_move_req(h C.netclient_handle_t) C.int {
 
 //export net_client_send_tank_change_req
 func net_client_send_tank_change_req(h C.netclient_handle_t) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
@@ -112,7 +112,7 @@ func net_client_send_tank_change_req(h C.netclient_handle_t) C.int {
 
 //export net_client_send_tank_restore_req
 func net_client_send_tank_restore_req(h C.netclient_handle_t) C.int {
-	client := ObjectGet(ObjectId(h)).(*core.NetClient)
+	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}

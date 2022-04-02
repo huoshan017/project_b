@@ -3,7 +3,7 @@ package common
 import (
 	"project_b/common/object"
 
-	"github.com/huoshan017/gsnet"
+	gsnet_msg "github.com/huoshan017/gsnet/msg"
 )
 
 type PlayerState int32
@@ -110,12 +110,12 @@ func (p *Player) RestoreTank() {
 // 会话玩家结构
 type SPlayer struct {
 	Player
-	sess         gsnet.ISession
+	sess         *gsnet_msg.MsgSession
 	disconnected bool
 }
 
 // 创建会话玩家结构
-func NewSPlayer(account string, id uint64, sess gsnet.ISession) *SPlayer {
+func NewSPlayer(account string, id uint64, sess *gsnet_msg.MsgSession) *SPlayer {
 	return &SPlayer{
 		Player: *NewPlayer(account, id),
 		sess:   sess,
@@ -123,7 +123,7 @@ func NewSPlayer(account string, id uint64, sess gsnet.ISession) *SPlayer {
 }
 
 // 重置会话
-func (p *SPlayer) ResetSess(sess gsnet.ISession) {
+func (p *SPlayer) ResetSess(sess *gsnet_msg.MsgSession) {
 	p.sess = sess
 }
 
