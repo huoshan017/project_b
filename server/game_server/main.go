@@ -4,13 +4,13 @@ import (
 	"errors"
 	"flag"
 	"os"
-	"time"
 
 	"project_b/common/log"
 	"project_b/game_proto"
 
 	gsnet_common "github.com/huoshan017/gsnet/common"
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
+	gsnet_server "github.com/huoshan017/gsnet/server"
 )
 
 var ErrKickDuplicatePlayer = errors.New("game service example: kick duplicate player")
@@ -21,7 +21,7 @@ type config struct {
 }
 
 type GameService struct {
-	net             *gsnet_msg.MsgServer
+	server          *gsnet_msg.MsgServer
 	loginCheckMgr   *KeyCheckManager
 	enterCheckMgr   *KeyCheckManager
 	playerMgr       *SPlayerManager
@@ -32,35 +32,23 @@ func NewGameService() *GameService {
 	return &GameService{}
 }
 
+func CreateGameMsgHandlerWrapper(args ...interface{}) gsnet_msg.IMsgSessionHandler {
+	handler := CreateGameMsgHandler(args[0].(*GameService))
+	return gsnet_msg.IMsgSessionHandler(handler)
+}
+
 func (s *GameService) Init(conf *config) bool {
 	// 错误注册
 	gsnet_common.RegisterNoDisconnectError(ErrKickDuplicatePlayer)
 	// 创建服务
-	net := gsnet_msg.NewPBMsgServer(gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnServer))
-	// 创建会话和消息处理器
-	msgHandler := CreateGameMsgHandler(s)
-	// 设置处理器到服务
-	handles := struct {
-		ConnectedHandle    func(*gsnet_msg.MsgSession)
-		DisconnectedHandle func(*gsnet_msg.MsgSession, error)
-		TickHandle         func(*gsnet_msg.MsgSession, time.Duration)
-		ErrorHandle        func(error)
-		MsgHandles         map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error
-	}{
-		msgHandler.OnConnect,
-		msgHandler.OnDisconnect,
-		msgHandler.OnTick,
-		msgHandler.OnError,
-		msgHandler.getMsgId2HandleMap(),
-	}
-	net.SetSessionHandles(handles)
+	net := gsnet_msg.NewPBMsgServer(CreateGameMsgHandlerWrapper, gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnServer), gsnet_server.WithNewSessionHandlerFuncArgs(s))
 	// 监听
 	err := net.Listen(conf.addr)
 	if err != nil {
 		gslog.Error("game service listen addr %v err: %v", conf.addr, err)
 		return false
 	}
-	s.net = net
+	s.server = net
 	s.loginCheckMgr = NewKeyCheckManager()
 	s.enterCheckMgr = NewKeyCheckManager()
 	s.playerMgr = NewSPlayerManager()
@@ -77,12 +65,12 @@ func (s *GameService) Start() {
 		}()
 		s.gameLogicThread.Run()
 	}()
-	s.net.Start()
+	s.server.Start()
 }
 
 func (s *GameService) End() {
 	s.gameLogicThread.Close()
-	s.net.End()
+	s.server.End()
 }
 
 var gslog *log.Logger

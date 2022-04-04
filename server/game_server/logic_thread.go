@@ -10,7 +10,6 @@ import (
 	"time"
 
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // 局部玩家数据
@@ -22,7 +21,7 @@ type playerData struct {
 }
 
 // 发送消息
-func (d *playerData) send(msgid uint32, msg protoreflect.ProtoMessage) error {
+func (d *playerData) send(msgid gsnet_msg.MsgIdType, msg interface{}) error {
 	return d.sess.SendMsg(gsnet_msg.MsgIdType(msgid), msg)
 }
 
@@ -141,7 +140,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 			ack.OtherPlayerTankInfoList = append(ack.OtherPlayerTankInfoList, playerTankInfo)
 		}
 	}
-	err := pd.send(uint32(game_proto.MsgPlayerEnterGameAck_Id), &ack)
+	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameAck_Id), &ack)
 	if err != nil {
 		return err
 	}
@@ -152,7 +151,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 		return err
 	}
 
-	err = pd.send(uint32(game_proto.MsgPlayerEnterGameFinishNtf_Id), &ntf)
+	err = pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameFinishNtf_Id), &ntf)
 	if err != nil {
 		return err
 	}
@@ -165,7 +164,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 		sync.TankInfo.PlayerId = pd.pid
 		sync.TankInfo.TankInfo = &game_proto.TankInfo{}
 		utils.TankObj2ProtoInfo(pd.tank, sync.TankInfo.TankInfo)
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerEnterGameSync_Id), &sync, pd.pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameSync_Id), &sync, pd.pid)
 	}
 	return err
 }
@@ -176,7 +175,7 @@ func (t *GameLogicThread) onPlayerTankLeaveReq(pid uint64) error {
 	if t.GetAgentCountNoLock() > 1 {
 		var sync game_proto.MsgPlayerExitGameSync
 		sync.PlayerId = pid
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerExitGameSync_Id), &sync, pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameSync_Id), &sync, pid)
 	}
 	return err
 }
@@ -199,7 +198,7 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 	t.gameLogic.PlayerTankMove(pd.pid, object.Direction(m.MoveInfo.Direction))
 
 	var ack game_proto.MsgPlayerTankMoveAck
-	err := pd.send(uint32(game_proto.MsgPlayerTankMoveAck_Id), &ack)
+	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveAck_Id), &ack)
 	if err != nil {
 		return err
 	}
@@ -207,7 +206,7 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 		var sync game_proto.MsgPlayerTankMoveSync
 		sync.PlayerId = pd.pid
 		sync.MoveInfo = m.MoveInfo
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankMoveSync_Id), &sync, pd.pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveSync_Id), &sync, pd.pid)
 	}
 	return err
 }
@@ -223,14 +222,14 @@ func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg commo
 	t.gameLogic.PlayerTankStopMove(pd.pid)
 
 	var ack game_proto.MsgPlayerTankStopMoveAck
-	err := pd.send(uint32(game_proto.MsgPlayerTankStopMoveAck_Id), &ack)
+	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveAck_Id), &ack)
 	if err != nil {
 		return err
 	}
 	if t.GetAgentCountNoLock() > 0 {
 		var sync game_proto.MsgPlayerTankStopMoveSync
 		sync.PlayerId = pd.pid
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankStopMoveSync_Id), &sync, pd.pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveSync_Id), &sync, pd.pid)
 	}
 	return err
 }
@@ -253,7 +252,7 @@ func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg comm
 	var ack game_proto.MsgPlayerTankUpdatePosAck
 	ack.State = m.State
 	ack.MoveInfo = m.MoveInfo
-	err := pd.send(uint32(game_proto.MsgPlayerTankUpdatePosAck_Id), &ack)
+	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosAck_Id), &ack)
 	if err != nil {
 		return err
 	}
@@ -263,7 +262,7 @@ func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg comm
 		sync.PlayerId = pd.pid
 		sync.State = m.State
 		sync.MoveInfo = m.MoveInfo
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerTankUpdatePosSync_Id), &sync, pd.pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosSync_Id), &sync, pd.pid)
 	}
 	return err
 }
@@ -288,7 +287,7 @@ func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.Msg
 	ack.ChangedTankInfo = &game_proto.TankInfo{}
 	utils.TankObj2ProtoInfo(tank, ack.ChangedTankInfo)
 	gslog.Info("player %v changed tank to %v", pd.pid, tank.Id())
-	err := pd.send(uint32(game_proto.MsgPlayerChangeTankAck_Id), &ack)
+	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankAck_Id), &ack)
 	if err != nil {
 		return err
 	}
@@ -308,7 +307,7 @@ func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.Msg
 				},
 			},
 		}
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerChangeTankSync_Id), &sync, pd.pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankSync_Id), &sync, pd.pid)
 	}
 	return err
 }
@@ -327,14 +326,14 @@ func (t *GameLogicThread) onPlayerTankRestore(key common.AgentKey, msg common.Ms
 
 	ack.TankId = tankId
 	gslog.Info("player %v restored tank", pd.pid)
-	err := pd.send(uint32(game_proto.MsgPlayerRestoreTankAck_Id), &ack)
+	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankAck_Id), &ack)
 
 	if t.GetAgentCountNoLock() > 1 {
 		var sync = game_proto.MsgPlayerRestoreTankSync{
 			PlayerId: pd.pid,
 			TankId:   tankId,
 		}
-		err = t.broadcastMsgExceptPlayer(uint32(game_proto.MsgPlayerRestoreTankSync_Id), &sync, pd.pid)
+		err = t.broadcastMsgExceptPlayer(gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankSync_Id), &sync, pd.pid)
 	}
 
 	return err
@@ -347,12 +346,12 @@ func (t *GameLogicThread) getPlayerData(key common.AgentKey) *playerData {
 }
 
 // 广播消息
-func (t *GameLogicThread) broadcastMsg(msgid uint32, msg protoreflect.ProtoMessage) error {
+func (t *GameLogicThread) broadcastMsg(msgid gsnet_msg.MsgIdType, msg interface{}) error {
 	return t.broadcastMsgExceptPlayer(msgid, msg, 0)
 }
 
 // 广播消息除了某玩家
-func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid uint32, msg protoreflect.ProtoMessage, uid uint64) error {
+func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid gsnet_msg.MsgIdType, msg interface{}, uid uint64) error {
 	var err error
 	players := t.GetAgentMapNoLock()
 	for _, d := range players {

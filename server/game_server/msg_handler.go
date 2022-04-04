@@ -23,14 +23,14 @@ func CreateGameMsgHandler(owner *GameService) *GameMsgHandler {
 }
 
 // 连接事件
-func (h *GameMsgHandler) OnConnect(sess *gsnet_msg.MsgSession) {
+func (h *GameMsgHandler) OnConnected(sess *gsnet_msg.MsgSession) {
 	// 连接后把会话缓存起来
 	h.sess = sess
 	gslog.Info("new session %v connected", sess.GetId())
 }
 
 // 断开事件
-func (h *GameMsgHandler) OnDisconnect(sess *gsnet_msg.MsgSession, err error) {
+func (h *GameMsgHandler) OnDisconnected(sess *gsnet_msg.MsgSession, err error) {
 	if sess != h.sess {
 		panic("sess must same to OnConnect")
 	}
@@ -69,6 +69,30 @@ func (h *GameMsgHandler) SendError(err game_proto.ErrorId) error {
 	return h.sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgErrorAck_Id), &game_proto.MsgErrorAck{
 		Error: err,
 	})
+}
+
+func (h *GameMsgHandler) OnMsgHandle(sess *gsnet_msg.MsgSession, msgid gsnet_msg.MsgIdType, msgobj interface{}) error {
+	var err error
+	if msgid == gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameReq_Id) {
+		err = h.onPlayerLoginReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameReq_Id) {
+		err = h.onPlayerEnterGameReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameReq_Id) {
+		err = h.onPlayerExitGameReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgTimeSyncReq_Id) {
+		err = h.onTimeSyncReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankReq_Id) {
+		err = h.onPlayerChangeTankReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankReq_Id) {
+		err = h.onPlayerRestoreTankReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosReq_Id) {
+		err = h.onPlayerTankUpdatePosReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveReq_Id) {
+		err = h.onPlayerTankMoveReq(sess, msgobj)
+	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveReq_Id) {
+		err = h.onPlayerTankStopMoveReq(sess, msgobj)
+	}
+	return err
 }
 
 // todo 暂时在这里处理登录，有了登录服务器再说
