@@ -11,15 +11,15 @@ import (
 )
 
 type NetClient struct {
-	msgClient     gsnet_msg.MsgClient
+	msgClient     *gsnet_msg.MsgClient
 	serverAddress string
 }
 
 func CreateNetClient(serverAddress string, options ...gsnet_common.Option) *NetClient {
 	client := &NetClient{
+		msgClient:     gsnet_msg.NewPBMsgClient(gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnClient), options...),
 		serverAddress: serverAddress,
 	}
-	client.msgClient = *gsnet_msg.NewPBMsgClient(gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnClient), options...)
 	return client
 }
 
@@ -64,6 +64,10 @@ func (c *NetClient) Update() error {
 }
 
 func (c *NetClient) SendLoginReq(account, password string) error {
+	if c.msgClient.IsConnected() {
+		gslog.Warn("already connected")
+		return nil
+	}
 	err := c.msgClient.Connect(c.serverAddress)
 	if err != nil {
 		return err

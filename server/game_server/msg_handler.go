@@ -14,6 +14,7 @@ type GameMsgHandler struct {
 	service               *GameService
 	sess                  *gsnet_msg.MsgSession
 	lastCheckDiscDuration custom_time.Duration
+	msgid2HandleMap       map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error
 }
 
 func CreateGameMsgHandler(owner *GameService) *GameMsgHandler {
@@ -31,7 +32,7 @@ func (h *GameMsgHandler) OnConnected(sess *gsnet_msg.MsgSession) {
 
 // 断开事件
 func (h *GameMsgHandler) OnDisconnected(sess *gsnet_msg.MsgSession, err error) {
-	if sess != h.sess {
+	if h.sess != nil && sess != h.sess {
 		panic("sess must same to OnConnect")
 	}
 	h.afterPlayerDisconnect(sess)
@@ -72,27 +73,7 @@ func (h *GameMsgHandler) SendError(err game_proto.ErrorId) error {
 }
 
 func (h *GameMsgHandler) OnMsgHandle(sess *gsnet_msg.MsgSession, msgid gsnet_msg.MsgIdType, msgobj interface{}) error {
-	var err error
-	if msgid == gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameReq_Id) {
-		err = h.onPlayerLoginReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameReq_Id) {
-		err = h.onPlayerEnterGameReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameReq_Id) {
-		err = h.onPlayerExitGameReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgTimeSyncReq_Id) {
-		err = h.onTimeSyncReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankReq_Id) {
-		err = h.onPlayerChangeTankReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankReq_Id) {
-		err = h.onPlayerRestoreTankReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosReq_Id) {
-		err = h.onPlayerTankUpdatePosReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveReq_Id) {
-		err = h.onPlayerTankMoveReq(sess, msgobj)
-	} else if msgid == gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveReq_Id) {
-		err = h.onPlayerTankStopMoveReq(sess, msgobj)
-	}
-	return err
+	return h.getMsgId2HandleMap()[msgid](sess, msgobj)
 }
 
 // todo 暂时在这里处理登录，有了登录服务器再说
@@ -332,18 +313,20 @@ func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, ms
 }
 
 func (s *GameMsgHandler) getMsgId2HandleMap() map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error {
-	var msgid2HandleMap = map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error{
-		gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameReq_Id):    s.onPlayerLoginReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameReq_Id):     s.onPlayerEnterGameReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameReq_Id):      s.onPlayerExitGameReq,
-		gsnet_msg.MsgIdType(game_proto.MsgTimeSyncReq_Id):            s.onTimeSyncReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankReq_Id):    s.onPlayerChangeTankReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankReq_Id):   s.onPlayerRestoreTankReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveReq_Id):      s.onPlayerTankMoveReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveReq_Id):  s.onPlayerTankStopMoveReq,
-		gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosReq_Id): s.onPlayerTankUpdatePosReq,
+	if s.msgid2HandleMap == nil {
+		s.msgid2HandleMap = map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error{
+			gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameReq_Id):    s.onPlayerLoginReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameReq_Id):     s.onPlayerEnterGameReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameReq_Id):      s.onPlayerExitGameReq,
+			gsnet_msg.MsgIdType(game_proto.MsgTimeSyncReq_Id):            s.onTimeSyncReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankReq_Id):    s.onPlayerChangeTankReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankReq_Id):   s.onPlayerRestoreTankReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveReq_Id):      s.onPlayerTankMoveReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerTankStopMoveReq_Id):  s.onPlayerTankStopMoveReq,
+			gsnet_msg.MsgIdType(game_proto.MsgPlayerTankUpdatePosReq_Id): s.onPlayerTankUpdatePosReq,
+		}
 	}
-	return msgid2HandleMap
+	return s.msgid2HandleMap
 }
 
 // 会话转成玩家

@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/huoshan017/gsnet/client"
 )
 
 type GameState int
@@ -54,7 +55,7 @@ func NewGame(conf *Config) *Game {
 	g := &Game{
 		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
-	g.net = core.CreateNetClient(conf.serverAddress)
+	g.net = core.CreateNetClient(conf.serverAddress, client.WithRunMode(client.RunModeOnlyUpdate))
 	g.eventMgr = base.NewEventManager()
 	g.logic = core.CreateGameLogic(g.eventMgr)
 	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
