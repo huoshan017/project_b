@@ -134,7 +134,7 @@ func (p *SPlayer) GetSessData(k string) interface{} {
 
 // 设置会话数据
 func (p *SPlayer) SetSessData(k string, d interface{}) {
-	p.sess.SetData(k, d)
+	p.sess.SetUserData(k, d)
 }
 
 // 离开游戏

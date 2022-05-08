@@ -105,11 +105,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 // 更新逻辑
 func (g *Game) Update() error {
-	if !g.net.IsDisconnected() {
-		err := g.net.Update()
-		if err != nil {
-			return err
-		}
+	err := g.net.Update()
+	if err != nil {
+		return err
 	}
 
 	switch g.gameData.state {

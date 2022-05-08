@@ -1,6 +1,6 @@
 module project_b
 
-go 1.17
+go 1.18
 
 require (
 	github.com/blizzy78/ebitenui v0.0.0-20210117025656-686fc9c50c07
@@ -8,7 +8,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hajimehoshi/ebiten/v2 v2.2.5
 	github.com/huoshan017/gproc v0.0.0-20210913125355-ecfcebb5e614
-	github.com/huoshan017/gsnet v0.0.0-20220415092742-7117d8b25989
+	github.com/huoshan017/gsnet v0.0.0-20220508015802-dcc2fb858ffd
 	github.com/orcaman/concurrent-map v0.0.0-20210501183033-44dafcb38ecc
 	golang.org/x/image v0.0.0-20211028202545-6944b10bf410
 	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
@@ -28,6 +28,7 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211213063430-748e38ca8aec // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hajimehoshi/oto v0.7.1 // indirect
 	github.com/hajimehoshi/oto/v2 v2.1.0-alpha.2 // indirect
 	github.com/jezek/xgb v0.0.0-20220216171722-7a4fade77cf2 // indirect
@@ -35,6 +36,8 @@ require (
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e // indirect
 	github.com/v2pro/quokka v0.0.0-20171201153428-382cb39c6ee6 // indirect
 	github.com/v2pro/wombat v0.0.0-20180402055224-a56dbdcddef2 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/exp v0.0.0-20201221025956-e89b829e73ea // indirect

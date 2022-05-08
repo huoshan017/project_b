@@ -25,9 +25,13 @@ func CreateGameMsgHandler(owner *GameService) *GameMsgHandler {
 
 // 连接事件
 func (h *GameMsgHandler) OnConnected(sess *gsnet_msg.MsgSession) {
+	gslog.Info("new session %v connected", sess.GetId())
+}
+
+func (h *GameMsgHandler) OnReady(sess *gsnet_msg.MsgSession) {
 	// 连接后把会话缓存起来
 	h.sess = sess
-	gslog.Info("new session %v connected", sess.GetId())
+	gslog.Info("session %v ready", sess.GetId())
 }
 
 // 断开事件
@@ -167,7 +171,7 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg in
 			// 玩家进入
 			p.Entered()
 			// 把玩家对象设置到会话
-			sess.SetData("player", p)
+			sess.SetUserData("player", p)
 		}
 		// 删除进入游戏状态
 		h.service.enterCheckMgr.remove(req.Account)

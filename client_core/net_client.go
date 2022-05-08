@@ -17,7 +17,7 @@ type NetClient struct {
 
 func CreateNetClient(serverAddress string, options ...gsnet_common.Option) *NetClient {
 	client := &NetClient{
-		msgClient:     gsnet_msg.NewPBMsgClient(gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnClient), options...),
+		msgClient:     gsnet_msg.NewProtobufMsgClient(gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnClient), options...),
 		serverAddress: serverAddress,
 	}
 	return client
