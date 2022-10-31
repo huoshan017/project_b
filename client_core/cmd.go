@@ -47,6 +47,10 @@ func CreateCmdHandleManager(net *NetClient, logic *GameLogic) *CmdHandleManager 
 	return m
 }
 
+func (m *CmdHandleManager) Add(cmd CmdCode, handle func(args ...any)) {
+	m.handles = append(m.handles, Cmd2Handle{cmd: cmd, handle: handle})
+}
+
 // 处理命令
 func (m *CmdHandleManager) Handle(cmd CmdCode, args ...interface{}) {
 	found := false

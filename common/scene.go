@@ -47,6 +47,9 @@ func (s *Scene) LoadMap(m *game_map.Config) bool {
 		s.tileObjectArray[i] = make([]*object.StaticObject, len(m.Layers[i]))
 		for j := 0; j < len(s.tileObjectArray[i]); j++ {
 			st := object.StaticObjType(m.Layers[i][j])
+			if common_data.StaticObjectConfigData[st] == nil {
+				continue
+			}
 			s.tileObjectArray[i][j] = s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
 			if s.tileObjectArray[i][j] == nil {
 				log.Error("Can't create static object %v by map layer (%v, %v) in loading map", st, i, j)

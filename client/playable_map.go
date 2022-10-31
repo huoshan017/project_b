@@ -8,7 +8,6 @@ import (
 )
 
 type tileOpCache struct {
-	//img         *ebiten.Image
 	op          *ebiten.DrawImageOptions
 	playableObj *PlayableStaticObject
 }
@@ -58,17 +57,37 @@ func (m *PlayableMap) SetViewport(viewport *base.Viewport) {
  * @param dstImage 目标屏幕
  */
 func (m *PlayableMap) Draw(rect *base.Rect, op *ebiten.DrawImageOptions, dstImage *ebiten.Image) {
-	m.checkInputCords(rect)
-
 	// 获取绘制tiles的索引范围
 	l := (rect.X() - m.config.X) / m.tileSize
+	if l < 0 {
+		l = 0
+	}
+	if l >= m.config.Width/m.tileSize {
+		l = m.config.Width/m.tileSize - 1
+	}
 	r := (rect.X() - m.config.X + rect.W()) / m.tileSize
+	if r < 0 {
+		r = 0
+	}
+	if r >= m.config.Width/m.tileSize {
+		r = m.config.Width/m.tileSize - 1
+	}
 	b := (rect.Y() - m.config.Y) / m.tileSize
+	if b < 0 {
+		b = 0
+	}
+	if b >= m.config.Height/m.tileSize {
+		b = m.config.Height/m.tileSize - 1
+	}
 	t := (rect.Y() - m.config.Y + rect.H()) / m.tileSize
+	if t < 0 {
+		t = 0
+	}
+	if t >= m.config.Height/m.tileSize {
+		t = m.config.Height/m.tileSize - 1
+	}
 	ly := (rect.X() - m.config.X) % m.tileSize
 	by := (rect.Y() - m.config.Y) % m.tileSize
-	//ty := (rect.Y() - m.config.Y + rect.H()) % m.tileSize
-	//ry := (rect.X() - m.config.X + rect.W()) % m.tileSize
 
 	// 按照世界坐標系的坐標軸方向遍歷tiles數組繪製
 	// y坐标，從下到上
@@ -77,6 +96,9 @@ func (m *PlayableMap) Draw(rect *base.Rect, op *ebiten.DrawImageOptions, dstImag
 		for j := l; j <= r; j++ {
 			// 瓦片类型
 			v := m.config.Layers[i][j]
+			if object.StaticObjType(v) == object.StaticObjNone {
+				continue
+			}
 			tileAnimConfig := GetStaticObjAnimConfig(object.StaticObjType(v))
 			if tileAnimConfig == nil {
 				glog.Error("can't get static object anim by type %v", v)
@@ -101,41 +123,10 @@ func (m *PlayableMap) Draw(rect *base.Rect, op *ebiten.DrawImageOptions, dstImag
 			tc.op.GeoM.Reset()
 			// tile圖片與世界坐標尺寸的縮放比例
 			tc.op.GeoM.Scale(multiplesObjLenAndDisplayLen, multiplesObjLenAndDisplayLen)
-			tc.op.GeoM.Translate(-float64(ly)+float64(i*m.tileSize), -float64(by)+float64(j*m.tileSize))
+			// todo 注意这里，i是y轴方向，j是x轴方向
+			tc.op.GeoM.Translate(-float64(by)+float64(j*m.tileSize), -float64(ly)+float64(i*m.tileSize))
 			tc.op.GeoM.Concat(op.GeoM)
 			tc.playableObj.Draw(dstImage, tc.op)
-			//dstImage.DrawImage(tc.img, tc.op)
 		}
-	}
-}
-
-/**
- * 检测并纠正输入的范围参数
- * @param rect 矩形范围
- */
-func (m *PlayableMap) checkInputCords(rect *base.Rect) {
-	if rect.X() < m.config.X {
-		rect.SetX(m.config.X)
-	}
-	if rect.X() > m.config.X+m.config.Width {
-		rect.SetX(m.config.X + m.config.Width)
-	}
-	if rect.Y() < m.config.Y {
-		rect.SetY(m.config.Y)
-	}
-	if rect.Y() > m.config.Y+m.config.Height {
-		rect.SetY(m.config.Y + m.config.Height)
-	}
-	if rect.W() < 0 {
-		rect.SetW(0)
-	}
-	if rect.W() > m.config.Width {
-		rect.SetW(m.config.Width)
-	}
-	if rect.H() < 0 {
-		rect.SetH(0)
-	}
-	if rect.H() > m.config.Height {
-		rect.SetH(m.config.Height)
 	}
 }

@@ -236,7 +236,7 @@ func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg i
 
 	tankId := p.GetChangeTankId()
 	req.TankId = tankId
-	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerChangeTankReq_Id), &req)
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerChangeTankReq_Id), req)
 
 	gslog.Info("player (account: %v, player_id: %v, session: %v) pushed change tank msg to game logic thread", p.Account(), p.Id(), sess.GetId())
 
@@ -255,7 +255,7 @@ func (h *GameMsgHandler) onPlayerRestoreTankReq(sess *gsnet_msg.MsgSession, msg 
 		gslog.Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankReq")
 		return nil
 	}
-	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerRestoreTankReq_Id), &req)
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerRestoreTankReq_Id), req)
 
 	gslog.Info("player (account: %v, player_id: %v, session: %v) pushed restore tank msg to game logic threadv", p.Account(), p.Id(), sess.GetId())
 
@@ -275,7 +275,7 @@ func (h *GameMsgHandler) onPlayerTankMoveReq(sess *gsnet_msg.MsgSession, msg int
 		return nil
 	}
 
-	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankMoveReq_Id), &sync)
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankMoveReq_Id), sync)
 
 	return nil
 }
@@ -293,7 +293,7 @@ func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess *gsnet_msg.MsgSession, msg
 		return nil
 	}
 
-	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankStopMoveReq_Id), &req)
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankStopMoveReq_Id), req)
 
 	return nil
 }
@@ -311,7 +311,7 @@ func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, ms
 		return nil
 	}
 
-	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), &req)
+	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerTankUpdatePosReq_Id), req)
 
 	return nil
 }

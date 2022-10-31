@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/huoshan017/gsnet/client"
+	"github.com/huoshan017/gsnet/options"
 )
 
 type GameState int
@@ -55,7 +55,7 @@ func NewGame(conf *Config) *Game {
 	g := &Game{
 		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
-	g.net = core.CreateNetClient(conf.serverAddress, client.WithRunMode(client.RunModeOnlyUpdate))
+	g.net = core.CreateNetClient(conf.serverAddress, options.WithRunMode(options.RunModeOnlyUpdate), options.WithNoDelay(true))
 	g.eventMgr = base.NewEventManager()
 	g.logic = core.CreateGameLogic(g.eventMgr)
 	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
@@ -73,6 +73,7 @@ func (g *Game) Init() error {
 	g.uiMgr.Init()
 	g.msgHandler.Init()
 	g.eventHandles.Init()
+	g.initInputHandles()
 	g.restart()
 	return nil
 }
@@ -134,7 +135,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		// 画场景
 		g.camera.Draw(screen)
 		// 显示帧数
-		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.CurrentTPS()))
+		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.ActualTPS()))
 	}
 	// 画UI
 	g.uiMgr.Draw(screen)
@@ -181,4 +182,19 @@ func (g *Game) handleInput() {
 			g.cmdMgr.Handle(cmd)
 		}
 	}
+}
+
+func (g *Game) initInputHandles() {
+	g.cmdMgr.Add(CMD_CAMERA_UP, func(args ...any) {
+		g.camera.Move(0, 10)
+	})
+	g.cmdMgr.Add(CMD_CAMERA_DOWN, func(args ...any) {
+		g.camera.Move(0, -10)
+	})
+	g.cmdMgr.Add(CMD_CAMERA_LEFT, func(args ...any) {
+		g.camera.Move(-10, 0)
+	})
+	g.cmdMgr.Add(CMD_CAMERA_RIGHT, func(args ...any) {
+		g.camera.Move(10, 0)
+	})
 }

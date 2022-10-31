@@ -5,8 +5,8 @@ import "sync"
 type ObjectId int32
 
 var refs struct {
-	sync.Mutex
-	objs map[ObjectId]interface{}
+	sync.RWMutex
+	objs map[ObjectId]any
 	next ObjectId
 }
 
@@ -14,11 +14,11 @@ func init() {
 	refs.Lock()
 	defer refs.Unlock()
 
-	refs.objs = make(map[ObjectId]interface{})
+	refs.objs = make(map[ObjectId]any)
 	refs.next = 1000
 }
 
-func NewObjectId(obj interface{}) ObjectId {
+func NewObjectId(obj any) ObjectId {
 	refs.Lock()
 	defer refs.Unlock()
 
@@ -33,14 +33,14 @@ func ObjectIsNil(id ObjectId) bool {
 	return id == 0
 }
 
-func ObjectGet(id ObjectId) interface{} {
-	refs.Lock()
-	defer refs.Unlock()
+func ObjectGet(id ObjectId) any {
+	refs.RLock()
+	defer refs.RUnlock()
 
 	return refs.objs[id]
 }
 
-func ObjectFree(id ObjectId) interface{} {
+func ObjectFree(id ObjectId) any {
 	refs.Lock()
 	defer refs.Unlock()
 

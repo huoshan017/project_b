@@ -6,8 +6,8 @@ import (
 	"project_b/game_proto"
 	"time"
 
-	gsnet_common "github.com/huoshan017/gsnet/common"
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
+	gsnet_options "github.com/huoshan017/gsnet/options"
 )
 
 type NetClient struct {
@@ -15,7 +15,7 @@ type NetClient struct {
 	serverAddress string
 }
 
-func CreateNetClient(serverAddress string, options ...gsnet_common.Option) *NetClient {
+func CreateNetClient(serverAddress string, options ...gsnet_options.Option) *NetClient {
 	client := &NetClient{
 		msgClient:     gsnet_msg.NewProtobufMsgClient(gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnClient), options...),
 		serverAddress: serverAddress,

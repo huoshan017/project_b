@@ -16,8 +16,8 @@ func init() {
 }
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 1280
+	screenHeight = 720
 )
 
 type Config struct {
@@ -42,7 +42,7 @@ func main() {
 
 	glog = core.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
 
-	game := NewGame(&Config{cameraFov: 120, serverAddress: *ip_str})
+	game := NewGame(&Config{cameraFov: 60, serverAddress: *ip_str})
 	err := game.Init()
 	if err != nil {
 		glog.Error("game init err: %v", err)

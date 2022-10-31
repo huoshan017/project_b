@@ -21,20 +21,20 @@ var mapInfoArray = map[int32]mapInfo{
 	1: {
 		config:       game_map.MapConfigArray[1],
 		tileSize:     defaultTileSideLength,
-		cameraPos:    object.Pos{X: 1000, Y: 1000},
-		cameraHeight: 1000,
+		cameraPos:    object.Pos{X: -2000, Y: -2000},
+		cameraHeight: 3700,
 	},
 	2: {
 		config:       game_map.MapConfigArray[2],
 		tileSize:     defaultTileSideLength,
 		cameraPos:    object.Pos{X: 1000, Y: 1000},
-		cameraHeight: 1000,
+		cameraHeight: 5000,
 	},
 	3: {
 		config:       game_map.MapConfigArray[3],
 		tileSize:     defaultTileSideLength,
 		cameraPos:    object.Pos{X: 1000, Y: 1000},
-		cameraHeight: 1000,
+		cameraHeight: 5000,
 	},
 }
 

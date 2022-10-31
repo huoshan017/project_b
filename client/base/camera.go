@@ -125,11 +125,19 @@ func (c *Camera) MoveTo(wx, wy int32) {
 }
 
 /**
- * 改变高度
+ * 设置高度
  * height 高度
  */
-func (c *Camera) ChangeHeight(height int32) {
+func (c *Camera) SetHeight(height int32) {
 	c.height = height
+}
+
+/**
+ * 改变高度
+ * delta 高度变化
+ */
+func (c *Camera) ChangeHeight(delta int32) {
+	c.height += delta
 }
 
 /**

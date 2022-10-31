@@ -10,6 +10,7 @@ import (
 
 	gsnet_common "github.com/huoshan017/gsnet/common"
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
+	gsnet_options "github.com/huoshan017/gsnet/options"
 )
 
 var ErrKickDuplicatePlayer = errors.New("game service example: kick duplicate player")
@@ -40,7 +41,7 @@ func (s *GameService) Init(conf *config) bool {
 	// 错误注册
 	gsnet_common.RegisterNoDisconnectError(ErrKickDuplicatePlayer)
 	// 创建服务
-	net := gsnet_msg.NewProtobufMsgServer(CreateGameMsgHandlerWrapper, []any{s}, gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnServer))
+	net := gsnet_msg.NewProtobufMsgServer(CreateGameMsgHandlerWrapper, []any{s}, gsnet_msg.CreateIdMsgMapperWith(game_proto.Id2MsgMapOnServer), gsnet_options.WithNoDelay(true))
 	// 监听
 	err := net.Listen(conf.addr)
 	if err != nil {
