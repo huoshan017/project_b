@@ -11,6 +11,7 @@ import (
  * 可绘制场景，实现base.IPlayableScene接口
  */
 type PlayableScene struct {
+	camera              *base.Camera
 	viewport            *base.Viewport
 	playerTankPlayables map[uint64]*PlayableTank
 	enemyTankPlayables  map[int32]*PlayableTank
@@ -20,28 +21,14 @@ type PlayableScene struct {
 /**
  * 创建可绘制场景
  */
-func CreatePlayableScene() *PlayableScene {
+func CreatePlayableScene(viewport *base.Viewport, camera *base.Camera) *PlayableScene {
 	return &PlayableScene{
+		camera:              camera,
+		viewport:            viewport,
 		playerTankPlayables: make(map[uint64]*PlayableTank),
 		enemyTankPlayables:  make(map[int32]*PlayableTank),
-		playableMap:         CreatePlayableMap(),
+		playableMap:         CreatePlayableMap(camera),
 	}
-}
-
-/**
- * 使用视口创建可绘制场景
- */
-func CreatePlayableSceneWithViewport(viewport *base.Viewport) *PlayableScene {
-	ps := CreatePlayableScene()
-	ps.viewport = viewport
-	return ps
-}
-
-/**
- * 设置相机
- */
-func (s *PlayableScene) SetViewport(viewport *base.Viewport) {
-	s.viewport = viewport
 }
 
 /**
@@ -61,10 +48,16 @@ func (s *PlayableScene) UnloadMap() {
 /**
  * 绘制场景
  */
-func (s *PlayableScene) Draw(rect *base.Rect, op *ebiten.DrawImageOptions, dstImage *ebiten.Image) {
-	// 先绘制地图
-	s.playableMap.Draw(rect, op, dstImage)
+func (s *PlayableScene) Draw( /*rect *base.Rect, op *ebiten.DrawImageOptions, */ dstImage *ebiten.Image) {
+	// 屏幕左下角
+	lx, ly := s.camera.Screen2World(0, s.viewport.H())
+	// 屏幕右上角
+	rx, ry := s.camera.Screen2World(s.viewport.W(), 0)
+	// 繪製場景圖
+	s.playableMap.Draw(base.NewRect(lx, ly, rx-lx, ry-ly), dstImage)
 	// 再绘制其他物体
+	//s.drawEnemyTanksPlayable(dstImage, op)
+	//s.drawPlayerTanksPlayable(dstImage, op)
 }
 
 // 更新玩家坦克动画

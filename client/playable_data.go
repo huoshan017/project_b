@@ -11,10 +11,6 @@ type frameConfig struct {
 	frameLevelList [][]int32
 }
 
-type movableFrameConfig struct {
-	frameConfig
-}
-
 var (
 	mapTileAnimOriginalConfig map[object.StaticObjType]*base.SpriteAnimConfig // 地图瓦片动画初始配置
 	mapTileFrameConfig        map[object.StaticObjType]*frameConfig           // 地图瓦片动画初始配置

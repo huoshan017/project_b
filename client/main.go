@@ -3,17 +3,11 @@ package main
 import (
 	"flag"
 	"log"
-	"math/rand"
 	"os"
 	core "project_b/client_core"
-	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 const (
 	screenWidth  = 1280

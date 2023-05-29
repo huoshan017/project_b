@@ -4,7 +4,7 @@ import "reflect"
 
 type EventId int32
 
-type EventHandle func(args ...interface{})
+type EventHandle func(args ...any)
 
 type Event struct {
 	handles []EventHandle
@@ -32,7 +32,7 @@ func (e *Event) Unregister(eh EventHandle) {
 	}
 }
 
-func (e *Event) Call(args ...interface{}) {
+func (e *Event) Call(args ...any) {
 	for _, h := range e.handles {
 		if h != nil {
 			h(args...)
@@ -74,14 +74,14 @@ func (e *EventManager) UnregisterEvent(id EventId, handle EventHandle) {
 	handles.Unregister(handle)
 }
 
-func (e *EventManager) InvokeEvent(id EventId, args ...interface{}) {
+func (e *EventManager) InvokeEvent(id EventId, args ...any) {
 	handles, o := e.id2EventHandles[id]
 	if o {
 		handles.Call(args...)
 	}
 }
 
-func (e *EventManager) DispatchEvent(id EventId, args ...interface{}) {
+func (e *EventManager) DispatchEvent(id EventId, args ...any) {
 	e.edList = append(e.edList, &eventData{eid: id, args: args})
 }
 

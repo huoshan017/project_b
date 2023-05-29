@@ -17,12 +17,14 @@ type PlayableMap struct {
 	staticObjArray  [][]*object.StaticObject
 	tilesImg        *ebiten.Image
 	tilesCacheArray [][]*tileOpCache // 缓存TilesImg生成的SubImage和Op，提升性能
-	viewport        *base.Viewport
+	camera          *base.Camera
 }
 
 // 创建可绘制的地图
-func CreatePlayableMap() *PlayableMap {
-	return &PlayableMap{}
+func CreatePlayableMap(camera *base.Camera) *PlayableMap {
+	return &PlayableMap{
+		camera: camera,
+	}
 }
 
 /**
@@ -44,50 +46,48 @@ func (m *PlayableMap) Load(mapId int32, staticObjArray [][]*object.StaticObject)
 }
 
 /**
- * 设置视口
- * @param viewport  视口
- */
-func (m *PlayableMap) SetViewport(viewport *base.Viewport) {
-	m.viewport = viewport
-}
-
-/**
  * 把地图上一个矩形窗口范围内的playable绘制到screen
  * @param rect  可視矩形范围，世界坐标，左下角為原點
  * @param dstImage 目标屏幕
  */
-func (m *PlayableMap) Draw(rect *base.Rect, op *ebiten.DrawImageOptions, dstImage *ebiten.Image) {
+func (m *PlayableMap) Draw(rect *base.Rect, dstImage *ebiten.Image) {
 	// 获取绘制tiles的索引范围
-	l := (rect.X() - m.config.X) / m.tileSize
-	if l < 0 {
+	if rect.X()+rect.W() <= m.config.X {
+		return
+	}
+	if rect.X() >= m.config.X+m.config.Width {
+		return
+	}
+	if rect.Y() >= m.config.Y+m.config.Height {
+		return
+	}
+	if rect.Y()+rect.H() <= m.config.Y {
+		return
+	}
+
+	var t, b, l, r int32
+
+	if rect.X() <= m.config.X {
 		l = 0
+	} else {
+		l = (rect.X() - m.config.X) / m.tileSize
 	}
-	if l >= m.config.Width/m.tileSize {
-		l = m.config.Width/m.tileSize - 1
+	if rect.X()+rect.W() >= m.config.X+m.config.Width {
+		r = int32(len(m.config.Layers[0])) - 1
+	} else {
+		r = (rect.X() + rect.W() - m.config.X) / m.tileSize
 	}
-	r := (rect.X() - m.config.X + rect.W()) / m.tileSize
-	if r < 0 {
-		r = 0
-	}
-	if r >= m.config.Width/m.tileSize {
-		r = m.config.Width/m.tileSize - 1
-	}
-	b := (rect.Y() - m.config.Y) / m.tileSize
-	if b < 0 {
+	if rect.Y() < m.config.Y {
 		b = 0
+	} else {
+		b = (rect.Y() - m.config.Y) / m.tileSize
 	}
-	if b >= m.config.Height/m.tileSize {
-		b = m.config.Height/m.tileSize - 1
+	if rect.Y()+rect.H() >= m.config.Y+m.config.Height {
+		t = int32(len(m.config.Layers)) - 1
+	} else {
+		d := (m.config.Y + m.config.Height - (rect.Y() + rect.H())) / m.tileSize
+		t = int32(len(m.config.Layers)) - 1 - d
 	}
-	t := (rect.Y() - m.config.Y + rect.H()) / m.tileSize
-	if t < 0 {
-		t = 0
-	}
-	if t >= m.config.Height/m.tileSize {
-		t = m.config.Height/m.tileSize - 1
-	}
-	ly := (rect.X() - m.config.X) % m.tileSize
-	by := (rect.Y() - m.config.Y) % m.tileSize
 
 	// 按照世界坐標系的坐標軸方向遍歷tiles數組繪製
 	// y坐标，從下到上
@@ -110,22 +110,20 @@ func (m *PlayableMap) Draw(rect *base.Rect, op *ebiten.DrawImageOptions, dstImag
 					playableObj: NewPlayableStaticObject(m.staticObjArray[i][j], tileAnimConfig),
 					op:          &ebiten.DrawImageOptions{},
 				}
-				//sx := (v % m.tileXNum) * m.tileSize
-				//sy := (v / m.tileXNum) * m.tileSize
-				//op := &ebiten.DrawImageOptions{}
-				//op.GeoM.Translate(float64((int32(j)%worldSizeX)*m.tileSize), float64((int32(j)/worldSizeY)*m.tileSize))
-				//tc = &tileOpCache{
-				//	img: m.tilesImg.SubImage(image.Rect(int(sx), int(sy), int(sx+m.tileSize), int(sy+m.tileSize))).(*ebiten.Image),
-				//	op:  op,
-				//}
 				m.tilesCacheArray[i][j] = tc
 			}
 			tc.op.GeoM.Reset()
-			// tile圖片與世界坐標尺寸的縮放比例
+			// tile本地坐標到世界坐標的縮放
 			tc.op.GeoM.Scale(multiplesObjLenAndDisplayLen, multiplesObjLenAndDisplayLen)
+			lx, ly := m.camera.World2Screen(m.config.X+j*m.tileSize, m.config.Y+i*m.tileSize)
+			rx, ry := m.camera.World2Screen(m.config.X+j*m.tileSize+m.tileSize, m.config.Y+i*m.tileSize+m.tileSize)
+			scalex := float64(rx-lx) / float64(m.tileSize)
+			scaley := float64(ly-ry) / float64(m.tileSize)
+			tc.op.GeoM.Scale(scalex, scaley)
+			tc.op.GeoM.Translate(float64(lx), float64(ly))
 			// todo 注意这里，i是y轴方向，j是x轴方向
-			tc.op.GeoM.Translate(-float64(by)+float64(j*m.tileSize), -float64(ly)+float64(i*m.tileSize))
-			tc.op.GeoM.Concat(op.GeoM)
+			//tc.op.GeoM.Translate(-float64(by)+float64(j*m.tileSize), -float64(ly)+float64(i*m.tileSize))
+			//tc.op.GeoM.Concat(op.GeoM)
 			tc.playableObj.Draw(dstImage, tc.op)
 		}
 	}

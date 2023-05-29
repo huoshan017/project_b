@@ -4,11 +4,16 @@ import (
 	"math"
 	"math/rand"
 	"project_b/common/object"
+	"time"
+)
+
+var (
+	defaultRand = rand.New(rand.NewSource(time.Now().Unix()))
 )
 
 func RandomPosInRect(rect object.Rect) object.Pos {
-	x := rand.Int31n(int32(rect.RightTop.X - rect.LeftBottom.X))
-	y := rand.Int31n(int32(rect.RightTop.Y - rect.LeftBottom.Y))
+	x := defaultRand.Int31n(int32(rect.RightTop.X - rect.LeftBottom.X))
+	y := defaultRand.Int31n(int32(rect.RightTop.Y - rect.LeftBottom.Y))
 	return object.Pos{X: x, Y: y}
 }
 

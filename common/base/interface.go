@@ -4,7 +4,7 @@ package base
 type IEvent interface {
 	Register(handle EventHandle)
 	Unregister(handle EventHandle)
-	Call(args ...interface{})
+	Call(args ...any)
 }
 
 // 事件注册器接口
@@ -15,12 +15,12 @@ type IEventRegistrar interface {
 
 // 事件调用器
 type IEventInvoker interface {
-	InvokeEvent(id EventId, args ...interface{})
+	InvokeEvent(id EventId, args ...any)
 }
 
 // 事件派发器
 type IEventDispatcher interface {
-	DispatchEvent(id EventId, args ...interface{})
+	DispatchEvent(id EventId, args ...any)
 	Update()
 }
 

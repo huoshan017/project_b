@@ -346,9 +346,9 @@ func (t *GameLogicThread) getPlayerData(key common.AgentKey) *playerData {
 }
 
 // 广播消息
-func (t *GameLogicThread) broadcastMsg(msgid gsnet_msg.MsgIdType, msg interface{}) error {
+/*func (t *GameLogicThread) broadcastMsg(msgid gsnet_msg.MsgIdType, msg interface{}) error {
 	return t.broadcastMsgExceptPlayer(msgid, msg, 0)
-}
+}*/
 
 // 广播消息除了某玩家
 func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid gsnet_msg.MsgIdType, msg interface{}, uid uint64) error {

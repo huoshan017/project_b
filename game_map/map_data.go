@@ -219,6 +219,8 @@ var MapConfigArray = map[int32]*Config{
 	3: {
 		Id:                 3,
 		Layers:             mapData3,
+		X:                  0,
+		Y:                  0,
 		Width:              4800,
 		Height:             3200,
 		PlayerTankInitData: *common_data.PlayerTankInitData,

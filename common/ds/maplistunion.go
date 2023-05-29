@@ -1,20 +1,20 @@
 package ds
 
 type kvPair struct {
-	key   interface{}
-	value interface{}
+	key   any
+	value any
 }
 
 // map和list组合体
 type MapListUnion struct {
-	key2index map[interface{}]int32 // 关键字到索引
-	list      []kvPair              // 保存kv对
+	key2index map[any]int32 // 关键字到索引
+	list      []kvPair      // 保存kv对
 }
 
 func NewMapListUnion() *MapListUnion {
 	return &MapListUnion{
 		list:      make([]kvPair, 0),
-		key2index: make(map[interface{}]int32),
+		key2index: make(map[any]int32),
 	}
 }
 
@@ -22,7 +22,7 @@ func (l *MapListUnion) Count() int32 {
 	return int32(len(l.list))
 }
 
-func (l *MapListUnion) Add(k interface{}, v interface{}) {
+func (l *MapListUnion) Add(k any, v any) {
 	if l.Exists(k) {
 		return
 	}
@@ -32,12 +32,12 @@ func (l *MapListUnion) Add(k interface{}, v interface{}) {
 	l.key2index[k] = int32(len(l.list) - 1)
 }
 
-func (l *MapListUnion) Exists(k interface{}) bool {
+func (l *MapListUnion) Exists(k any) bool {
 	_, o := l.key2index[k]
 	return o
 }
 
-func (l *MapListUnion) Get(k interface{}) (interface{}, bool) {
+func (l *MapListUnion) Get(k any) (any, bool) {
 	// 先获得索引
 	idx, o := l.key2index[k]
 	if !o {
@@ -47,7 +47,7 @@ func (l *MapListUnion) Get(k interface{}) (interface{}, bool) {
 	return l.list[idx].value, true
 }
 
-func (l *MapListUnion) Remove(k interface{}) interface{} {
+func (l *MapListUnion) Remove(k any) any {
 	idx, o := l.key2index[k]
 	if !o {
 		return nil
@@ -70,13 +70,13 @@ func (l *MapListUnion) Remove(k interface{}) interface{} {
 	return result.value
 }
 
-func (l *MapListUnion) GetByIndex(idx int32) (key interface{}, value interface{}) {
+func (l *MapListUnion) GetByIndex(idx int32) (key any, value any) {
 	kv := l.list[idx]
 	return kv.key, kv.value
 }
 
-func (l *MapListUnion) GetList() []interface{} {
-	var lis []interface{}
+func (l *MapListUnion) GetList() []any {
+	var lis []any
 	for _, kv := range l.list {
 		lis = append(lis, kv.value)
 	}

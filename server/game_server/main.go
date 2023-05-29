@@ -32,9 +32,9 @@ func NewGameService() *GameService {
 	return &GameService{}
 }
 
-func CreateGameMsgHandlerWrapper(args ...interface{}) gsnet_msg.IMsgSessionEventHandler {
+func CreateGameMsgHandlerWrapper(args ...interface{}) gsnet_msg.IMsgSessionHandler {
 	handler := CreateGameMsgHandler(args[0].(*GameService))
-	return gsnet_msg.IMsgSessionEventHandler(handler)
+	return gsnet_msg.IMsgSessionHandler(handler)
 }
 
 func (s *GameService) Init(conf *config) bool {

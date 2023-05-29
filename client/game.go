@@ -62,8 +62,8 @@ func NewGame(conf *Config) *Game {
 	g.playerMgr = core.CreateCPlayerManager()
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = NewUIMgr(g)
-	g.playableScene = CreatePlayableScene()
-	g.camera = client_base.CreateCamera(g.viewport, conf.cameraFov)
+	g.camera = client_base.CreateCamera(g.viewport, conf.cameraFov, defaultCamera2ViewportDistance)
+	g.playableScene = CreatePlayableScene(g.viewport, g.camera)
 	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
 	return g
 }
@@ -133,7 +133,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.gameData.state == GameStateInGame && g.logic.IsStart() {
 		// 画场景
-		g.camera.Draw(screen)
+		g.playableScene.Draw(screen)
 		// 显示帧数
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.ActualTPS()))
 	}
@@ -145,10 +145,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 func (g *Game) loadMap() {
 	mapId := mapIdList[g.logic.MapIndex()]
 	if g.logic.LoadMap(mapId) {
-		g.camera.SetScene(g.playableScene)
+		//g.camera.SetScene(g.playableScene)
 		mapInfo := mapInfoArray[mapId]
 		g.camera.MoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
-		g.camera.ChangeHeight(mapInfo.cameraHeight)
+		g.camera.SetHeight(mapInfo.cameraHeight)
 	}
 }
 
@@ -185,16 +185,20 @@ func (g *Game) handleInput() {
 }
 
 func (g *Game) initInputHandles() {
-	g.cmdMgr.Add(CMD_CAMERA_UP, func(args ...any) {
+	g.cmdMgr.Add(CMD_CAMERA_UP, func(...any) {
 		g.camera.Move(0, 10)
 	})
-	g.cmdMgr.Add(CMD_CAMERA_DOWN, func(args ...any) {
+	g.cmdMgr.Add(CMD_CAMERA_DOWN, func(...any) {
 		g.camera.Move(0, -10)
 	})
-	g.cmdMgr.Add(CMD_CAMERA_LEFT, func(args ...any) {
+	g.cmdMgr.Add(CMD_CAMERA_LEFT, func(...any) {
 		g.camera.Move(-10, 0)
 	})
-	g.cmdMgr.Add(CMD_CAMERA_RIGHT, func(args ...any) {
+	g.cmdMgr.Add(CMD_CAMERA_RIGHT, func(...any) {
 		g.camera.Move(10, 0)
+	})
+	g.cmdMgr.Add(CMD_CAMERA_HEIGHT, func(args ...any) {
+		delta := args[0].(int)
+		g.camera.ChangeHeight(int32(delta))
 	})
 }

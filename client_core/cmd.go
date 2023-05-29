@@ -21,7 +21,7 @@ const (
 // 命令对应处理
 type Cmd2Handle struct {
 	cmd    CmdCode
-	handle func(args ...interface{})
+	handle func(args ...any)
 }
 
 // 命令处理管理器
@@ -52,7 +52,7 @@ func (m *CmdHandleManager) Add(cmd CmdCode, handle func(args ...any)) {
 }
 
 // 处理命令
-func (m *CmdHandleManager) Handle(cmd CmdCode, args ...interface{}) {
+func (m *CmdHandleManager) Handle(cmd CmdCode, args ...any) {
 	found := false
 	for _, h := range m.handles {
 		if h.cmd == cmd {
@@ -67,7 +67,7 @@ func (m *CmdHandleManager) Handle(cmd CmdCode, args ...interface{}) {
 }
 
 // 移动命令
-func (m *CmdHandleManager) handleMove(args ...interface{}) {
+func (m *CmdHandleManager) handleMove(args ...any) {
 	dir := args[0].(object.Direction)
 	m.logic.MyPlayerTankMove(dir)
 	// todo 在GameLogic中触发移动事件
@@ -75,7 +75,7 @@ func (m *CmdHandleManager) handleMove(args ...interface{}) {
 }
 
 // 停止移动命令
-func (m *CmdHandleManager) handleStopMove(args ...interface{}) {
+func (m *CmdHandleManager) handleStopMove(args ...any) {
 	log.Debug("handleStopMove")
 	m.logic.MyPlayerTankStopMove()
 	// todo 在GameLogic中触发停止事件
@@ -83,7 +83,7 @@ func (m *CmdHandleManager) handleStopMove(args ...interface{}) {
 }
 
 // 改变坦克命令
-func (m *CmdHandleManager) handleChangeTank(args ...interface{}) {
+func (m *CmdHandleManager) handleChangeTank(args ...any) {
 	err := m.net.SendTankChangeReq()
 	if err != nil {
 		Log().Warn("send tank change req err: %v", err)
@@ -91,7 +91,7 @@ func (m *CmdHandleManager) handleChangeTank(args ...interface{}) {
 }
 
 // 恢复坦克命令
-func (m *CmdHandleManager) handleRestoreTank(args ...interface{}) {
+func (m *CmdHandleManager) handleRestoreTank(args ...any) {
 	err := m.net.SendTankRestoreReq()
 	if err != nil {
 		Log().Warn("send tank restore req err: %v", err)

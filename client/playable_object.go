@@ -60,13 +60,13 @@ func (po *PlayableObject) Stop() {
 
 // 更新
 func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
-	x, y := po.obj.Pos()
-	x0 := po.op.GeoM.Element(0, 2)
-	y0 := po.op.GeoM.Element(1, 2)
+	//x, y := po.obj.Pos()
+	//x0 := po.op.GeoM.Element(0, 2)
+	//y0 := po.op.GeoM.Element(1, 2)
 	// 顯示根據邏輯數據插值
-	po.op.GeoM.Translate(float64(x)-x0, float64(y)-y0)
-	po.op.GeoM.Concat(op.GeoM)
-	po.anim.Update(screen, po.op)
+	//po.op.GeoM.Translate(float64(x)-x0, float64(y)-y0)
+	op.GeoM.Concat(po.op.GeoM)
+	po.anim.Update(screen, op)
 }
 
 // 可播放的静态对象

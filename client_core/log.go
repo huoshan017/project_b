@@ -1,6 +1,10 @@
 package client_core
 
-import "project_b/common/log"
+import (
+	"project_b/common/log"
+
+	"go.uber.org/zap/zapcore"
+)
 
 type Logger struct {
 	log.Logger
@@ -18,7 +22,7 @@ func InitLog(fileName string, maxSize, maxBackups, maxAge int, compress, console
 				MaxAge:        maxAge,        // 30,
 				Compress:      compress,      // false,
 				ConsoleOutput: consoleOutput, // true,
-			}, log.DebugLevel),
+			}, zapcore.Level(logLevel)),
 		}
 	}
 	return gslog

@@ -5,7 +5,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "game_server",
+			"name": "game_server attach",
 			"type": "go",
 			"request": "attach",
 			"mode": "local",
