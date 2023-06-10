@@ -1,56 +1,58 @@
 package ds
 
-type kvPair struct {
-	key   any
-	value any
+type kvPair[Key comparable, Value any] struct {
+	key   Key
+	value Value
 }
 
 // map和list组合体
-type MapListUnion struct {
-	key2index map[any]int32 // 关键字到索引
-	list      []kvPair      // 保存kv对
+type MapListUnion[Key comparable, Value any] struct {
+	key2index map[Key]int32        // 关键字到索引
+	list      []kvPair[Key, Value] // 保存kv对
 }
 
-func NewMapListUnion() *MapListUnion {
-	return &MapListUnion{
-		list:      make([]kvPair, 0),
-		key2index: make(map[any]int32),
+func NewMapListUnion[Key comparable, Value any]() *MapListUnion[Key, Value] {
+	return &MapListUnion[Key, Value]{
+		list:      make([]kvPair[Key, Value], 0),
+		key2index: make(map[Key]int32),
 	}
 }
 
-func (l *MapListUnion) Count() int32 {
+func (l *MapListUnion[Key, Value]) Count() int32 {
 	return int32(len(l.list))
 }
 
-func (l *MapListUnion) Add(k any, v any) {
+func (l *MapListUnion[Key, Value]) Add(k Key, v Value) {
 	if l.Exists(k) {
 		return
 	}
 	// 把值追加到队列尾部
-	l.list = append(l.list, kvPair{key: k, value: v})
+	l.list = append(l.list, kvPair[Key, Value]{key: k, value: v})
 	// 建立key跟索引的映射
 	l.key2index[k] = int32(len(l.list) - 1)
 }
 
-func (l *MapListUnion) Exists(k any) bool {
+func (l *MapListUnion[Key, Value]) Exists(k Key) bool {
 	_, o := l.key2index[k]
 	return o
 }
 
-func (l *MapListUnion) Get(k any) (any, bool) {
+func (l *MapListUnion[Key, Value]) Get(k Key) (Value, bool) {
 	// 先获得索引
 	idx, o := l.key2index[k]
 	if !o {
-		return nil, false
+		var v Value
+		return v, false
 	}
 	// 再取值
 	return l.list[idx].value, true
 }
 
-func (l *MapListUnion) Remove(k any) any {
+func (l *MapListUnion[Key, Value]) Remove(k Key) Value {
 	idx, o := l.key2index[k]
 	if !o {
-		return nil
+		var v Value
+		return v
 	}
 	// 需要删除的值
 	result := l.list[idx]
@@ -70,13 +72,13 @@ func (l *MapListUnion) Remove(k any) any {
 	return result.value
 }
 
-func (l *MapListUnion) GetByIndex(idx int32) (key any, value any) {
+func (l *MapListUnion[Key, Value]) GetByIndex(idx int32) (key Key, value Value) {
 	kv := l.list[idx]
 	return kv.key, kv.value
 }
 
-func (l *MapListUnion) GetList() []any {
-	var lis []any
+func (l *MapListUnion[Key, Value]) GetList() []Value {
+	var lis []Value
 	for _, kv := range l.list {
 		lis = append(lis, kv.value)
 	}

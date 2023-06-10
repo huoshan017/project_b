@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package game_map;
-option go_package="../game_map";
-
-message MapFormat {
-    uint32 Width = 1;
-    uint32 Height = 2;
-}

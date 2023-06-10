@@ -17,7 +17,7 @@ const (
 	StaticObjNone          = StaticObjType(0) // 无
 	StaticObjBrick         = StaticObjType(1) // 砖块
 	StaticObjIron          = StaticObjType(2) // 铁
-	StaticObjGrass         = StaticObjType(3) // 草
+	StaticObjTree          = StaticObjType(3) // 樹
 	StaticObjWater         = StaticObjType(4) // 水
 	StaticObjIce           = StaticObjType(5) // 冰
 	StaticObjHome          = StaticObjType(6) // 基地
@@ -41,7 +41,7 @@ type ObjSubType int
 const (
 	ObjSubTypeBrick         = ObjSubType(StaticObjBrick)
 	ObjSubTypeIron          = ObjSubType(StaticObjIron)
-	ObjSubTypeGrass         = ObjSubType(StaticObjGrass)
+	ObjSubTypeTree          = ObjSubType(StaticObjTree)
 	ObjSubTypeIce           = ObjSubType(StaticObjIce)
 	ObjSubTypeWater         = ObjSubType(StaticObjWater)
 	ObjSubTypeHome          = ObjSubType(StaticObjHome)

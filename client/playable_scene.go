@@ -1,7 +1,8 @@
 package main
 
 import (
-	"project_b/client/base"
+	client_base "project_b/client/base"
+	"project_b/common/math"
 	"project_b/common/object"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -11,8 +12,8 @@ import (
  * 可绘制场景，实现base.IPlayableScene接口
  */
 type PlayableScene struct {
-	camera              *base.Camera
-	viewport            *base.Viewport
+	camera              *client_base.Camera
+	viewport            *client_base.Viewport
 	playerTankPlayables map[uint64]*PlayableTank
 	enemyTankPlayables  map[int32]*PlayableTank
 	playableMap         *PlayableMap
@@ -21,13 +22,11 @@ type PlayableScene struct {
 /**
  * 创建可绘制场景
  */
-func CreatePlayableScene(viewport *base.Viewport, camera *base.Camera) *PlayableScene {
+func CreatePlayableScene(viewport *client_base.Viewport) *PlayableScene {
 	return &PlayableScene{
-		camera:              camera,
 		viewport:            viewport,
 		playerTankPlayables: make(map[uint64]*PlayableTank),
 		enemyTankPlayables:  make(map[int32]*PlayableTank),
-		playableMap:         CreatePlayableMap(camera),
 	}
 }
 
@@ -35,6 +34,11 @@ func CreatePlayableScene(viewport *base.Viewport, camera *base.Camera) *Playable
  * 载入地图
  */
 func (s *PlayableScene) LoadMap(mapId int32, objArray [][]*object.StaticObject) bool {
+	mapInfo := mapInfoArray[mapId]
+	s.camera = client_base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultCamera2ViewportDistance)
+	s.CameraMoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
+	s.CameraSetHeight(mapInfo.cameraHeight)
+	s.playableMap = CreatePlayableMap(s.camera)
 	return s.playableMap.Load(mapId, objArray)
 }
 
@@ -46,6 +50,34 @@ func (s *PlayableScene) UnloadMap() {
 }
 
 /**
+ * 移動相機
+ */
+func (s *PlayableScene) CameraMove(x, y int32) {
+	s.camera.Move(x, y)
+}
+
+/**
+ * 相機移到
+ */
+func (s *PlayableScene) CameraMoveTo(x, y int32) {
+	s.camera.MoveTo(x, y)
+}
+
+/**
+ * 改變相機高度
+ */
+func (s *PlayableScene) CameraChangeHeight(delta int32) {
+	s.camera.ChangeHeight(delta)
+}
+
+/**
+ * 設置相機高度
+ */
+func (s *PlayableScene) CameraSetHeight(height int32) {
+	s.camera.SetHeight(height)
+}
+
+/**
  * 绘制场景
  */
 func (s *PlayableScene) Draw( /*rect *base.Rect, op *ebiten.DrawImageOptions, */ dstImage *ebiten.Image) {
@@ -54,10 +86,7 @@ func (s *PlayableScene) Draw( /*rect *base.Rect, op *ebiten.DrawImageOptions, */
 	// 屏幕右上角
 	rx, ry := s.camera.Screen2World(s.viewport.W(), 0)
 	// 繪製場景圖
-	s.playableMap.Draw(base.NewRect(lx, ly, rx-lx, ry-ly), dstImage)
-	// 再绘制其他物体
-	//s.drawEnemyTanksPlayable(dstImage, op)
-	//s.drawPlayerTanksPlayable(dstImage, op)
+	s.playableMap.Draw(math.NewRect(lx, ly, rx-lx, ry-ly), dstImage)
 }
 
 // 更新玩家坦克动画

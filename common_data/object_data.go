@@ -9,7 +9,7 @@ var (
 	StaticObjectTypeList = []object.StaticObjType{
 		object.StaticObjBrick,
 		object.StaticObjIron,
-		object.StaticObjGrass,
+		object.StaticObjTree,
 		object.StaticObjWater,
 		object.StaticObjIce,
 		object.StaticObjHome,
@@ -19,19 +19,26 @@ var (
 	// 静态物体配置
 	StaticObjectConfigData = map[object.StaticObjType]*object.ObjStaticInfo{
 		// 砖
-		object.StaticObjBrick: object.NewObjStaticInfo(int32(object.StaticObjBrick), object.ObjTypeStatic, object.ObjSubTypeBrick, 0, 0, 320, 320, 0, object.DirNone),
+		object.StaticObjBrick: object.NewObjStaticInfo(
+			int32(object.StaticObjBrick), object.ObjTypeStatic, object.ObjSubTypeBrick, 0, 0, 320, 320, 0, object.DirNone, 1),
 		// 铁
-		object.StaticObjIron: object.NewObjStaticInfo(int32(object.StaticObjIron), object.ObjTypeStatic, object.ObjSubTypeIron, 0, 0, 320, 320, 0, object.DirNone),
-		// 草
-		object.StaticObjGrass: object.NewObjStaticInfo(int32(object.StaticObjGrass), object.ObjTypeStatic, object.ObjSubTypeGrass, 0, 0, 320, 320, 0, object.DirNone),
+		object.StaticObjIron: object.NewObjStaticInfo(
+			int32(object.StaticObjIron), object.ObjTypeStatic, object.ObjSubTypeIron, 0, 0, 320, 320, 0, object.DirNone, 1),
+		// 樹
+		object.StaticObjTree: object.NewObjStaticInfo(
+			int32(object.StaticObjTree), object.ObjTypeStatic, object.ObjSubTypeTree, 0, 0, 320, 320, 0, object.DirNone, 2),
 		// 水
-		object.StaticObjWater: object.NewObjStaticInfo(int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, 0, 0, 320, 320, 0, object.DirNone),
+		object.StaticObjWater: object.NewObjStaticInfo(
+			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, 0, 0, 320, 320, 0, object.DirNone, 0),
 		// 冰
-		object.StaticObjIce: object.NewObjStaticInfo(int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, 0, 0, 320, 320, 0, object.DirNone),
+		object.StaticObjIce: object.NewObjStaticInfo(
+			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, 0, 0, 320, 320, 0, object.DirNone, 0),
 		// 基地
-		object.StaticObjHome: object.NewObjStaticInfo(int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, 0, 0, 320, 320, 0, object.DirNone),
-		// 摧毁的基地
-		object.StaticObjHomeDestroyed: object.NewObjStaticInfo(int32(object.StaticObjHomeDestroyed), object.ObjTypeStatic, object.ObjSubTypeHomeDestroyed, 0, 0, 320, 320, 0, object.DirNone),
+		object.StaticObjHome: object.NewObjStaticInfo(
+			int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, 0, 0, 320, 320, 0, object.DirNone, 1),
+		// 廢墟
+		object.StaticObjHomeDestroyed: object.NewObjStaticInfo(
+			int32(object.StaticObjHomeDestroyed), object.ObjTypeStatic, object.ObjSubTypeHomeDestroyed, 0, 0, 320, 320, 0, object.DirNone, 1),
 	}
 
 	// 坦克id列表
@@ -48,12 +55,12 @@ var (
 
 	// 坦克静态配置数据，全部是逻辑数据
 	TankConfigData = map[int32]*object.ObjStaticInfo{
-		1: object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp),
-		2: object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp),
+		1: object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1),
+		2: object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1),
 
-		1000: object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp),
-		1001: object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 650, object.DirUp),
-		1002: object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 300, object.DirUp),
+		1000: object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1),
+		1001: object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 650, object.DirUp, 1),
+		1002: object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 300, object.DirUp, 1),
 	}
 
 	// 玩家坦克配置信息

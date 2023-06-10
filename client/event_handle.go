@@ -12,7 +12,7 @@ import (
 
 type event2Handle struct {
 	eid    base.EventId
-	handle func(args ...interface{})
+	handle func(args ...any)
 }
 
 type EventHandles struct {
@@ -86,12 +86,13 @@ func (g *EventHandles) unregisterEvents() {
 	}
 }
 
-/**
+/*
+*
 请求登录
 args[0]: account string
 args[1]: password string
 */
-func (g *EventHandles) onEventReqLogin(args ...interface{}) {
+func (g *EventHandles) onEventReqLogin(args ...any) {
 	var account string
 	var password string
 	var o bool
@@ -117,11 +118,12 @@ func (g *EventHandles) onEventReqLogin(args ...interface{}) {
 	glog.Info("handle event: account %v password %v send login req", account, password)
 }
 
-/**
+/*
+*
 请求进入游戏
 args[0]: account string
 */
-func (g *EventHandles) onEventReqEnterGame(args ...interface{}) {
+func (g *EventHandles) onEventReqEnterGame(args ...any) {
 	var account, sessionToken string
 	var o bool
 	account, o = args[0].(string)
@@ -137,12 +139,13 @@ func (g *EventHandles) onEventReqEnterGame(args ...interface{}) {
 	glog.Info("handle event: account %v send enter game req", account)
 }
 
-/**
+/*
+*
 处理玩家进入游戏事件
 args[0]: account(string)
 args[1]: uid(uint64)
 */
-func (g *EventHandles) onEventPlayerEnterGame(args ...interface{}) {
+func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 	if len(args) < 3 {
 		glog.Warn("onEventEnterGame event args length cant less than 3")
 		return
@@ -166,10 +169,11 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...interface{}) {
 	}
 }
 
-/**
+/*
+*
 处理进入游戏完成
 */
-func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...interface{}) {
+func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...any) {
 	// 准备同步服务器时间
 	if err := g.net.SendTimeSyncReq(); err != nil {
 		glog.Error("handle event: send time sync request err: %v", err)
@@ -184,11 +188,12 @@ func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...interface{}) {
 	glog.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.gameData.myAcc, g.gameData.myId)
 }
 
-/**
+/*
+*
 处理玩家离开游戏事件
 args[0]: uid(uint64)
 */
-func (g *EventHandles) onEventPlayerExitGame(args ...interface{}) {
+func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 	if len(args) < 1 {
 		glog.Warn("onEventPlayerExitGame event args length cant less 1")
 		return
@@ -207,10 +212,11 @@ func (g *EventHandles) onEventPlayerExitGame(args ...interface{}) {
 	glog.Info("handle event: player (uid: %v) exited game", uid)
 }
 
-/**
+/*
+*
 处理时间同步事件
 */
-func (g *EventHandles) onEventTimeSync(args ...interface{}) {
+func (g *EventHandles) onEventTimeSync(args ...any) {
 	if err := g.net.SendTimeSyncReq(); err != nil {
 		glog.Error("handle event: send time sync request err: %v", err)
 		return
@@ -221,21 +227,21 @@ func (g *EventHandles) onEventTimeSync(args ...interface{}) {
 /**
  *处理时间同步结束事件
  */
-func (g *EventHandles) onEventTimeSyncEnd(args ...interface{}) {
+func (g *EventHandles) onEventTimeSyncEnd(args ...any) {
 	glog.Info("handle event: time sync end")
 }
 
 /**
  * 处理载入地图前事件
  */
-func (g *EventHandles) onEventBeforeMapLoad(args ...interface{}) {
+func (g *EventHandles) onEventBeforeMapLoad(args ...any) {
 
 }
 
 /**
  * 处理地图载入完成事件
  */
-func (eh *EventHandles) onEventMapLoaded(args ...interface{}) {
+func (eh *EventHandles) onEventMapLoaded(args ...any) {
 	mapId := args[0].(int32)
 	objArray := args[1].([][]*object.StaticObject)
 	if !eh.playableScene.LoadMap(mapId, objArray) {
@@ -247,24 +253,25 @@ func (eh *EventHandles) onEventMapLoaded(args ...interface{}) {
 /**
  * 处理地图卸载前事件
  */
-func (g *EventHandles) onEventBeforeMapUnload(args ...interface{}) {
+func (g *EventHandles) onEventBeforeMapUnload(args ...any) {
 
 }
 
 /**
  * 处理地图卸载后事件
  */
-func (g *EventHandles) onEventMapUnloaded(args ...interface{}) {
+func (g *EventHandles) onEventMapUnloaded(args ...any) {
 
 }
 
-/**
+/*
+*
 处理坦克移动事件
 args[0]: pos(object.Pos)
 args[1]: direction(object.Direction)
 args[2]: speed(int32)
 */
-func (g *EventHandles) onEventTankMove(args ...interface{}) {
+func (g *EventHandles) onEventTankMove(args ...any) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
@@ -274,13 +281,14 @@ func (g *EventHandles) onEventTankMove(args ...interface{}) {
 	}
 }
 
-/**
+/*
+*
 处理坦克停止移动事件
 args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
 */
-func (g *EventHandles) onEventTankStopMove(args ...interface{}) {
+func (g *EventHandles) onEventTankStopMove(args ...any) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
@@ -290,13 +298,14 @@ func (g *EventHandles) onEventTankStopMove(args ...interface{}) {
 	}
 }
 
-/**
+/*
+*
 处理坦克设置坐标事件
 args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
 */
-func (g *EventHandles) onEventTankSetPos(args ...interface{}) {
+func (g *EventHandles) onEventTankSetPos(args ...any) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
@@ -306,12 +315,13 @@ func (g *EventHandles) onEventTankSetPos(args ...interface{}) {
 	}
 }
 
-/**
+/*
+*
 处理坦克改变事件
 args[0]: uint64
 args[1]: *object.Tank
 */
-func (g *EventHandles) onEventTankChange(args ...interface{}) {
+func (g *EventHandles) onEventTankChange(args ...any) {
 	if len(args) < 2 {
 		glog.Error("onEventTankChange event need 3 args")
 		return
@@ -321,12 +331,13 @@ func (g *EventHandles) onEventTankChange(args ...interface{}) {
 	glog.Info("handle event: player %v changed tank to %v", pid, tank.Id())
 }
 
-/**
+/*
+*
 处理坦克恢复事件
 args[0]: uint64
 args[1]: *object.Tank
 */
-func (g *EventHandles) onEventTankRestore(args ...interface{}) {
+func (g *EventHandles) onEventTankRestore(args ...any) {
 	if len(args) < 2 {
 		glog.Error("onEventTankRestore event need 3 args")
 		return

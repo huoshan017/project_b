@@ -21,8 +21,8 @@ type Scene struct {
 	gmap                *game_map.Config
 	tileObjectArray     [][]*object.StaticObject
 	eventMgr            base.IEventManager
-	playerTankList      *ds.MapListUnion
-	enemyTankList       *ds.MapListUnion
+	playerTankList      *ds.MapListUnion[uint64, *object.Tank]
+	enemyTankList       *ds.MapListUnion[uint32, *object.Tank]
 	playerTankListCache []PlayerTankKV
 	objFactory          *object.ObjectFactory
 }
@@ -30,8 +30,8 @@ type Scene struct {
 func NewScene(eventMgr base.IEventManager) *Scene {
 	return &Scene{
 		eventMgr:       eventMgr,
-		playerTankList: ds.NewMapListUnion(),
-		enemyTankList:  ds.NewMapListUnion(),
+		playerTankList: ds.NewMapListUnion[uint64, *object.Tank](),
+		enemyTankList:  ds.NewMapListUnion[uint32, *object.Tank](),
 		objFactory:     object.NewObjectFactory(true),
 	}
 }
@@ -89,7 +89,7 @@ func (s *Scene) GetPlayerTank(pid uint64) *object.Tank {
 	if !o {
 		return nil
 	}
-	return v.(*object.Tank)
+	return v
 }
 
 func (s *Scene) NewPlayerTank(pid uint64) *object.Tank {
@@ -108,7 +108,7 @@ func (s *Scene) AddPlayerTank(pid uint64, tank *object.Tank) {
 
 func (s *Scene) RemovePlayerTank(pid uint64) {
 	tank := s.playerTankList.Remove(pid)
-	s.objFactory.RecycleTank(tank.(*object.Tank))
+	s.objFactory.RecycleTank(tank)
 }
 
 func (s *Scene) GetPlayerTankList() []PlayerTankKV {
@@ -119,8 +119,8 @@ func (s *Scene) GetPlayerTankList() []PlayerTankKV {
 	for i := int32(0); i < count; i++ {
 		k, v := s.playerTankList.GetByIndex(i)
 		s.playerTankListCache = append(s.playerTankListCache, PlayerTankKV{
-			PlayerId: k.(uint64),
-			Tank:     v.(*object.Tank),
+			PlayerId: k,
+			Tank:     v,
 		})
 	}
 	return s.playerTankListCache
@@ -171,10 +171,10 @@ func (s *Scene) GetEnemyTank(instId uint32) *object.Tank {
 	if !o {
 		return nil
 	}
-	return v.(*object.Tank)
+	return v
 }
 
-func (s *Scene) RemoveEnemyTank(id uint64) {
+func (s *Scene) RemoveEnemyTank(id uint32) {
 	s.enemyTankList.Remove(id)
 }
 
@@ -182,27 +182,27 @@ func (s *Scene) Update(tick time.Duration) {
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.playerTankList.GetByIndex(i)
-		tank.(*object.Tank).Update(tick)
+		tank.Update(tick)
 	}
 	count = s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.enemyTankList.GetByIndex(i)
-		tank.(*object.Tank).Update(tick)
+		tank.Update(tick)
 	}
 }
 
 // 注册事件
-func (s *Scene) RegisterEvent(eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) RegisterEvent(eid base.EventId, handle func(args ...any)) {
 	s.eventMgr.RegisterEvent(eid, handle)
 }
 
 // 注销事件
-func (s *Scene) UnregisterEvent(eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) UnregisterEvent(eid base.EventId, handle func(args ...any)) {
 	s.eventMgr.UnregisterEvent(eid, handle)
 }
 
 // 注册玩家事件
-func (s *Scene) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...any)) {
 	tank := s.GetPlayerTank(uid)
 	if tank == nil {
 		return
@@ -218,7 +218,7 @@ func (s *Scene) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(ar
 }
 
 // 注销玩家事件
-func (s *Scene) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...any)) {
 	tank := s.GetPlayerTank(uid)
 	if tank == nil {
 		return
@@ -233,7 +233,7 @@ func (s *Scene) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(
 	}
 }
 
-func (s *Scene) RegisterEnemyEvent(instId uint32, eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) RegisterEnemyEvent(instId uint32, eid base.EventId, handle func(args ...any)) {
 	tank := s.GetEnemyTank(instId)
 	if tank == nil {
 		return
@@ -248,7 +248,7 @@ func (s *Scene) RegisterEnemyEvent(instId uint32, eid base.EventId, handle func(
 	}
 }
 
-func (s *Scene) UnregisterEnemyEvent(instId uint32, eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) UnregisterEnemyEvent(instId uint32, eid base.EventId, handle func(args ...any)) {
 	tank := s.GetEnemyTank(instId)
 	if tank == nil {
 		return
@@ -263,34 +263,34 @@ func (s *Scene) UnregisterEnemyEvent(instId uint32, eid base.EventId, handle fun
 	}
 }
 
-func (s *Scene) RegisterAllPlayersEvent(eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) RegisterAllPlayersEvent(eid base.EventId, handle func(args ...any)) {
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
 		pid, _ := s.playerTankList.GetByIndex(i)
-		s.RegisterPlayerEvent(pid.(uint64), eid, handle)
+		s.RegisterPlayerEvent(pid, eid, handle)
 	}
 }
 
-func (s *Scene) UnregisterAllPlayersEvent(eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) UnregisterAllPlayersEvent(eid base.EventId, handle func(args ...any)) {
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
 		pid, _ := s.playerTankList.GetByIndex(i)
-		s.UnregisterPlayerEvent(pid.(uint64), eid, handle)
+		s.UnregisterPlayerEvent(pid, eid, handle)
 	}
 }
 
-func (s *Scene) RegisterAllEnemiesEvent(eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) RegisterAllEnemiesEvent(eid base.EventId, handle func(args ...any)) {
 	count := s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
 		instId, _ := s.enemyTankList.GetByIndex(i)
-		s.RegisterEnemyEvent(instId.(uint32), eid, handle)
+		s.RegisterEnemyEvent(instId, eid, handle)
 	}
 }
 
-func (s *Scene) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args ...interface{})) {
+func (s *Scene) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args ...any)) {
 	count := s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
 		instId, _ := s.enemyTankList.GetByIndex(i)
-		s.UnregisterEnemyEvent(instId.(uint32), eid, handle)
+		s.UnregisterEnemyEvent(instId, eid, handle)
 	}
 }

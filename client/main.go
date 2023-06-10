@@ -15,7 +15,6 @@ const (
 )
 
 type Config struct {
-	cameraFov     int32
 	serverAddress string
 }
 
@@ -36,7 +35,7 @@ func main() {
 
 	glog = core.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
 
-	game := NewGame(&Config{cameraFov: 60, serverAddress: *ip_str})
+	game := NewGame(&Config{serverAddress: *ip_str})
 	err := game.Init()
 	if err != nil {
 		glog.Error("game init err: %v", err)

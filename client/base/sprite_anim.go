@@ -43,6 +43,16 @@ func NewSpriteAnim(config *SpriteAnimConfig) *SpriteAnim {
 	}
 }
 
+// 寬度
+func (a *SpriteAnim) Width() int32 {
+	return int32(a.Config.FrameWidth)
+}
+
+// 高度
+func (a *SpriteAnim) Height() int32 {
+	return int32(a.Config.FrameHeight)
+}
+
 // 播放
 func (a *SpriteAnim) Play() {
 	if a.currState != stop {
@@ -62,7 +72,7 @@ func (a *SpriteAnim) Stop() {
 // 更新
 func (a *SpriteAnim) Update(screen *ebiten.Image, options *ebiten.DrawImageOptions) {
 	// 停止模式，播放当前帧，一般是第0帧
-	if a.currState == stop {
+	if a.currState == stop || a.Config.PlayInterval == 0 {
 		a.draw(a.currFrame, screen, options)
 		return
 	}

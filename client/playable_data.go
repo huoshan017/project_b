@@ -31,8 +31,8 @@ func initAnimOriginalConfigs() {
 		object.StaticObjIron: {
 			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 1, Y: 0}},
 		},
-		// 草
-		object.StaticObjGrass: {
+		// 樹
+		object.StaticObjTree: {
 			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 2, Y: 0}},
 		},
 		// 水
@@ -59,8 +59,8 @@ func initAnimOriginalConfigs() {
 			frameNum:       1,
 			frameLevelList: [][]int32{{0}},
 		},
-		// 草
-		object.StaticObjGrass: {
+		// 樹
+		object.StaticObjTree: {
 			frameNum:       1,
 			frameLevelList: [][]int32{{0}},
 		},
@@ -255,9 +255,9 @@ func initAnimConfigs() {
 			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeIron,
 			AnimConfig: createStaticObjAnimConfig(object.StaticObjIron),
 		},
-		object.StaticObjGrass: {
-			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeGrass,
-			AnimConfig: createStaticObjAnimConfig(object.StaticObjGrass),
+		object.StaticObjTree: {
+			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeTree,
+			AnimConfig: createStaticObjAnimConfig(object.StaticObjTree),
 		},
 		object.StaticObjWater: {
 			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeWater,
@@ -535,9 +535,9 @@ func GetIronAnimConfig() *StaticObjectAnimConfig {
 	return GetStaticObjAnimConfig(object.StaticObjIron)
 }
 
-// 获得草地动画配置
-func GetGrassAnimConfig() *StaticObjectAnimConfig {
-	return GetStaticObjAnimConfig(object.StaticObjGrass)
+// 获得樹木动画配置
+func GetTreeAnimConfig() *StaticObjectAnimConfig {
+	return GetStaticObjAnimConfig(object.StaticObjTree)
 }
 
 // 获得水动画配置

@@ -1,6 +1,7 @@
 package base
 
 import (
+	"project_b/common/math"
 	"project_b/common/object"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -35,5 +36,5 @@ type IPlayableScene interface {
 	// @param sceneRect 表示场景的绘制逻辑坐标区域
 	// @param options 从世界空间到视图到投影空间的变换矩阵
 	// @param sceneImage 表示绘制的目标屏幕
-	Draw(sceneRect *Rect, options *ebiten.DrawImageOptions, sceneImage *ebiten.Image)
+	Draw(sceneRect *math.Rect, options *ebiten.DrawImageOptions, sceneImage *ebiten.Image)
 }

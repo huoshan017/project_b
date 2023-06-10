@@ -5,6 +5,7 @@ import (
 	client_base "project_b/client/base"
 	core "project_b/client_core"
 	"project_b/common/base"
+	"project_b/common/log"
 	"project_b/common/time"
 	"project_b/common_data"
 
@@ -35,7 +36,7 @@ type Game struct {
 	msgHandler    *core.MsgHandler       // 消息处理器
 	logic         *core.GameLogic        // 游戏逻辑
 	cmdMgr        *core.CmdHandleManager // 命令处理管理器
-	playerMgr     *core.CPlayerManager   // 玩家管理器
+	playerMgr     *core.CPlayerManager   // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
 	eventMgr      *base.EventManager     // 游戏事件管理器，向上层逻辑传递事件
 	lastCheckTime time.CustomTime        // 上次检测时间
 
@@ -43,7 +44,6 @@ type Game struct {
 	// 表现相关
 
 	viewport      *client_base.Viewport // 视口
-	camera        *client_base.Camera   // 摄像机
 	playableScene *PlayableScene        // 场景绘制
 	uiMgr         *UIManager            // UI管理
 	eventHandles  *EventHandles         // 事件处理
@@ -62,8 +62,7 @@ func NewGame(conf *Config) *Game {
 	g.playerMgr = core.CreateCPlayerManager()
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = NewUIMgr(g)
-	g.camera = client_base.CreateCamera(g.viewport, conf.cameraFov, defaultCamera2ViewportDistance)
-	g.playableScene = CreatePlayableScene(g.viewport, g.camera)
+	g.playableScene = CreatePlayableScene(g.viewport)
 	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
 	return g
 }
@@ -85,8 +84,7 @@ func (g *Game) Uninit() {
 
 // 重新开始
 func (g *Game) restart() {
-	//g.logic.LoadMap(mapIdList[g.logic.MapIndex()])
-	g.gameData.state = 0
+	g.gameData.state = GameStateMainMenu
 }
 
 // 当前模式
@@ -114,16 +112,10 @@ func (g *Game) Update() error {
 	switch g.gameData.state {
 	case GameStateMainMenu:
 	case GameStateInGame:
-		if !g.logic.IsStart() {
-			g.loadMap()
-			g.logic.Start()
-		} else {
-			g.update()
-		}
+		g.update()
 		g.handleInput()
 	case GameStateOver:
 		g.restart()
-		g.gameData.state = GameStateMainMenu
 	}
 	g.uiMgr.Update()
 	return nil
@@ -145,15 +137,17 @@ func (g *Game) Draw(screen *ebiten.Image) {
 func (g *Game) loadMap() {
 	mapId := mapIdList[g.logic.MapIndex()]
 	if g.logic.LoadMap(mapId) {
-		//g.camera.SetScene(g.playableScene)
-		mapInfo := mapInfoArray[mapId]
-		g.camera.MoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
-		g.camera.SetHeight(mapInfo.cameraHeight)
+		log.Error("load map %v error", mapId)
 	}
 }
 
 // 更新
 func (g *Game) update() {
+	if !g.logic.IsStart() {
+		g.loadMap()
+		g.logic.Start()
+		return
+	}
 	// 时间同步完成
 	if core.IsTimeSyncEnd() {
 		now := core.GetSyncServTime()
@@ -186,19 +180,19 @@ func (g *Game) handleInput() {
 
 func (g *Game) initInputHandles() {
 	g.cmdMgr.Add(CMD_CAMERA_UP, func(...any) {
-		g.camera.Move(0, 10)
+		g.playableScene.CameraMove(0, 10)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_DOWN, func(...any) {
-		g.camera.Move(0, -10)
+		g.playableScene.CameraMove(0, -10)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_LEFT, func(...any) {
-		g.camera.Move(-10, 0)
+		g.playableScene.CameraMove(-10, 0)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_RIGHT, func(...any) {
-		g.camera.Move(10, 0)
+		g.playableScene.CameraMove(10, 0)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_HEIGHT, func(args ...any) {
 		delta := args[0].(int)
-		g.camera.ChangeHeight(int32(delta))
+		g.playableScene.CameraChangeHeight(int32(delta))
 	})
 }
