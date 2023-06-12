@@ -101,6 +101,14 @@ func (o object) OwnerType() ObjOwnerType {
 	return o.ownerType
 }
 
+// 靜態信息
+func (o object) StaticInfo() *ObjStaticInfo {
+	if o.changedStaticInfo != nil {
+		return o.changedStaticInfo
+	}
+	return o.staticInfo
+}
+
 // 位置
 func (o object) Pos() (int32, int32) {
 	return o.x, o.y

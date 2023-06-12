@@ -11,6 +11,10 @@ func NewRect(x, y, w, h int32) *Rect {
 	}
 }
 
+func NewRectObj(x, y, w, h int32) Rect {
+	return Rect{x: x, y: y, w: w, h: h}
+}
+
 func (r Rect) X() int32 {
 	return r.x
 }

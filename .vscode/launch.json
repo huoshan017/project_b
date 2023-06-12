@@ -21,7 +21,7 @@
 			"mode": "debug",
 			"program": "${fileDirname}",
 			"cwd": "${workspaceFolder}/bin",
-			"args": ["-ip=127.0.0.1:8000"],
+			"args": ["-ip=127.0.0.1:9000"],
 			"showLog": true
 		},
 		{

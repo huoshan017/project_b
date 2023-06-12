@@ -40,6 +40,10 @@ func (f *ObjectFactory) getNewObjId() uint32 {
 	return id
 }
 
+func (f *ObjectFactory) GetObj(instId uint32) IObject {
+	return f.objMap[instId]
+}
+
 func (f *ObjectFactory) NewStaticObject(info *ObjStaticInfo) *StaticObject {
 	if info.typ != ObjTypeStatic {
 		log.Error("object type is invalid, must ObjTypeStatic")

@@ -16,10 +16,10 @@ type event2Handle struct {
 }
 
 type EventHandles struct {
-	net           *core.NetClient
-	logic         *core.GameLogic
-	playableScene *PlayableScene
-	gameData      *GameData
+	net              *core.NetClient
+	logic            *core.GameLogic
+	playableSceneMap *PlayableSceneMap
+	gameData         *GameData
 	// --------------------------------------
 	// 事件处理
 	gameEvent2Handles   []event2Handle // 游戏事件
@@ -27,12 +27,12 @@ type EventHandles struct {
 }
 
 // 创建EventHandles
-func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableScene *PlayableScene, gameData *GameData) *EventHandles {
+func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableSceneMap *PlayableSceneMap, gameData *GameData) *EventHandles {
 	eh := &EventHandles{
-		net:           net,
-		logic:         logic,
-		playableScene: playableScene,
-		gameData:      gameData,
+		net:              net,
+		logic:            logic,
+		playableSceneMap: playableSceneMap,
+		gameData:         gameData,
 	}
 	return eh
 }
@@ -156,7 +156,7 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 	tank := args[2].(*object.Tank)
 
 	// 加入播放场景
-	g.playableScene.AddPlayerTankPlayable(uid, tank)
+	g.playableSceneMap.AddPlayerTankPlayable(uid, tank)
 
 	if g.gameData.myAcc == account {
 		g.gameData.myId = uid
@@ -202,7 +202,7 @@ func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 	uid := args[0].(uint64)
 
 	// 从播放场景中删除
-	g.playableScene.RemovePlayerTankPlayable(uid)
+	g.playableSceneMap.RemovePlayerTankPlayable(uid)
 
 	// 注销本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
@@ -242,12 +242,8 @@ func (g *EventHandles) onEventBeforeMapLoad(args ...any) {
  * 处理地图载入完成事件
  */
 func (eh *EventHandles) onEventMapLoaded(args ...any) {
-	mapId := args[0].(int32)
-	objArray := args[1].([][]*object.StaticObject)
-	if !eh.playableScene.LoadMap(mapId, objArray) {
-		glog.Error("playable scene load map %v failed", mapId)
-		return
-	}
+	currentSceneMap := args[0].(*common.SceneMap)
+	eh.playableSceneMap.SetMap(currentSceneMap)
 }
 
 /**

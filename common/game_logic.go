@@ -15,11 +15,12 @@ const (
 
 type GameLogic struct {
 	eventMgr base.IEventManager // 事件管理
-	scene    *Scene             // 场景
-	state    int32              // 0 未开始  1. 运行中
-	mapIndex int32              // 地图索引
-	frame    int32              // 帧序号，每Update一次加1
-	maxFrame int32              // 最大帧序号
+	//scene    *Scene             // 场景
+	sceneMap *SceneMap // 場景圖
+	state    int32     // 0 未开始  1. 运行中
+	mapIndex int32     // 地图索引
+	frame    int32     // 帧序号，每Update一次加1
+	maxFrame int32     // 最大帧序号
 }
 
 // 创建游戏逻辑
@@ -29,14 +30,30 @@ func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
 		eventMgr = base.NewEventManager()
 	}
 	gl.eventMgr = eventMgr
-	gl.scene = NewScene(gl.eventMgr)
+	//gl.scene = NewScene(gl.eventMgr)
+	gl.sceneMap = NewSceneMap(gl.eventMgr)
 	return gl
 }
 
 // 载入地图
 func (g *GameLogic) LoadMap(mapId int32) bool {
 	m := game_map.MapConfigArray[mapId]
-	return g.scene.LoadMap(m)
+	return g.sceneMap.LoadMap(m)
+}
+
+// 載入場景地圖
+func (g *GameLogic) LoadSceneMap(mapId int32) bool {
+	return g.sceneMap.LoadMap(game_map.MapConfigArray[mapId])
+}
+
+// 卸載場景圖
+func (g *GameLogic) UnloadSceneMap() {
+	g.sceneMap.UnloadMap()
+}
+
+// 場景圖
+func (g *GameLogic) CurrentSceneMap() *SceneMap {
+	return g.sceneMap
 }
 
 // 地图索引
@@ -56,7 +73,7 @@ func (g *GameLogic) GetCurrFrame() int32 {
 
 // 在逻辑线程中更新
 func (g *GameLogic) Update(tick time.Duration) {
-	g.scene.Update(tick)
+	g.sceneMap.Update(tick)
 	g.frame += 1
 	if g.maxFrame > 0 {
 		if g.frame >= g.maxFrame {
@@ -94,74 +111,74 @@ func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interf
 
 // 注册场景事件
 func (g *GameLogic) RegisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
-	g.scene.RegisterEvent(eid, handle)
+	g.sceneMap.RegisterEvent(eid, handle)
 }
 
 // 注销场景事件
 func (g *GameLogic) UnregisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
-	g.scene.UnregisterEvent(eid, handle)
+	g.sceneMap.UnregisterEvent(eid, handle)
 }
 
 // 注册坦克事件
 func (g *GameLogic) RegisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
-	g.scene.RegisterPlayerEvent(uid, eid, handle)
+	g.sceneMap.RegisterPlayerEvent(uid, eid, handle)
 }
 
 // 注销坦克事件
 func (g *GameLogic) UnregisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
-	g.scene.UnregisterPlayerEvent(uid, eid, handle)
+	g.sceneMap.UnregisterPlayerEvent(uid, eid, handle)
 }
 
 // 获得玩家坦克
 func (g *GameLogic) GetPlayerTank(uid uint64) *object.Tank {
-	return g.scene.GetPlayerTank(uid)
+	return g.sceneMap.GetPlayerTank(uid)
 }
 
 // 获得玩家坦克列表
 func (g *GameLogic) GetPlayerTankList() []PlayerTankKV {
-	return g.scene.GetPlayerTankList()
+	return g.sceneMap.GetPlayerTankList()
 }
 
 // 玩家进入
 func (g *GameLogic) NewPlayerEnter(pid uint64) *object.Tank {
-	return g.scene.NewPlayerTank(pid)
+	return g.sceneMap.NewPlayerTank(pid)
 }
 
 // 玩家坦克进入
 func (g *GameLogic) PlayerEnterWithTank(uid uint64, tank *object.Tank) {
-	if g.scene.GetPlayerTank(uid) == nil {
-		g.scene.AddPlayerTank(uid, tank)
+	if g.sceneMap.GetPlayerTank(uid) == nil {
+		g.sceneMap.AddPlayerTank(uid, tank)
 	}
 }
 
 // 玩家离开
 func (g *GameLogic) PlayerLeave(pid uint64) {
-	g.scene.RemovePlayerTank(pid)
+	g.sceneMap.RemovePlayerTank(pid)
 }
 
 // 获得敌人坦克
 func (g *GameLogic) GetEnemyTank(instId uint32) *object.Tank {
-	return g.scene.GetEnemyTank(instId)
+	return g.sceneMap.GetEnemyTank(instId)
 }
 
 // 玩家坦克移动
 func (g *GameLogic) PlayerTankMove(uid uint64, moveDir object.Direction) {
-	g.scene.PlayerTankMove(uid, moveDir)
+	g.sceneMap.PlayerTankMove(uid, moveDir)
 }
 
 // 玩家坦克停止移动
 func (g *GameLogic) PlayerTankStopMove(uid uint64) {
-	g.scene.PlayerTankStopMove(uid)
+	g.sceneMap.PlayerTankStopMove(uid)
 }
 
 // 玩家坦克改变
 func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.ObjStaticInfo) bool {
-	return g.scene.PlayerTankChange(uid, staticInfo)
+	return g.sceneMap.PlayerTankChange(uid, staticInfo)
 }
 
 // 玩家坦克恢复
 func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
-	return g.scene.PlayerTankRestore(uid)
+	return g.sceneMap.PlayerTankRestore(uid)
 }
 
 // 检测玩家

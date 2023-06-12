@@ -11,6 +11,7 @@ type IObject interface {
 	Type() ObjectType            // 类型
 	Subtype() ObjSubType         // 子类型
 	OwnerType() ObjOwnerType     // 所有者类型
+	StaticInfo() *ObjStaticInfo  // 靜態信息
 	SetPos(x, y int32)           // 设置位置
 	Pos() (x, y int32)           // 位置
 	Width() int32                // 宽度
