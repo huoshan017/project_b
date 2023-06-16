@@ -125,7 +125,6 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.gameData.state == GameStateInGame && g.logic.IsStart() {
 		// 画场景
-		//g.playableScene.Draw(screen)
 		g.playableSceneMap.Draw(screen)
 		// 显示帧数
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.ActualTPS()))
@@ -136,8 +135,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 // 载入地图
 func (g *Game) loadMap() {
-	mapId := mapIdList[g.logic.MapIndex()]
-	//if g.logic.LoadMap(mapId) {
+	mapId := common_data.MapIdList[g.logic.MapIndex()]
 	if !g.logic.LoadSceneMap(mapId) {
 		log.Error("load map %v error", mapId)
 	}
@@ -147,7 +145,7 @@ func (g *Game) loadMap() {
 // 更新
 func (g *Game) update() {
 	if !g.logic.IsStart() {
-		g.loadMap()
+		// g.loadMap()
 		g.logic.Start()
 		return
 	}

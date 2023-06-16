@@ -13,7 +13,6 @@ import (
 type Camera struct {
 	sceneImage            *ebiten.Image
 	viewport              *Viewport
-	scene                 IPlayableScene           // interface of Scene Playable
 	wx, wy                int32                    // world cordinate
 	height                int32                    // distance to world
 	fov                   int32                    // field of view
@@ -43,14 +42,6 @@ func CreateCamera(viewport *Viewport, fov int32, nearPlane float64) *Camera {
 	c.tanHalfFov = math.Tan(float64(c.fov) * math.Pi / 360)
 	c.nearPlane = nearPlane //float64(c.viewport.w) / 2 * c.tanHalfFov
 	return c
-}
-
-/**
- * 设置可视场景
- */
-func (c *Camera) SetScene(scene IPlayableScene) {
-	scene.SetViewport(c.viewport)
-	c.scene = scene
 }
 
 /**

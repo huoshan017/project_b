@@ -14,8 +14,8 @@ import (
 
 // 场景圖结构必须在单个goroutine中执行
 type SceneMap struct {
-	gmap *game_map.Config
-	//tileObjectArray     [][]*object.StaticObject
+	gmap                *game_map.Config
+	mapWidth, mapHeight int32
 	eventMgr            base.IEventManager
 	playerTankList      *ds.MapListUnion[uint64, *object.Tank]
 	enemyTankList       *ds.MapListUnion[uint32, *object.Tank]
@@ -43,22 +43,24 @@ func (s *SceneMap) LoadMap(m *game_map.Config) bool {
 	s.mapInstance.Load(m)
 	// 地图载入前事件
 	s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
-	for i := 0; i < len(m.Layers); i++ {
-		for j := 0; j < len(m.Layers[i]); j++ {
-			st := object.StaticObjType(m.Layers[i][j])
+	for line := 0; line < len(m.Layers); line++ {
+		for col := 0; col < len(m.Layers[line]); col++ {
+			st := object.StaticObjType(m.Layers[line][col])
 			if common_data.StaticObjectConfigData[st] == nil {
 				continue
 			}
 			tileObj := s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
-			// 二維數組m.Layers是自上而下的，而世界坐標是自下而上的，所以設置Y坐標要倒過來
-			tileObj.SetPos(m.TileWidth*int32(j), m.TileHeight*int32(len(m.Layers)-1-i))
-			s.mapInstance.AddTile(int32(len(m.Layers)-1-i), int32(j), tileObj)
+			// 二維數組Y軸是自上而下的，而世界坐標Y軸是自下而上的，所以設置Y坐標要倒過來
+			tileObj.SetPos(m.TileWidth*int32(col), m.TileHeight*int32(len(m.Layers)-1-line))
+			s.mapInstance.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 		}
 	}
 	s.gmap = m
+	s.mapWidth = int32(len(m.Layers[0])) * m.TileWidth
+	s.mapHeight = int32(len(m.Layers)) * m.TileHeight
 	// 地图载入完成事件
 	s.eventMgr.InvokeEvent(EventIdMapLoaded, s)
-	log.Info("Load map %v done", m.Id)
+	log.Info("Load map %v done, map width %v, map height %v", m.Id, s.mapWidth, s.mapHeight)
 	return true
 }
 
@@ -82,6 +84,10 @@ func (s *SceneMap) UnloadMap() {
 	s.tileObjectArray = nil*/
 }
 
+func (s *SceneMap) GetMapConfig() *game_map.Config {
+	return s.gmap
+}
+
 func (s *SceneMap) GetLayerObjsWithRange(rect *math.Rect) [game_map.MapMaxLayer][]uint32 {
 	return s.mapInstance.GetLayerObjsWithRange(rect)
 }
@@ -100,20 +106,37 @@ func (s *SceneMap) GetPlayerTank(pid uint64) *object.Tank {
 
 func (s *SceneMap) NewPlayerTank(pid uint64) *object.Tank {
 	tank := s.objFactory.NewTank(&s.gmap.PlayerTankInitData)
+	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
 	// 随机并设置坦克位置
 	pos := utils.RandomPosInRect(s.gmap.PlayerTankInitRect)
 	tank.SetPos(pos.X, pos.Y)
 	// 加入到玩家坦克列表
 	s.playerTankList.Add(pid, tank)
+	s.mapInstance.AddObj(tank)
 	return tank
 }
 
 func (s *SceneMap) AddPlayerTank(pid uint64, tank *object.Tank) {
+	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
 	s.playerTankList.Add(pid, tank)
+	s.mapInstance.AddObj(tank)
+}
+
+func (s *SceneMap) AddPlayerTankWithInfo(pid uint64, id int32, level int32, x, y int32, dir object.Direction, currSpeed int32) {
+	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
+	tank.SetPos(x, y)
+	tank.SetLevel(level)
+	tank.SetDir(dir)
+	tank.SetCurrentSpeed(currSpeed)
+	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	s.playerTankList.Add(pid, tank)
+	s.mapInstance.AddObj(tank)
 }
 
 func (s *SceneMap) RemovePlayerTank(pid uint64) {
 	tank := s.playerTankList.Remove(pid)
+	tank.UnregisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	s.mapInstance.RemoveObj(tank.InstId())
 	s.objFactory.RecycleTank(tank)
 }
 
@@ -138,7 +161,10 @@ func (s *SceneMap) PlayerTankMove(uid uint64, dir object.Direction) {
 		log.Error("player %v tank not found", uid)
 		return
 	}
-	tank.Move(dir)
+	tank.SetDir(dir)
+	if s.checkObjCanMove(tank, nil, nil) {
+		tank.Move(dir)
+	}
 }
 
 func (s *SceneMap) PlayerTankStopMove(uid uint64) {
@@ -170,6 +196,7 @@ func (s *SceneMap) PlayerTankRestore(uid uint64) int32 {
 
 func (s *SceneMap) AddEnemyTank(instId uint32, tank *object.Tank) {
 	s.enemyTankList.Add(instId, tank)
+	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
 }
 
 func (s *SceneMap) GetEnemyTank(instId uint32) *object.Tank {
@@ -181,6 +208,10 @@ func (s *SceneMap) GetEnemyTank(instId uint32) *object.Tank {
 }
 
 func (s *SceneMap) RemoveEnemyTank(id uint32) {
+	v, o := s.enemyTankList.Get(id)
+	if o {
+		v.UnregisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	}
 	s.enemyTankList.Remove(id)
 }
 
@@ -189,11 +220,13 @@ func (s *SceneMap) Update(tick time.Duration) {
 	for i := int32(0); i < count; i++ {
 		_, tank := s.playerTankList.GetByIndex(i)
 		tank.Update(tick)
+		s.mapInstance.UpdateObj(tank)
 	}
 	count = s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.enemyTankList.GetByIndex(i)
 		tank.Update(tick)
+		s.mapInstance.UpdateObj(tank)
 	}
 }
 
@@ -299,4 +332,41 @@ func (s *SceneMap) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args 
 		instId, _ := s.enemyTankList.GetByIndex(i)
 		s.UnregisterEnemyEvent(instId, eid, handle)
 	}
+}
+
+func (s *SceneMap) checkObjPosEventHandle(args ...any) {
+	obj := args[0].(object.IMovableObject)
+	var x, y int32
+	if !s.checkObjCanMove(obj, &x, &y) {
+		obj.SetPos(x, y)
+		obj.Stop()
+	}
+}
+
+func (s *SceneMap) checkObjCanMove(obj object.IMovableObject, rx, ry *int32) bool {
+	x, y := obj.Pos()
+	var move bool = true
+	if x <= s.gmap.X && obj.Dir() == object.DirLeft {
+		move = false
+		x = s.gmap.X
+	} else if x >= s.gmap.X+s.mapWidth-obj.Width() && obj.Dir() == object.DirRight {
+		move = false
+		x = s.gmap.X + s.mapWidth - obj.Width()
+	}
+	if y <= s.gmap.Y && obj.Dir() == object.DirDown {
+		move = false
+		y = s.gmap.Y
+	} else if y >= s.gmap.Y+s.mapHeight-obj.Height() && obj.Dir() == object.DirUp {
+		move = false
+		y = s.gmap.Y + s.mapHeight - obj.Height()
+	}
+	if !move {
+		if rx != nil {
+			*rx = x
+		}
+		if ry != nil {
+			*ry = y
+		}
+	}
+	return move
 }

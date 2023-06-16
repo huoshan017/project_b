@@ -5,14 +5,13 @@ import (
 	"project_b/common"
 	"project_b/common/math"
 	"project_b/common/object"
-	"unsafe"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type objOpCache struct {
 	op          *ebiten.DrawImageOptions
-	playableObj *PlayableObject
+	playableObj IPlayable
 }
 
 /**
@@ -25,6 +24,7 @@ type PlayableSceneMap struct {
 	playableObjs        map[uint32]*objOpCache
 	playerTankPlayables map[uint64]*PlayableTank
 	enemyTankPlayables  map[int32]*PlayableTank
+	interpolationObjs   map[uint32]struct{}
 }
 
 /**
@@ -36,6 +36,7 @@ func CreatePlayableSceneMap(viewport *base.Viewport) *PlayableSceneMap {
 		playableObjs:        make(map[uint32]*objOpCache),
 		playerTankPlayables: make(map[uint64]*PlayableTank),
 		enemyTankPlayables:  make(map[int32]*PlayableTank),
+		interpolationObjs:   make(map[uint32]struct{}),
 	}
 }
 
@@ -99,6 +100,7 @@ func (s *PlayableSceneMap) Draw(dstImage *ebiten.Image) {
 		if len(layerObjs[i]) == 0 {
 			continue
 		}
+		// todo 這裏正確的做法是根據obj的邏輯距離由遠到近畫出來
 		for j := 0; j < len(layerObjs[i]); j++ {
 			obj := s.sceneMap.GetObj(layerObjs[i][j])
 			if obj == nil {
@@ -110,59 +112,40 @@ func (s *PlayableSceneMap) Draw(dstImage *ebiten.Image) {
 }
 
 func (s *PlayableSceneMap) drawObj(obj object.IObject, dstImage *ebiten.Image) {
-	var animConfig *base.SpriteAnimConfig
-	switch obj.Type() {
-	case object.ObjTypeStatic:
-		if object.StaticObjType(obj.Subtype()) == object.StaticObjNone {
-			return
-		}
-		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
-		if config == nil {
-			glog.Error("can't get static object anim by type %v", obj.Subtype())
-			return
-		}
-		animConfig = config.AnimConfig
-	case object.ObjTypeMovable:
-		if object.MovableObjType(obj.Subtype()) == object.MovableObjNone {
-			return
-		}
-		var level int32
-		mobj := obj.(*object.MovableObject)
-		if mobj.Subtype() == object.ObjSubType(object.MovableObjTank) {
-			tobj := (*object.Tank)(unsafe.Pointer(mobj))
-			level = tobj.Level()
-		}
-		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), level)
-		if config == nil {
-			glog.Error("can't get static object anim by type %v", obj.Subtype())
-			return
-		}
-		animConfig = config.AnimConfig[mobj.Dir()]
-	default:
-		return
-	}
+	playableObj, animConfig := GetPlayableObject(obj)
 	tc := s.playableObjs[obj.InstId()]
 	if tc == nil {
 		tc = &objOpCache{
-			playableObj: NewPlayableObject(obj, animConfig),
+			playableObj: playableObj,
 			op:          &ebiten.DrawImageOptions{},
 		}
-		tc.playableObj.Play()
 		s.playableObjs[obj.InstId()] = tc
 	}
+
 	tc.op.GeoM.Reset()
 	// tile本地坐標到世界坐標的縮放
 	sx := obj.Width() / int32(animConfig.FrameWidth)
 	sy := obj.Height() / int32(animConfig.FrameHeight)
 	tc.op.GeoM.Scale(float64(sx), float64(sy))
+
+	// 插值
+	var dx, dy float64
+	x, y := obj.Pos()
+	mapConfig := s.sceneMap.GetMapConfig()
+	mapWidth := mapConfig.TileWidth * int32(len(mapConfig.Layers[0]))
+	mapHeight := mapConfig.TileHeight * int32(len(mapConfig.Layers))
+	if x >= mapConfig.X && x <= mapConfig.X+mapWidth-obj.Width() && y >= mapConfig.Y && y <= mapConfig.Y+mapHeight-obj.Height() {
+		dx, dy = tc.playableObj.Interpolation()
+	}
 	// todo 注意这里，i是y轴方向，j是x轴方向
 	// 由於世界坐標Y軸與屏幕坐標Y軸方向相反，所以變換左上角和右下角的世界坐標到屏幕坐標
-	lx, ly := s.camera.World2Screen(obj.Left(), obj.Top())
-	rx, ry := s.camera.World2Screen(obj.Right(), obj.Bottom())
+	lx, ly := s.camera.World2Screen(obj.Left()+int32(dx), obj.Top()+int32(dy))
+	rx, ry := s.camera.World2Screen(obj.Right()+int32(dx), obj.Bottom()+int32(dy))
 	scalex := float64(rx-lx) / float64(obj.Width())
 	scaley := float64(ry-ly) / float64(obj.Height())
 	tc.op.GeoM.Scale(scalex, scaley)
 	tc.op.GeoM.Translate(float64(lx), float64(ly))
+	// 判断是否插值
 	tc.playableObj.Draw(dstImage, tc.op)
 }
 

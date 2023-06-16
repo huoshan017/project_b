@@ -10,7 +10,6 @@
 			"request": "attach",
 			"mode": "local",
 			"cwd": "${workspaceFolder}/bin",
-			"args": [],
 			"processId": 0,
 			"showLog": true
 		},
@@ -30,7 +29,6 @@
 			"request": "attach",
 			"mode": "local",
 			"cwd": "${workspaceFolder}/bin",
-			"args": [],
 			"processId": 0,
 			"showLog": true
 		}

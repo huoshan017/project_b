@@ -17,22 +17,22 @@ var (
 	ErrMsgLogicProcNoFoundHandle = errors.New("common: not found handle for message logic proc")
 )
 
-type AgentKey interface{}
-type MsgData interface{}
+type AgentKey any
+type MsgData any
 
 // 消息结构
 type msgData struct {
 	key   AgentKey
 	msgid uint32
-	msg   interface{}
+	msg   any
 }
 
 // 代理数据
 type agentData struct {
 	typ      int32 // 1. 添加  2. 删除  3. 更新
 	key      AgentKey
-	data     interface{}
-	onHandle func(interface{}) error
+	data     any
+	onHandle func(any) error
 }
 
 // 消息逻辑处理器，单线程结构，非线程安全
@@ -40,7 +40,7 @@ type MsgLogicProc struct {
 	msgList     chan *msgData
 	msgDataPool *sync.Pool
 	agentCh     chan *agentData
-	agentMap    map[AgentKey]interface{}
+	agentMap    map[AgentKey]any
 	handleMap   map[uint32]func(AgentKey, MsgData) error
 	tickHandle  func(tick time.Duration)
 	tick        time.Duration
@@ -54,12 +54,12 @@ func CreateMsgLogicProc() *MsgLogicProc {
 	return &MsgLogicProc{
 		msgList: make(chan *msgData, LogicProcDefaultMsgListLength),
 		msgDataPool: &sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				return &msgData{}
 			},
 		},
 		agentCh:   make(chan *agentData),
-		agentMap:  make(map[AgentKey]interface{}),
+		agentMap:  make(map[AgentKey]any),
 		closeCh:   make(chan struct{}),
 		handleMap: make(map[uint32]func(AgentKey, MsgData) error),
 	}
@@ -85,7 +85,7 @@ func (p *MsgLogicProc) SetErrorHandle(handle func(err error)) {
 }
 
 // 压入代理
-func (t *MsgLogicProc) AddAgent(key AgentKey, data interface{}, handle func(interface{}) error) {
+func (t *MsgLogicProc) AddAgent(key AgentKey, data any, handle func(any) error) {
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}
@@ -98,7 +98,7 @@ func (t *MsgLogicProc) AddAgent(key AgentKey, data interface{}, handle func(inte
 }
 
 // 删除代理
-func (t *MsgLogicProc) DeleteAgent(key AgentKey, data interface{}, handle func(interface{}) error) {
+func (t *MsgLogicProc) DeleteAgent(key AgentKey, data any, handle func(any) error) {
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}
@@ -110,7 +110,7 @@ func (t *MsgLogicProc) DeleteAgent(key AgentKey, data interface{}, handle func(i
 }
 
 // 更新代理
-func (t *MsgLogicProc) UpdateAgent(key AgentKey, data interface{}, handle func(interface{}) error) {
+func (t *MsgLogicProc) UpdateAgent(key AgentKey, data any, handle func(any) error) {
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}
@@ -127,17 +127,17 @@ func (t *MsgLogicProc) GetAgentCountNoLock() int32 {
 }
 
 // 获得代理map
-func (t *MsgLogicProc) GetAgentMapNoLock() map[AgentKey]interface{} {
+func (t *MsgLogicProc) GetAgentMapNoLock() map[AgentKey]any {
 	return t.agentMap
 }
 
 // 无锁获得代理
-func (t *MsgLogicProc) GetAgentNoLock(key AgentKey) interface{} {
+func (t *MsgLogicProc) GetAgentNoLock(key AgentKey) any {
 	return t.agentMap[key]
 }
 
 // 压入玩家消息数据
-func (t *MsgLogicProc) PushMsg(key AgentKey, msgid uint32, msg interface{}) {
+func (t *MsgLogicProc) PushMsg(key AgentKey, msgid uint32, msg any) {
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}

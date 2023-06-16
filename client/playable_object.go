@@ -9,9 +9,26 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// 可播放接口
+type IPlayable interface {
+	// 初始化
+	Init()
+	// 反初始化
+	Uninit()
+	// 重置对象
+	Reset(object.IObject)
+	// 播放
+	Play()
+	// 停止
+	Stop()
+	// 绘制
+	Draw(*ebiten.Image, *ebiten.DrawImageOptions)
+	// 插值
+	Interpolation() (float64, float64)
+}
+
 // 可播放对象
 type PlayableObject struct {
-	base.IPlayable
 	op   *ebiten.DrawImageOptions
 	obj  object.IObject
 	anim base.SpriteAnim
@@ -42,7 +59,7 @@ func (po *PlayableObject) Uninit() {
 }
 
 // 重置对象
-func (po *PlayableObject) ResetObj(obj object.IObject) {
+func (po *PlayableObject) Reset(obj object.IObject) {
 	po.obj = obj
 }
 
@@ -63,6 +80,11 @@ func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 	po.anim.Update(screen, op)
 }
 
+// 插值
+func (po *PlayableObject) Interpolation() (float64, float64) {
+	return 0, 0
+}
+
 // 可播放的静态对象
 type PlayableStaticObject struct {
 	PlayableObject
@@ -70,33 +92,29 @@ type PlayableStaticObject struct {
 
 // 创建静态物体的播放对象
 func NewPlayableStaticObject(sobj object.IStaticObject, animConfig *StaticObjectAnimConfig) *PlayableStaticObject {
-	return &PlayableStaticObject{
+	playable := &PlayableStaticObject{
 		PlayableObject: *NewPlayableObject(sobj.(object.IObject), animConfig.AnimConfig),
 	}
+	playable.Play()
+	return playable
 }
 
 // 可移动物体的播放对象，有四个方向的动画
 type PlayableMoveObject struct {
-	base.IPlayable
-	op         *ebiten.DrawImageOptions
-	mobj       object.IMovableObject
-	anims      []*base.SpriteAnim
-	isMoving   bool             // 是否正在移动
-	moveDir    object.Direction // 移动方向
-	currSpeed  int32            // 当前速度
-	updateTime time.CustomTime  // 更新时间点
-	dx, dy     int32            // 目标点坐标，负数表示已经到达过该点
+	op           *ebiten.DrawImageOptions
+	mobj         object.IMovableObject
+	anims        []*base.SpriteAnim
+	currSpeed    int32           // 当前速度
+	lastTime     time.CustomTime // 更新时间点
+	interpolate  bool            // 上次是停止状态
+	lastX, lastY int32
 }
 
 // 创建可移动物体的播放对象
 func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObjectAnimConfig) *PlayableMoveObject {
-	op := &ebiten.DrawImageOptions{}
-	x, y := mobj.Pos()
-	op.GeoM.Translate(float64(x), float64(y))
 	pobj := &PlayableMoveObject{
-		op:      op,
-		mobj:    mobj,
-		moveDir: mobj.Dir(),
+		op:   &ebiten.DrawImageOptions{},
+		mobj: mobj,
 	}
 	pobj.changeAnim(animConfig)
 	return pobj
@@ -118,7 +136,6 @@ func (po *PlayableMoveObject) Init() {
 	// 注册移动停止更新事件
 	po.mobj.RegisterMoveEventHandle(po.onEventMove)
 	po.mobj.RegisterStopMoveEventHandle(po.onEventStopMove)
-	po.mobj.RegisterUpdateEventHandle(po.onEventUpdate)
 }
 
 // 反初始化
@@ -126,116 +143,141 @@ func (po *PlayableMoveObject) Uninit() {
 	// 注销移动停止更新事件
 	po.mobj.UnregisterMoveEventHandle(po.onEventMove)
 	po.mobj.UnregisterStopMoveEventHandle(po.onEventStopMove)
-	po.mobj.UnregisterUpdateEventHandle(po.onEventUpdate)
+}
+
+// 重置对象
+func (po *PlayableMoveObject) Reset(obj object.IObject) {
+	po.mobj = obj.(object.IMovableObject)
 }
 
 // 播放
 func (po *PlayableMoveObject) Play() {
-	po.anims[po.moveDir].Play()
+	po.anims[po.mobj.Dir()].Play()
 }
 
 // 停止
 func (po *PlayableMoveObject) Stop() {
-	po.anims[po.moveDir].Stop()
+	po.anims[po.mobj.Dir()].Stop()
 }
 
 // 更新
 func (po *PlayableMoveObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
-	if po.isMoving {
-		var duration time.Duration
-		now := time.Now()
-		duration = now.Sub(po.updateTime)
-		po.updateTime = now
-		dx := po.op.GeoM.Element(0, 2)
-		dy := po.op.GeoM.Element(1, 2)
-		d := float64(po.currSpeed) * float64(duration) / float64(time.Second)
-		switch po.moveDir {
-		case object.DirLeft:
-			po.op.GeoM.SetElement(0, 2, dx-d)
-		case object.DirRight:
-			po.op.GeoM.SetElement(0, 2, dx+d)
-		case object.DirUp:
-			po.op.GeoM.SetElement(1, 2, dy-d)
-		case object.DirDown:
-			po.op.GeoM.SetElement(1, 2, dy+d)
-		default:
-			return
-		}
+	op.GeoM.Concat(po.op.GeoM)
+	po.anims[po.mobj.Dir()].Update(screen, op)
+}
+
+// 插值，在Draw前同步调用，得到位置插值
+// ----|------------|------------|------------|------------|-------------|--------------|--------------|--------------|--------------|----
+//
+//	Draw      Update(Draw)    Draw         Draw         Draw       Update(Draw)      Draw           Draw           Draw        Update(Draw)
+func (po *PlayableMoveObject) Interpolation() (x, y float64) {
+	if !po.interpolate {
+		return
 	}
-	po.op.GeoM.Concat(op.GeoM)
-	po.anims[po.moveDir].Update(screen, po.op)
+	// 上一次Update的坐标点与当前的不一样，说明又Update了，重置LastX和LastY和开始时间
+	// 所以每次Update后都要重置LastX,lastY,LastTime，是因为要从重置点开始计算位置插值
+	if po.lastX != po.mobj.Left() || po.lastY != po.mobj.Bottom() {
+		po.lastX = po.mobj.Left()
+		po.lastY = po.mobj.Bottom()
+		po.lastTime = core.GetSyncServTime()
+	}
+	duration := time.Since(po.lastTime)
+	distance := object.GetMoveDistance(po.mobj, duration)
+	switch po.mobj.Dir() {
+	case object.DirLeft:
+		x = -distance
+	case object.DirRight:
+		x = distance
+	case object.DirDown:
+		y = -distance
+	case object.DirUp:
+		y = distance
+	}
+	return
 }
 
 // 移动事件处理
-func (po *PlayableMoveObject) onEventMove(args ...interface{}) {
-	pos := args[0].(object.Pos)
-	dir := args[1].(object.Direction)
-	speed := args[2].(int32)
-	po.onupdate(pos, dir, speed)
-	po.updateTime = core.GetSyncServTime() //args[2].(time.CustomTime)
-	po.isMoving = true
+func (po *PlayableMoveObject) onEventMove(args ...any) {
 	po.Play()
-}
-
-// 更新数据事件处理
-func (po *PlayableMoveObject) onEventUpdate(args ...interface{}) {
-	pos := args[0].(object.Pos)
-	dir := args[1].(object.Direction)
-	speed := args[2].(int32)
-	po.onupdate(pos, dir, speed)
+	po.lastX = po.mobj.Left()
+	po.lastY = po.mobj.Bottom()
+	po.lastTime = core.GetSyncServTime()
+	po.interpolate = true
 }
 
 // 停止移动事件处理
-func (po *PlayableMoveObject) onEventStopMove(args ...interface{}) {
-	pos := args[0].(object.Pos)
-	dir := args[1].(object.Direction)
-	speed := args[2].(int32)
-	po.onupdate(pos, dir, speed)
-	po.isMoving = false
+func (po *PlayableMoveObject) onEventStopMove(args ...any) {
 	po.Stop()
-}
-
-func (po *PlayableMoveObject) onupdate(pos object.Pos, dir object.Direction, speed int32) {
-	po.dx = pos.X
-	po.dy = pos.Y
-	po.op.GeoM.SetElement(0, 2, float64(po.dx))
-	po.op.GeoM.SetElement(1, 2, float64(po.dy))
-	po.moveDir = dir
-	po.currSpeed = speed
+	po.interpolate = false
 }
 
 // 坦克播放对象
 type PlayableTank struct {
-	PlayableMoveObject
-	tankObj object.ITank
+	*PlayableMoveObject
 }
 
 // 创建坦克播放对象
 func NewPlayableTank(tank object.ITank, animConfig *MovableObjectAnimConfig) *PlayableTank {
-	pt := &PlayableTank{
-		PlayableMoveObject: *NewPlayableMoveObject(tank, animConfig),
-		tankObj:            tank,
+	return &PlayableTank{
+		PlayableMoveObject: NewPlayableMoveObject(tank, animConfig),
 	}
-	return pt
 }
 
 // 初始化
 func (pt *PlayableTank) Init() {
 	pt.PlayableMoveObject.Init()
-	pt.tankObj.RegisterChangeEventHandle(pt.onChange)
+	pt.mobj.(object.ITank).RegisterChangeEventHandle(pt.onChange)
 }
 
 // 反初始化
 func (pt *PlayableTank) Uninit() {
 	pt.PlayableMoveObject.Uninit()
-	pt.tankObj.UnregisterChangeEventHandle(pt.onChange)
+	pt.mobj.(object.ITank).UnregisterChangeEventHandle(pt.onChange)
 }
 
 // 变化事件
-func (pt *PlayableTank) onChange(args ...interface{}) {
+func (pt *PlayableTank) onChange(args ...any) {
 	info := args[0].(*object.ObjStaticInfo)
 	level := args[1].(int32)
 	pt.currSpeed = (info.Speed())
 	pt.changeAnim(GetTankAnimConfig(info.Id(), level))
 	pt.Play()
+}
+
+func GetPlayableObject(obj object.IObject) (IPlayable, *base.SpriteAnimConfig) {
+	var (
+		playableObj IPlayable
+		animConfig  *base.SpriteAnimConfig
+	)
+	switch obj.Type() {
+	case object.ObjTypeStatic:
+		if object.StaticObjType(obj.Subtype()) == object.StaticObjNone {
+			return nil, nil
+		}
+		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
+		if config == nil {
+			glog.Error("can't get static object anim by type %v", obj.Subtype())
+			return nil, nil
+		}
+		playableObj = NewPlayableStaticObject(obj, config)
+		animConfig = config.AnimConfig
+	case object.ObjTypeMovable:
+		if object.MovableObjType(obj.Subtype()) == object.MovableObjNone {
+			return nil, nil
+		}
+		mobj := obj.(object.IMovableObject)
+		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
+		if config == nil {
+			glog.Error("can't get static object anim by type %v", obj.Subtype())
+			return nil, nil
+		}
+		if obj.Subtype() == object.ObjSubTypeTank {
+			playableObj = NewPlayableTank(mobj.(object.ITank), config)
+		} else if obj.Subtype() == object.ObjSubTypeBullet {
+			playableObj = NewPlayableMoveObject(mobj, config)
+		}
+		playableObj.Init()
+		animConfig = config.AnimConfig[mobj.Dir()]
+	}
+	return playableObj, animConfig
 }

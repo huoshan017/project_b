@@ -21,7 +21,7 @@ type playerData struct {
 }
 
 // 发送消息
-func (d *playerData) send(msgid gsnet_msg.MsgIdType, msg interface{}) error {
+func (d *playerData) send(msgid gsnet_msg.MsgIdType, msg any) error {
 	return d.sess.SendMsg(gsnet_msg.MsgIdType(msgid), msg)
 }
 
@@ -58,7 +58,7 @@ func (t *GameLogicThread) Close() {
 func (t *GameLogicThread) init() {
 	t.registerHandles()
 	// todo 临时代码，初始化时载入第一张地图
-	t.gameLogic.LoadMap(1)
+	t.gameLogic.LoadSceneMap(common_data.MapIdList[t.gameLogic.MapIndex()])
 }
 
 // 注册处理器
@@ -73,10 +73,10 @@ func (t *GameLogicThread) registerHandles() {
 
 // 玩家进入游戏主逻辑
 func (t *GameLogicThread) PlayerEnter(pid uint64, data *playerData) {
-	t.AddAgent(pid, data, func(d interface{}) error {
+	t.AddAgent(pid, data, func(d any) error {
 		pd := d.(*playerData)
 		if pd.tank == nil {
-			t.gameLogic.NewPlayerEnter(pid)
+			pd.tank = t.gameLogic.NewPlayerEnter(pid)
 		} else {
 			t.gameLogic.PlayerEnterWithTank(pid, pd.tank)
 		}
@@ -89,7 +89,7 @@ func (t *GameLogicThread) PlayerLeave(pid uint64) {
 	d := &playerData{
 		pid: pid,
 	}
-	t.DeleteAgent(pid, d, func(agentKey interface{}) error {
+	t.DeleteAgent(pid, d, func(agentKey any) error {
 		pid := agentKey.(uint64)
 		t.gameLogic.PlayerLeave(pid)
 		var err error
@@ -106,7 +106,7 @@ func (t *GameLogicThread) PlayerResetHandler(pid uint64, sessHandler *GameMsgHan
 	d := &playerData{
 		pid: pid,
 	}
-	t.UpdateAgent(pid, d, func(data interface{}) error {
+	t.UpdateAgent(pid, d, func(data any) error {
 		t.gameLogic.PlayerLeave(pid)
 		t.gameLogic.PlayerEnterWithTank(pid, tank)
 		return nil
@@ -139,6 +139,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 			utils.TankObj2ProtoInfo(p.tank, playerTankInfo.TankInfo)
 			ack.OtherPlayerTankInfoList = append(ack.OtherPlayerTankInfoList, playerTankInfo)
 		}
+		ack.MapId = common_data.MapIdList[t.gameLogic.MapIndex()]
 	}
 	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameAck_Id), &ack)
 	if err != nil {
@@ -346,12 +347,12 @@ func (t *GameLogicThread) getPlayerData(key common.AgentKey) *playerData {
 }
 
 // 广播消息
-/*func (t *GameLogicThread) broadcastMsg(msgid gsnet_msg.MsgIdType, msg interface{}) error {
+/*func (t *GameLogicThread) broadcastMsg(msgid gsnet_msg.MsgIdType, msg any) error {
 	return t.broadcastMsgExceptPlayer(msgid, msg, 0)
 }*/
 
 // 广播消息除了某玩家
-func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid gsnet_msg.MsgIdType, msg interface{}, uid uint64) error {
+func (t *GameLogicThread) broadcastMsgExceptPlayer(msgid gsnet_msg.MsgIdType, msg any, uid uint64) error {
 	var err error
 	players := t.GetAgentMapNoLock()
 	for _, d := range players {

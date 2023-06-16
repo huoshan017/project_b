@@ -43,6 +43,7 @@ message MsgPlayerEnterGameReq {
 message MsgPlayerEnterGameAck {
     PlayerAccountTankInfo SelfTankInfo = 1;
     repeated PlayerAccountTankInfo OtherPlayerTankInfoList = 2;
+    int32 MapId = 3;
     enum ProtoId { None = 0; Id = 101; }
 }
 

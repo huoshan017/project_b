@@ -2,6 +2,7 @@ package object
 
 import (
 	"fmt"
+	"math"
 	"project_b/common/base"
 	"project_b/common/log"
 	"project_b/common/time"
@@ -36,6 +37,7 @@ type object struct {
 	ownerType         ObjOwnerType   // 所有制类型，可被动态临时改变，所以需要在对象中另外缓存
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
+	lastX, lastY      int32          // 上次更新的位置
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 }
 
@@ -43,6 +45,7 @@ type object struct {
 func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.instId = instId
 	o.ownerType = staticInfo.ownerType
+	o.lastX, o.lastY = math.MinInt32, math.MinInt32
 	o.staticInfo = staticInfo
 }
 
@@ -114,8 +117,15 @@ func (o object) Pos() (int32, int32) {
 	return o.x, o.y
 }
 
+func (o object) LastPos() (int32, int32) {
+	return o.lastX, o.lastY
+}
+
 // 坐标位置，相对于父坐标系
 func (o *object) SetPos(x, y int32) {
+	//if o.lastX == math.MinInt32 && o.lastY == math.MinInt32 {
+	//	o.lastX, o.lastY = x, y
+	//}
 	o.x = x
 	o.y = y
 }
@@ -168,6 +178,26 @@ func (o object) Bottom() int32 {
 	return o.y + int32(o.staticInfo.y0)
 }
 
+// 注冊進入碰撞檢測事件
+func (o *object) RegisterEnterCollisionEventHandle(handle func(args ...any)) {
+
+}
+
+// 注冊離開碰撞檢測事件
+func (o *object) RegisterLeaveCollisionEventHandle(handle func(args ...any)) {
+
+}
+
+// 注銷進入碰撞檢測事件
+func (o *object) UnregisterEnterCollisionEventHandle(handle func(args ...any)) {
+
+}
+
+// 注銷離開碰撞檢測事件
+func (o *object) UnregisterLeaveCollisionEventHandle(handle func(args ...any)) {
+
+}
+
 // 静态物体
 type StaticObject struct {
 	object
@@ -175,12 +205,8 @@ type StaticObject struct {
 
 // 创建静态物体
 func NewStaticObject(instId uint32, info *ObjStaticInfo) *StaticObject {
-	obj := &StaticObject{
-		object: object{
-			instId:     instId,
-			staticInfo: info,
-		},
-	}
+	obj := &StaticObject{}
+	obj.object.Init(instId, info)
 	return obj
 }
 
@@ -202,25 +228,26 @@ const (
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir   Direction       // 方向
-	speed int32           // 当前移动速度（米/秒）
-	state moveObjectState // 移动状态
-	//moveDataList []*moveData     // 移动数据队列
-	moveEvent   *base.Event // 移动事件
-	stopEvent   *base.Event // 停止事件
-	updateEvent *base.Event // 更新事件
+	dir           Direction       // 方向
+	speed         int32           // 当前移动速度（米/秒）
+	state         moveObjectState // 移动状态
+	checkPosEvent *base.Event     // 檢查坐標事件
+	moveEvent     *base.Event     // 移动事件
+	stopEvent     *base.Event     // 停止事件
+	updateEvent   *base.Event     // 更新事件
 }
 
 // 创建可移动物体
 func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 	o := &MovableObject{
-		object:      object{instId: instId, ownerType: staticInfo.ownerType, staticInfo: staticInfo},
-		dir:         staticInfo.dir,
-		speed:       staticInfo.speed,
-		moveEvent:   base.NewEvent(),
-		stopEvent:   base.NewEvent(),
-		updateEvent: base.NewEvent(),
+		dir:           staticInfo.dir,
+		speed:         staticInfo.speed,
+		checkPosEvent: base.NewEvent(),
+		moveEvent:     base.NewEvent(),
+		stopEvent:     base.NewEvent(),
+		updateEvent:   base.NewEvent(),
 	}
+	o.object.Init(instId, staticInfo)
 	return o
 }
 
@@ -229,6 +256,7 @@ func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
 	o.dir = staticInfo.dir
 	o.speed = staticInfo.speed
+	o.checkPosEvent = base.NewEvent()
 	o.moveEvent = base.NewEvent()
 	o.stopEvent = base.NewEvent()
 	o.updateEvent = base.NewEvent()
@@ -264,6 +292,11 @@ func (o *MovableObject) SetCurrentSpeed(speed int32) {
 // 当前方向
 func (o MovableObject) Dir() Direction {
 	return o.dir
+}
+
+// 等级
+func (o MovableObject) Level() int32 {
+	return 0
 }
 
 // 配置速度
@@ -313,8 +346,15 @@ func (o *MovableObject) IsMoving() bool {
 	return o.state == isMoving
 }
 
+func GetMoveDistance(obj IMovableObject, duration time.Duration) float64 {
+	return float64(int64(obj.CurrentSpeed())*int64(duration)) / float64(time.Second)
+}
+
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
+	// 每次Update都要更新lastX和lastY
+	o.lastX, o.lastY = o.x, o.y
+
 	if o.state == stopped {
 		return
 	}
@@ -329,7 +369,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 		return
 	}
 
-	distance := float64(int64(o.CurrentSpeed())*int64(tick)) / float64(time.Second)
+	distance := GetMoveDistance(o, tick)
 	switch o.dir {
 	case DirLeft:
 		x := float64(o.x)
@@ -341,15 +381,17 @@ func (o *MovableObject) Update(tick time.Duration) {
 		o.x = int32(x)
 	case DirUp:
 		y := float64(o.y)
-		y -= distance
+		y += distance
 		o.y = int32(y)
 	case DirDown:
 		y := float64(o.y)
-		y += distance
+		y -= distance
 		o.y = int32(y)
 	default:
 		panic("invalid direction")
 	}
+
+	o.checkPosEvent.Call(o)
 
 	if o.state == isMoving {
 		// args[0]: object.Pos
@@ -366,33 +408,43 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 }
 
+// 注冊檢查坐標事件
+func (o *MovableObject) RegisterCheckPosEventHandle(handle func(args ...any)) {
+	o.checkPosEvent.Register(handle)
+}
+
+// 注銷檢查坐標事件
+func (o *MovableObject) UnregisterCheckPosEventHandle(handle func(args ...any)) {
+	o.checkPosEvent.Unregister(handle)
+}
+
 // 注册移动事件
-func (o *MovableObject) RegisterMoveEventHandle(handle func(args ...interface{})) {
+func (o *MovableObject) RegisterMoveEventHandle(handle func(args ...any)) {
 	o.moveEvent.Register(handle)
 }
 
 // 注销移动事件
-func (o *MovableObject) UnregisterMoveEventHandle(handle func(args ...interface{})) {
+func (o *MovableObject) UnregisterMoveEventHandle(handle func(args ...any)) {
 	o.moveEvent.Unregister(handle)
 }
 
 // 注册停止移动事件
-func (o *MovableObject) RegisterStopMoveEventHandle(handle func(args ...interface{})) {
+func (o *MovableObject) RegisterStopMoveEventHandle(handle func(args ...any)) {
 	o.stopEvent.Register(handle)
 }
 
 // 注销停止移动事件
-func (o *MovableObject) UnregisterStopMoveEventHandle(handle func(args ...interface{})) {
+func (o *MovableObject) UnregisterStopMoveEventHandle(handle func(args ...any)) {
 	o.stopEvent.Unregister(handle)
 }
 
 // 注册更新事件
-func (o *MovableObject) RegisterUpdateEventHandle(handle func(args ...interface{})) {
+func (o *MovableObject) RegisterUpdateEventHandle(handle func(args ...any)) {
 	o.updateEvent.Register(handle)
 }
 
 // 注销更新事件
-func (o *MovableObject) UnregisterUpdateEventHandle(handle func(args ...interface{})) {
+func (o *MovableObject) UnregisterUpdateEventHandle(handle func(args ...any)) {
 	o.updateEvent.Unregister(handle)
 }
 
@@ -471,12 +523,12 @@ func (t *Tank) Restore() {
 }
 
 // 注册变化事件
-func (t *Tank) RegisterChangeEventHandle(handle func(args ...interface{})) {
+func (t *Tank) RegisterChangeEventHandle(handle func(args ...any)) {
 	t.changeEvent.Register(handle)
 }
 
 // 注销变化事件
-func (t *Tank) UnregisterChangeEventHandle(handle func(args ...interface{})) {
+func (t *Tank) UnregisterChangeEventHandle(handle func(args ...any)) {
 	t.changeEvent.Unregister(handle)
 }
 

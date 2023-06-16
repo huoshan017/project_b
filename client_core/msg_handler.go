@@ -1,8 +1,10 @@
 package client_core
 
 import (
+	"fmt"
 	"project_b/common"
 	"project_b/common/base"
+	"project_b/common/log"
 	"project_b/common/object"
 	custom_time "project_b/common/time"
 
@@ -80,7 +82,7 @@ func (h *MsgHandler) registerNetMsgHandles() {
 }
 
 // 登录处理
-func (h *MsgHandler) onLoginAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onLoginAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgAccountLoginGameAck)
 	if !o {
 		Log().Warn("can't get to type *game_proto.MsgAccountLoginGameAck")
@@ -102,11 +104,17 @@ func (h *MsgHandler) onLoginAck(sess *gsnet_msg.MsgSession, msg interface{}) err
 }
 
 // 进入游戏处理
-func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerEnterGameAck)
 	if !o {
 		Log().Warn("can't get to type *game_proto.MsgPlayerEnterGameAck")
 		return nil
+	}
+
+	// 载入地图
+	if !h.logic.LoadSceneMap(ack.MapId) {
+		log.Error("load map %v error", ack.MapId)
+		return fmt.Errorf("load map %v failed", ack.MapId)
 	}
 
 	// 自己
@@ -124,7 +132,7 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg interf
 }
 
 // 进入游戏结束处理
-func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess *gsnet_msg.MsgSession, msg any) error {
 	_, o := msg.(*game_proto.MsgPlayerEnterGameFinishNtf)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerEnterGameFinishNtf")
@@ -140,7 +148,7 @@ func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess *gsnet_msg.MsgSession, msg 
 }
 
 // 退出游戏处理
-func (h *MsgHandler) onPlayerExitGameAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerExitGameAck(sess *gsnet_msg.MsgSession, msg any) error {
 	h.doPlayerExit(h.myId())
 
 	Log().Info("my player exited game")
@@ -149,7 +157,7 @@ func (h *MsgHandler) onPlayerExitGameAck(sess *gsnet_msg.MsgSession, msg interfa
 }
 
 // 时间同步处理
-func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgTimeSyncAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgTimeSyncAck")
@@ -177,7 +185,7 @@ func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg interface{}) 
 }
 
 // 玩家坦克进入同步
-func (h *MsgHandler) onPlayerEnterGameSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerEnterGameSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerEnterGameSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerEnterGameSync")
@@ -192,7 +200,7 @@ func (h *MsgHandler) onPlayerEnterGameSync(sess *gsnet_msg.MsgSession, msg inter
 }
 
 // 玩家坦克退出同步
-func (h *MsgHandler) onPlayerExitGameSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerExitGameSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerExitGameSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerExitGameSync")
@@ -207,7 +215,7 @@ func (h *MsgHandler) onPlayerExitGameSync(sess *gsnet_msg.MsgSession, msg interf
 }
 
 // 玩家改变坦克处理
-func (h *MsgHandler) onPlayerTankChangeAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankChangeAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerChangeTankAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerChangeTankAck")
@@ -222,7 +230,7 @@ func (h *MsgHandler) onPlayerTankChangeAck(sess *gsnet_msg.MsgSession, msg inter
 }
 
 // 玩家改变坦克同步
-func (h *MsgHandler) onPlayerTankChangeSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankChangeSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerChangeTankSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerChangeTankSync")
@@ -237,7 +245,7 @@ func (h *MsgHandler) onPlayerTankChangeSync(sess *gsnet_msg.MsgSession, msg inte
 }
 
 // 玩家恢复坦克处理
-func (h *MsgHandler) onPlayerTankRestoreAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankRestoreAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerRestoreTankAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankAck")
@@ -252,7 +260,7 @@ func (h *MsgHandler) onPlayerTankRestoreAck(sess *gsnet_msg.MsgSession, msg inte
 }
 
 // 玩家恢复坦克同步处理
-func (h *MsgHandler) onPlayerTankRestoreSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankRestoreSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerRestoreTankSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankSync")
@@ -267,7 +275,7 @@ func (h *MsgHandler) onPlayerTankRestoreSync(sess *gsnet_msg.MsgSession, msg int
 }
 
 // 本玩家移动回应处理
-func (h *MsgHandler) onPlayerTankMoveAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankMoveAck(sess *gsnet_msg.MsgSession, msg any) error {
 	_, o := msg.(*game_proto.MsgPlayerTankMoveAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankMoveAck")
@@ -277,7 +285,7 @@ func (h *MsgHandler) onPlayerTankMoveAck(sess *gsnet_msg.MsgSession, msg interfa
 }
 
 // 其他玩家移动同步处理
-func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerTankMoveSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankMoveSync")
@@ -292,7 +300,7 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg interf
 }
 
 // 本玩家停止移动返回处理
-func (h *MsgHandler) onPlayerTankStopMoveAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankStopMoveAck(sess *gsnet_msg.MsgSession, msg any) error {
 	_, o := msg.(*game_proto.MsgPlayerTankStopMoveAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankStopMoveAck")
@@ -302,7 +310,7 @@ func (h *MsgHandler) onPlayerTankStopMoveAck(sess *gsnet_msg.MsgSession, msg int
 }
 
 // 其他玩家停止移动同步处理
-func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerTankMoveSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankMoveSync")
@@ -317,7 +325,7 @@ func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg in
 }
 
 // 本玩家的坦克位置更新返回
-func (h *MsgHandler) onPlayerTankUpdatePosAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankUpdatePosAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerTankUpdatePosAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosAck")
@@ -336,7 +344,7 @@ func (h *MsgHandler) onPlayerTankUpdatePosAck(sess *gsnet_msg.MsgSession, msg in
 }
 
 // 其他玩家坦克位置更新同步
-func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerTankUpdatePosSync)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosSync")
@@ -358,7 +366,7 @@ func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg i
 }
 
 // 处理错误返回
-func (h *MsgHandler) onErrorAck(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *MsgHandler) onErrorAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgErrorAck)
 	if !o {
 		Log().Warn("cant transfer to type *game_proto.MsgErrorAck")
@@ -408,7 +416,7 @@ func (h *MsgHandler) doPlayerEnter(p *game_proto.PlayerAccountTankInfo, isMe boo
 	}
 
 	// 玩家坦克进入主逻辑
-	h.logic.PlayerEnterWithTank(p.PlayerId, cplayer.GetTank())
+	h.logic.PlayerEnterWithTankInfo(cplayer, p.TankInfo)
 
 	// 向上层传递事件
 	h.invoker.InvokeEvent(EventIdPlayerEnterGame, p.Account, p.PlayerId, cplayer.GetTank())

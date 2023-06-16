@@ -17,7 +17,7 @@ const (
 
 type KeyCmdData struct {
 	cmd  core.CmdCode
-	args []interface{}
+	args []any
 }
 
 // 按下键位映射命令

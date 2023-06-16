@@ -84,3 +84,10 @@ func (l *MapListUnion[Key, Value]) GetList() []Value {
 	}
 	return lis
 }
+
+func (l *MapListUnion[Key, Value]) GetKeys(keys []Key) []Key {
+	for _, kv := range l.list {
+		keys = append(keys, kv.key)
+	}
+	return keys
+}

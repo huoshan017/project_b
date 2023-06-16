@@ -15,12 +15,11 @@ const (
 
 type GameLogic struct {
 	eventMgr base.IEventManager // 事件管理
-	//scene    *Scene             // 场景
-	sceneMap *SceneMap // 場景圖
-	state    int32     // 0 未开始  1. 运行中
-	mapIndex int32     // 地图索引
-	frame    int32     // 帧序号，每Update一次加1
-	maxFrame int32     // 最大帧序号
+	sceneMap *SceneMap          // 場景圖
+	state    int32              // 0 未开始  1. 运行中
+	mapIndex int32              // 地图索引
+	frame    int32              // 帧序号，每Update一次加1
+	maxFrame int32              // 最大帧序号
 }
 
 // 创建游戏逻辑
@@ -30,7 +29,6 @@ func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
 		eventMgr = base.NewEventManager()
 	}
 	gl.eventMgr = eventMgr
-	//gl.scene = NewScene(gl.eventMgr)
 	gl.sceneMap = NewSceneMap(gl.eventMgr)
 	return gl
 }
@@ -43,12 +41,17 @@ func (g *GameLogic) LoadMap(mapId int32) bool {
 
 // 載入場景地圖
 func (g *GameLogic) LoadSceneMap(mapId int32) bool {
-	return g.sceneMap.LoadMap(game_map.MapConfigArray[mapId])
+	g.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
+	loaded := g.sceneMap.LoadMap(game_map.MapConfigArray[mapId])
+	g.eventMgr.InvokeEvent(EventIdMapLoaded, g.sceneMap)
+	return loaded
 }
 
 // 卸載場景圖
 func (g *GameLogic) UnloadSceneMap() {
+	g.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
 	g.sceneMap.UnloadMap()
+	g.eventMgr.InvokeEvent(EventIdMapUnloaded)
 }
 
 // 場景圖

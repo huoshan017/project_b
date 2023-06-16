@@ -37,6 +37,3 @@ var mapInfoArray = map[int32]mapInfo{
 		cameraFov:    60,
 	},
 }
-
-// 地图Id列表
-var mapIdList = []int32{2, 1, 3}

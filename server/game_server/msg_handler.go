@@ -5,69 +5,8 @@ import (
 	custom_time "project_b/common/time"
 	"project_b/game_proto"
 
-	"time"
-
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
 )
-
-type GameMsgHandler struct {
-	service               *GameService
-	sess                  *gsnet_msg.MsgSession
-	lastCheckDiscDuration custom_time.Duration
-	msgid2HandleMap       map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error
-}
-
-func CreateGameMsgHandler(owner *GameService) *GameMsgHandler {
-	h := &GameMsgHandler{}
-	h.service = owner
-	return h
-}
-
-// 连接事件
-func (h *GameMsgHandler) OnConnected(sess *gsnet_msg.MsgSession) {
-	gslog.Info("new session %v connected", sess.GetId())
-}
-
-func (h *GameMsgHandler) OnReady(sess *gsnet_msg.MsgSession) {
-	// 连接后把会话缓存起来
-	h.sess = sess
-	gslog.Info("session %v ready", sess.GetId())
-}
-
-// 断开事件
-func (h *GameMsgHandler) OnDisconnected(sess *gsnet_msg.MsgSession, err error) {
-	if h.sess != nil && sess != h.sess {
-		panic("sess must same to OnConnect")
-	}
-	h.afterPlayerDisconnect(sess)
-	gslog.Info("session %v disconnected", sess.GetId())
-	h.sess = nil
-}
-
-// 定时器事件
-func (h *GameMsgHandler) OnTick(sess *gsnet_msg.MsgSession, tick time.Duration) {
-	if sess != h.sess {
-		panic("sess must same to OnConnect")
-	}
-	h.lastCheckDiscDuration += custom_time.Duration(tick)
-	// 0.5秒检测一次
-	if h.lastCheckDiscDuration >= custom_time.Duration(time.Millisecond)*500 {
-		p, err := h.toPlayer(sess)
-		if err != nil {
-			return
-		}
-		// 这里断开之后，后面会走到OnDisconnect中
-		kicker := p.GetKicker()
-		if kicker != nil {
-			kicker.CheckDisconnectNotification()
-		}
-	}
-}
-
-// 错误事件
-func (h *GameMsgHandler) OnError(err error) {
-	gslog.Info("get error: %v", err)
-}
 
 // 发送错误码
 func (h *GameMsgHandler) SendError(err game_proto.ErrorId) error {
@@ -76,12 +15,8 @@ func (h *GameMsgHandler) SendError(err game_proto.ErrorId) error {
 	})
 }
 
-func (h *GameMsgHandler) OnMsgHandle(sess *gsnet_msg.MsgSession, msgid gsnet_msg.MsgIdType, msgobj interface{}) error {
-	return h.getMsgId2HandleMap()[msgid](sess, msgobj)
-}
-
 // todo 暂时在这里处理登录，有了登录服务器再说
-func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg any) error {
 	req, o := msg.(*game_proto.MsgAccountLoginGameReq)
 	if !o {
 		gslog.Warn("cant transfer to type *game_proto.MsgAccountLoginGameReq")
@@ -111,7 +46,7 @@ func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg interf
 }
 
 // 处理进入游戏
-func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg any) error {
 	req, o := msg.(*game_proto.MsgPlayerEnterGameReq)
 	if !o {
 		gslog.Warn("cant transfer to type *game_proto.MsgPlayerEnterGameReq")
@@ -185,7 +120,7 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg in
 }
 
 // 处理退出游戏
-func (h *GameMsgHandler) onPlayerExitGameReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerExitGameReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -198,7 +133,7 @@ func (h *GameMsgHandler) onPlayerExitGameReq(sess *gsnet_msg.MsgSession, msg int
 }
 
 // 处理时间同步
-func (h *GameMsgHandler) onTimeSyncReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onTimeSyncReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -222,7 +157,7 @@ func (h *GameMsgHandler) onTimeSyncReq(sess *gsnet_msg.MsgSession, msg interface
 }
 
 // 处理改变坦克
-func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -244,7 +179,7 @@ func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg i
 }
 
 // 处理恢复坦克
-func (h *GameMsgHandler) onPlayerRestoreTankReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerRestoreTankReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -263,7 +198,7 @@ func (h *GameMsgHandler) onPlayerRestoreTankReq(sess *gsnet_msg.MsgSession, msg 
 }
 
 // 坦克移动请求
-func (h *GameMsgHandler) onPlayerTankMoveReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerTankMoveReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -281,7 +216,7 @@ func (h *GameMsgHandler) onPlayerTankMoveReq(sess *gsnet_msg.MsgSession, msg int
 }
 
 // 坦克停止移动请求
-func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -299,7 +234,7 @@ func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess *gsnet_msg.MsgSession, msg
 }
 
 // 坦克位置更新请求
-func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, msg interface{}) error {
+func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, msg any) error {
 	p, err := h.toPlayer(sess)
 	if err != nil {
 		return err
@@ -316,9 +251,9 @@ func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, ms
 	return nil
 }
 
-func (s *GameMsgHandler) getMsgId2HandleMap() map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error {
+func (s *GameMsgHandler) getMsgId2HandleMap() map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, any) error {
 	if s.msgid2HandleMap == nil {
-		s.msgid2HandleMap = map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, interface{}) error{
+		s.msgid2HandleMap = map[gsnet_msg.MsgIdType]func(*gsnet_msg.MsgSession, any) error{
 			gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameReq_Id):    s.onPlayerLoginReq,
 			gsnet_msg.MsgIdType(game_proto.MsgPlayerEnterGameReq_Id):     s.onPlayerEnterGameReq,
 			gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameReq_Id):      s.onPlayerExitGameReq,

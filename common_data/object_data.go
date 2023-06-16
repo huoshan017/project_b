@@ -29,10 +29,10 @@ var (
 			int32(object.StaticObjTree), object.ObjTypeStatic, object.ObjSubTypeTree, 0, 0, 320, 320, 0, object.DirNone, 2),
 		// 水
 		object.StaticObjWater: object.NewObjStaticInfo(
-			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, 0, 0, 320, 320, 0, object.DirNone, 0),
+			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, 0, 0, 320, 320, 0, object.DirNone, 1),
 		// 冰
 		object.StaticObjIce: object.NewObjStaticInfo(
-			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, 0, 0, 320, 320, 0, object.DirNone, 0),
+			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, 0, 0, 320, 320, 0, object.DirNone, 1),
 		// 基地
 		object.StaticObjHome: object.NewObjStaticInfo(
 			int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, 0, 0, 320, 320, 0, object.DirNone, 1),
