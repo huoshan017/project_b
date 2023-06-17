@@ -10,6 +10,8 @@ import (
 	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/utils"
+
+	"github.com/huoshan017/ponu/heap"
 )
 
 // 场景圖结构必须在单个goroutine中执行
@@ -88,7 +90,7 @@ func (s *SceneMap) GetMapConfig() *game_map.Config {
 	return s.gmap
 }
 
-func (s *SceneMap) GetLayerObjsWithRange(rect *math.Rect) [game_map.MapMaxLayer][]uint32 {
+func (s *SceneMap) GetLayerObjsWithRange(rect *math.Rect) [game_map.MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
 	return s.mapInstance.GetLayerObjsWithRange(rect)
 }
 

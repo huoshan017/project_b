@@ -1,4 +1,4 @@
-package main
+ackage main
 
 import (
 	"project_b/client/base"
@@ -92,16 +92,18 @@ func (s *PlayableSceneMap) Draw(dstImage *ebiten.Image) {
 	var rect = math.NewRectObj(lx, ly, rx-lx, ry-ly)
 	layerObjs := s.sceneMap.GetLayerObjsWithRange(&rect)
 	for i := 0; i < len(layerObjs); i++ {
-		if len(layerObjs[i]) == 0 {
+		if layerObjs[i].Length() == 0 {
 			continue
 		}
 		// todo 這裏正確的做法是根據obj的邏輯距離由遠到近畫出來
-		for j := 0; j < len(layerObjs[i]); j++ {
-			obj := s.sceneMap.GetObj(layerObjs[i][j])
+		id, _, o := layerObjs[i].Get()
+		for o {
+			obj := s.sceneMap.GetObj(id)
 			if obj == nil {
 				continue
 			}
 			s.drawObj(obj, dstImage)
+			id, _, o = layerObjs[i].Get()
 		}
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"project_b/common/log"
 	"project_b/common/math"
 	"project_b/common/object"
+
+	"github.com/huoshan017/ponu/heap"
 )
 
 const (
@@ -38,8 +40,8 @@ type MapInstance struct {
 		line int16
 		col  int16
 	} // 瓦片ID对应的坐标位置
-	grids           []*ds.MapListUnion[uint32, struct{}] // 網格用於碰撞檢測，提高檢測性能
-	resultLayerObjs [MapMaxLayer][]uint32                // 缓存返回的结果给调用者，主要为了提高性能，减少GC
+	grids           []*ds.MapListUnion[uint32, struct{}]           // 網格用於碰撞檢測，提高檢測性能
+	resultLayerObjs [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] // 缓存返回的结果给调用者，主要为了提高性能，减少GC
 }
 
 func NewMapInstance(gridTileSize int16) *MapInstance {
@@ -96,6 +98,11 @@ func (m *MapInstance) Load(config *Config) {
 	// 網格寬度和高度
 	m.gridWidth = int32(gridTileWidth) * m.config.TileWidth
 	m.gridHeight = int32(gridTileHeight) * m.config.TileHeight
+
+	// 創建結果層
+	for i := 0; i < len(m.resultLayerObjs); i++ {
+		m.resultLayerObjs[i] = heap.NewMaxBinaryHeapKV[uint32, int32]()
+	}
 }
 
 func (m *MapInstance) Unload() {
@@ -199,13 +206,8 @@ func (m *MapInstance) UpdateObj(obj object.IObject) {
 		return
 	}
 
-	//log.Info("lastX: %v, lastY：%v | x: %v, y: %v", lastX, lastY, x, y)
-
 	left1, bottom1, right1, top1 := m.gridBoundsBy(x, y, x+obj.Width(), y+obj.Height())
 	left0, bottom0, right0, top0 := m.gridBoundsBy(lastX, lastY, lastX+obj.Width(), lastY+obj.Height())
-
-	//log.Info("left0: %v, bottom0: %v, right0: %v, top0: %v", left0, bottom0, right0, top0)
-	//log.Info("left1: %v, bottom1: %v, right1: %v, top1: %v", left1, bottom1, right1, top1)
 
 	// ---------------|---------------|---------------|--
 	//                |               |               |
@@ -312,7 +314,7 @@ func (m *MapInstance) UpdateObj(obj object.IObject) {
 	}
 }
 
-func (m *MapInstance) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer][]uint32 {
+func (m *MapInstance) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
 	// 獲得範圍内的瓦片
 	tl := (rect.X() - m.config.X) / m.config.TileWidth
 	if tl < 0 {
@@ -331,10 +333,7 @@ func (m *MapInstance) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer][]uint
 		tt = int32(len(m.config.Layers)) - 1
 	}
 
-	// 先清空
-	for layer := 0; layer < len(m.resultLayerObjs); layer++ {
-		m.resultLayerObjs[layer] = m.resultLayerObjs[layer][:0]
-	}
+	// 先把tiles插入
 	for i := tb; i <= tt; i++ {
 		for j := tl; j <= tr; j++ {
 			if m.tiles[i][j] <= 0 {
@@ -342,7 +341,7 @@ func (m *MapInstance) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer][]uint
 			}
 			obj := m.objMap[m.tiles[i][j]]
 			layer := obj.StaticInfo().Layer()
-			m.resultLayerObjs[layer] = append(m.resultLayerObjs[layer], m.tiles[i][j])
+			m.resultLayerObjs[layer].Set(m.tiles[i][j], obj.Bottom())
 		}
 	}
 
@@ -358,7 +357,7 @@ func (m *MapInstance) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer][]uint
 					obj := m.objMap[key]
 					if obj != nil {
 						layer := obj.StaticInfo().Layer()
-						m.resultLayerObjs[layer] = append(m.resultLayerObjs[layer], key)
+						m.resultLayerObjs[layer].Set(key, obj.Bottom())
 					}
 				}
 			}

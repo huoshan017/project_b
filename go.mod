@@ -15,7 +15,7 @@ require (
 
 require (
 	github.com/golang/protobuf v1.5.3
-	github.com/huoshan017/ponu v0.0.0-20230515104746-47e588bbbf02 // indirect
+	github.com/huoshan017/ponu v0.0.0-20230617125619-1cb179d8f65d
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/tealeg/xlsx v1.0.5
@@ -40,6 +40,7 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
+	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0 // indirect
 	golang.org/x/exp/shiny v0.0.0-20221106115401-f9659909a136 // indirect
 	golang.org/x/mobile v0.0.0-20221020085226-b36e6246172e // indirect
 	golang.org/x/text v0.4.0 // indirect

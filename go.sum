@@ -48,6 +48,8 @@ github.com/huoshan017/kcpgo v0.0.0-20230615185351-fa69383497ba h1:yytN1XFqM51h6T
 github.com/huoshan017/kcpgo v0.0.0-20230615185351-fa69383497ba/go.mod h1:mE6qpFSx8ndePygvMDMR1ECCrI0TjP7Pm1V1+pmAhno=
 github.com/huoshan017/ponu v0.0.0-20230515104746-47e588bbbf02 h1:PwMzJkXW3BK+fQYuvOmSjZH7FS/1uPyygXaLbhnKNdg=
 github.com/huoshan017/ponu v0.0.0-20230515104746-47e588bbbf02/go.mod h1:dbwSRHOrAANody1Gjv6Gs27IrrjT82E8DU3DQEdFDyo=
+github.com/huoshan017/ponu v0.0.0-20230617125619-1cb179d8f65d h1:bI4baMakfjP1jrrDMlDjEmKegN6UH5xijpGH4ISOjns=
+github.com/huoshan017/ponu v0.0.0-20230617125619-1cb179d8f65d/go.mod h1:dbwSRHOrAANody1Gjv6Gs27IrrjT82E8DU3DQEdFDyo=
 github.com/jakecoffman/cp v1.2.1/go.mod h1:JjY/Fp6d8E1CHnu74gWNnU0+b9VzEdUVPoJxg2PsTQg=
 github.com/jezek/xgb v1.0.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=
 github.com/jezek/xgb v1.1.0 h1:wnpxJzP1+rkbGclEkmwpVFQWpuE2PUGNUzP8SbfFobk=
