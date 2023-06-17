@@ -40,7 +40,6 @@ type MapInstance struct {
 	} // 瓦片ID对应的坐标位置
 	grids           []*ds.MapListUnion[uint32, struct{}] // 網格用於碰撞檢測，提高檢測性能
 	resultLayerObjs [MapMaxLayer][]uint32                // 缓存返回的结果给调用者，主要为了提高性能，减少GC
-	tempKeys        []uint32                             // 临时缓存对象id，提高性能，减少GC
 }
 
 func NewMapInstance(gridTileSize int16) *MapInstance {
@@ -351,31 +350,22 @@ func (m *MapInstance) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer][]uint
 	// 先获取grids
 	lx, by, rx, ty := m.gridBoundsBy(rect.X(), rect.Y(), rect.X()+rect.W(), rect.Y()+rect.H())
 	if rx >= lx && ty >= by {
-		m.tempKeys = m.tempKeys[:0]
 		for y := by; y <= ty; y++ {
 			for x := lx; x <= rx; x++ {
-				m.tempKeys = m.grids[m.gridLineCol2Index(y, x)].GetKeys(m.tempKeys)
-			}
-		}
-
-		for _, k := range m.tempKeys {
-			obj := m.objMap[k]
-			if obj != nil {
-				layer := obj.StaticInfo().Layer()
-				m.resultLayerObjs[layer] = append(m.resultLayerObjs[layer], k)
+				lis := m.grids[m.gridLineCol2Index(y, x)].GetList()
+				for i := 0; i < len(lis); i++ {
+					key := lis[i].Key
+					obj := m.objMap[key]
+					if obj != nil {
+						layer := obj.StaticInfo().Layer()
+						m.resultLayerObjs[layer] = append(m.resultLayerObjs[layer], key)
+					}
+				}
 			}
 		}
 	}
 
 	return m.resultLayerObjs
-}
-
-func (m *MapInstance) lineCol2Index(line, col int16) int32 {
-	return int32(line)*int32(len(m.config.Layers)) + int32(col)
-}
-
-func (m *MapInstance) index2LineCol(index int32) (int16, int16) {
-	return int16(index / int32(len(m.config.Layers))), int16(index % int32(m.gridXTiles))
 }
 
 func (m *MapInstance) gridLineCol2Index(line, col int16) int32 {

@@ -155,9 +155,6 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 	uid := args[1].(uint64)
 	tank := args[2].(*object.Tank)
 
-	// 加入播放场景
-	g.playableSceneMap.AddPlayerTankPlayable(uid, tank)
-
 	if g.gameData.myAcc == account {
 		g.gameData.myId = uid
 		g.logic.SetMyId(uid)
@@ -200,9 +197,6 @@ func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 	}
 
 	uid := args[0].(uint64)
-
-	// 从播放场景中删除
-	g.playableSceneMap.RemovePlayerTankPlayable(uid)
 
 	// 注销本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {

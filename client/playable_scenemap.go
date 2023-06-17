@@ -10,21 +10,19 @@ import (
 )
 
 type objOpCache struct {
-	op          *ebiten.DrawImageOptions
-	playableObj IPlayable
+	op                      *ebiten.DrawImageOptions
+	playableObj             IPlayable
+	frameWidth, frameHeight int32
 }
 
 /**
  * 可绘制场景，实现base.IPlayableScene接口
  */
 type PlayableSceneMap struct {
-	sceneMap            *common.SceneMap
-	camera              *base.Camera
-	viewport            *base.Viewport
-	playableObjs        map[uint32]*objOpCache
-	playerTankPlayables map[uint64]*PlayableTank
-	enemyTankPlayables  map[int32]*PlayableTank
-	interpolationObjs   map[uint32]struct{}
+	sceneMap     *common.SceneMap
+	camera       *base.Camera
+	viewport     *base.Viewport
+	playableObjs map[uint32]*objOpCache
 }
 
 /**
@@ -32,11 +30,8 @@ type PlayableSceneMap struct {
  */
 func CreatePlayableSceneMap(viewport *base.Viewport) *PlayableSceneMap {
 	return &PlayableSceneMap{
-		viewport:            viewport,
-		playableObjs:        make(map[uint32]*objOpCache),
-		playerTankPlayables: make(map[uint64]*PlayableTank),
-		enemyTankPlayables:  make(map[int32]*PlayableTank),
-		interpolationObjs:   make(map[uint32]struct{}),
+		viewport:     viewport,
+		playableObjs: make(map[uint32]*objOpCache),
 	}
 }
 
@@ -112,28 +107,30 @@ func (s *PlayableSceneMap) Draw(dstImage *ebiten.Image) {
 }
 
 func (s *PlayableSceneMap) drawObj(obj object.IObject, dstImage *ebiten.Image) {
-	playableObj, animConfig := GetPlayableObject(obj)
 	tc := s.playableObjs[obj.InstId()]
 	if tc == nil {
+		playableObj, animConfig := GetPlayableObject(obj)
 		tc = &objOpCache{
 			playableObj: playableObj,
 			op:          &ebiten.DrawImageOptions{},
+			frameWidth:  int32(animConfig.FrameWidth),
+			frameHeight: int32(animConfig.FrameHeight),
 		}
 		s.playableObjs[obj.InstId()] = tc
 	}
 
 	tc.op.GeoM.Reset()
 	// tile本地坐標到世界坐標的縮放
-	sx := obj.Width() / int32(animConfig.FrameWidth)
-	sy := obj.Height() / int32(animConfig.FrameHeight)
+	sx := obj.Width() / tc.frameWidth
+	sy := obj.Height() / tc.frameHeight
 	tc.op.GeoM.Scale(float64(sx), float64(sy))
 
 	// 插值
-	var dx, dy float64
 	x, y := obj.Pos()
 	mapConfig := s.sceneMap.GetMapConfig()
 	mapWidth := mapConfig.TileWidth * int32(len(mapConfig.Layers[0]))
 	mapHeight := mapConfig.TileHeight * int32(len(mapConfig.Layers))
+	var dx, dy float64
 	if x >= mapConfig.X && x <= mapConfig.X+mapWidth-obj.Width() && y >= mapConfig.Y && y <= mapConfig.Y+mapHeight-obj.Height() {
 		dx, dy = tc.playableObj.Interpolation()
 	}
@@ -147,16 +144,4 @@ func (s *PlayableSceneMap) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 	tc.op.GeoM.Translate(float64(lx), float64(ly))
 	// 判断是否插值
 	tc.playableObj.Draw(dstImage, tc.op)
-}
-
-func (m *PlayableSceneMap) AddPlayerTankPlayable(uid uint64, tank *object.Tank) bool {
-	return true
-}
-
-func (m *PlayableSceneMap) RemovePlayerTankPlayable(uid uint64) bool {
-	return true
-}
-
-func (m *PlayableSceneMap) AddEnemyTankPlayable(id int32, tank *object.Tank) bool {
-	return true
 }
