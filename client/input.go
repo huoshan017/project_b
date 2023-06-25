@@ -26,6 +26,7 @@ var keyPressed2CmdMap = map[ebiten.Key]*KeyCmdData{
 	ebiten.KeyD:        {cmd: core.CMD_MOVE, args: []any{object.DirRight}},
 	ebiten.KeyW:        {cmd: core.CMD_MOVE, args: []any{object.DirUp}},
 	ebiten.KeyS:        {cmd: core.CMD_MOVE, args: []any{object.DirDown}},
+	ebiten.KeyJ:        {cmd: core.CMD_FIRE, args: []any{}},
 	ebiten.KeyUp:       {cmd: CMD_CAMERA_UP, args: []any{}},
 	ebiten.KeyDown:     {cmd: CMD_CAMERA_DOWN, args: []any{}},
 	ebiten.KeyLeft:     {cmd: CMD_CAMERA_LEFT, args: []any{}},

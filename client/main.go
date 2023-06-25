@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"net/http"
 	_ "net/http/pprof"
 	core "project_b/client_core"
 
@@ -46,9 +47,9 @@ func main() {
 	defer game.Uninit()
 	defer glog.Sync()
 
-	//go func() {
-	//	http.ListenAndServe("0.0.0.0:6060", nil)
-	//}()
+	go func() {
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
 
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("ProjectB")

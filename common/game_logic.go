@@ -184,6 +184,10 @@ func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
 	return g.sceneMap.PlayerTankRestore(uid)
 }
 
+func (g *GameLogic) PlayerFire() {
+
+}
+
 // 检测玩家
 func (g *GameLogic) CheckPlayerTankStartMove(uid uint64, startPos object.Pos, dir object.Direction, speed int32) bool {
 	tank := g.GetPlayerTank(uid)

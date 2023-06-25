@@ -141,3 +141,19 @@ func (f *ObjectFactory) recycleMovableObject(mobj *MovableObject) bool {
 	delete(f.objMap, mobj.InstId())
 	return true
 }
+
+func (f *ObjectFactory) Clear() {
+	for _, obj := range f.objMap {
+		if obj.Type() == ObjTypeStatic {
+			f.RecycleStaticObject(obj.(*StaticObject))
+		} else if obj.Type() == ObjTypeMovable {
+			f.recycleMovableObject(obj.(*MovableObject))
+		}
+	}
+	clear(f.objMap)
+	f.freeObjIds = f.freeObjIds[:0]
+	f.freeStaticObjs = f.freeStaticObjs[:0]
+	for i := 0; i < len(f.freeMovableObjs); i++ {
+		f.freeMovableObjs[i] = f.freeMovableObjs[i][:0]
+	}
+}

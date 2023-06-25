@@ -44,7 +44,7 @@ func initAnimOriginalConfigs() {
 			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 5, Y: 0}},
 		},
 		// 摧毁的基地
-		object.StaticObjHomeDestroyed: {
+		object.StaticObjRuins: {
 			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 6, Y: 0}},
 		},
 	}
@@ -75,7 +75,7 @@ func initAnimOriginalConfigs() {
 			frameLevelList: [][]int32{{0}},
 		},
 		// 被摧毁的基地
-		object.StaticObjHomeDestroyed: {
+		object.StaticObjRuins: {
 			frameNum:       1,
 			frameLevelList: [][]int32{{0}},
 		},
@@ -267,9 +267,9 @@ func initAnimConfigs() {
 			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeHome,
 			AnimConfig: createStaticObjAnimConfig(object.StaticObjHome),
 		},
-		object.StaticObjHomeDestroyed: {
-			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeHomeDestroyed,
-			AnimConfig: createStaticObjAnimConfig(object.StaticObjHomeDestroyed),
+		object.StaticObjRuins: {
+			Type: object.ObjTypeStatic, Subtype: object.ObjSubTypeRuins,
+			AnimConfig: createStaticObjAnimConfig(object.StaticObjRuins),
 		},
 	}
 	moveableObjectAnimConfigList = []*MovableObjectAnimConfig{
@@ -550,7 +550,7 @@ func GetHomeAnimConfig() *StaticObjectAnimConfig {
 	return GetStaticObjAnimConfig(object.StaticObjHome)
 }
 
-// 获得被摧毁的基地动画配置
-func GetHomeDestroyedAnimConfig() *StaticObjectAnimConfig {
-	return GetStaticObjAnimConfig(object.StaticObjHomeDestroyed)
+// 获得廢墟动画配置
+func GetRuinsAnimConfig() *StaticObjectAnimConfig {
+	return GetStaticObjAnimConfig(object.StaticObjRuins)
 }

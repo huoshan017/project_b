@@ -14,15 +14,15 @@ const (
 type StaticObjType int
 
 const (
-	StaticObjNone          = StaticObjType(0) // 无
-	StaticObjBrick         = StaticObjType(1) // 砖块
-	StaticObjIron          = StaticObjType(2) // 铁
-	StaticObjTree          = StaticObjType(3) // 樹
-	StaticObjWater         = StaticObjType(4) // 水
-	StaticObjIce           = StaticObjType(5) // 冰
-	StaticObjHome          = StaticObjType(6) // 基地
-	StaticObjHomeDestroyed = StaticObjType(7) // 被摧毁的基地
-	StaticObjEnumMax       = 8
+	StaticObjNone    = StaticObjType(0) // 无
+	StaticObjBrick   = StaticObjType(1) // 砖块
+	StaticObjIron    = StaticObjType(2) // 铁
+	StaticObjTree    = StaticObjType(3) // 樹
+	StaticObjWater   = StaticObjType(4) // 水
+	StaticObjIce     = StaticObjType(5) // 冰
+	StaticObjHome    = StaticObjType(6) // 基地
+	StaticObjRuins   = StaticObjType(7) // 被摧毁的基地
+	StaticObjEnumMax = 8
 )
 
 // 可移动物体类型
@@ -39,15 +39,15 @@ const (
 type ObjSubType int
 
 const (
-	ObjSubTypeBrick         = ObjSubType(StaticObjBrick)
-	ObjSubTypeIron          = ObjSubType(StaticObjIron)
-	ObjSubTypeTree          = ObjSubType(StaticObjTree)
-	ObjSubTypeIce           = ObjSubType(StaticObjIce)
-	ObjSubTypeWater         = ObjSubType(StaticObjWater)
-	ObjSubTypeHome          = ObjSubType(StaticObjHome)
-	ObjSubTypeHomeDestroyed = ObjSubType(StaticObjHomeDestroyed)
-	ObjSubTypeTank          = ObjSubType(MovableObjTank)
-	ObjSubTypeBullet        = ObjSubType(MovableObjBullet)
+	ObjSubTypeBrick  = ObjSubType(StaticObjBrick)
+	ObjSubTypeIron   = ObjSubType(StaticObjIron)
+	ObjSubTypeTree   = ObjSubType(StaticObjTree)
+	ObjSubTypeIce    = ObjSubType(StaticObjIce)
+	ObjSubTypeWater  = ObjSubType(StaticObjWater)
+	ObjSubTypeHome   = ObjSubType(StaticObjHome)
+	ObjSubTypeRuins  = ObjSubType(StaticObjRuins)
+	ObjSubTypeTank   = ObjSubType(MovableObjTank)
+	ObjSubTypeBullet = ObjSubType(MovableObjBullet)
 )
 
 // 对象所有者类型

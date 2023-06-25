@@ -84,6 +84,11 @@ func (c *Camera) ChangeHeight(delta int32) {
 	}
 }
 
+// Rotate 以屏幕中心點為旋轉軸逆時針旋轉angle度
+func (c *Camera) Rotate(angle int32) {
+	
+}
+
 /**
  * 屏幕坐標到世界坐標
  * x, y 屏幕坐標

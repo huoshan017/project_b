@@ -15,6 +15,7 @@ const (
 	CMD_STOP_MOVE    CmdCode = 2   // 停止移动
 	CMD_CHANGE_TANK  CmdCode = 3   // 改变坦克
 	CMD_RESTORE_TANK CmdCode = 4   // 恢复坦克
+	CMD_FIRE         CmdCode = 5   // 開炮
 	CMD_RESTART      CmdCode = 100 // 重新开始
 )
 

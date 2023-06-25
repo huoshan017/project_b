@@ -95,3 +95,8 @@ func (l *MapListUnion[Key, Value]) GetKeys(keys []Key) []Key {
 func (l *MapListUnion[Key, Value]) GetList() []Pair[Key, Value] {
 	return l.list
 }
+
+func (l *MapListUnion[Key, Value]) Clear() {
+	clear(l.key2index)
+	l.list = l.list[:0]
+}

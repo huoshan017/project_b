@@ -5,7 +5,6 @@ import (
 	client_base "project_b/client/base"
 	core "project_b/client_core"
 	"project_b/common/base"
-	"project_b/common/log"
 	"project_b/common/time"
 	"project_b/common_data"
 
@@ -131,15 +130,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	// 画UI
 	g.uiMgr.Draw(screen)
-}
-
-// 载入地图
-func (g *Game) loadMap() {
-	mapId := common_data.MapIdList[g.logic.MapIndex()]
-	if !g.logic.LoadSceneMap(mapId) {
-		log.Error("load map %v error", mapId)
-	}
-	g.playableSceneMap.SetMap(g.logic.CurrentSceneMap())
 }
 
 // 更新

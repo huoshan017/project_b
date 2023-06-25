@@ -2,7 +2,6 @@ package object
 
 import (
 	"fmt"
-	"math"
 	"project_b/common/base"
 	"project_b/common/log"
 	"project_b/common/time"
@@ -37,7 +36,8 @@ type object struct {
 	ownerType         ObjOwnerType   // 所有制类型，可被动态临时改变，所以需要在对象中另外缓存
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
-	lastX, lastY      int32          // 上次更新的位置
+	orientation       int32          // 旋轉角度，以Y軸正方向為0度，逆時針方向為旋轉正方向
+	components        []IComponent   // 組件
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 }
 
@@ -45,7 +45,6 @@ type object struct {
 func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.instId = instId
 	o.ownerType = staticInfo.ownerType
-	o.lastX, o.lastY = math.MinInt32, math.MinInt32
 	o.staticInfo = staticInfo
 }
 
@@ -117,17 +116,18 @@ func (o object) Pos() (int32, int32) {
 	return o.x, o.y
 }
 
-func (o object) LastPos() (int32, int32) {
-	return o.lastX, o.lastY
-}
-
 // 坐标位置，相对于父坐标系
 func (o *object) SetPos(x, y int32) {
-	//if o.lastX == math.MinInt32 && o.lastY == math.MinInt32 {
-	//	o.lastX, o.lastY = x, y
-	//}
 	o.x = x
 	o.y = y
+}
+
+// 中心點坐標
+func (o object) Center() (x, y int32) {
+	if o.changedStaticInfo != nil {
+		return o.x + o.changedStaticInfo.w>>1, o.y + o.changedStaticInfo.h>>1
+	}
+	return o.x + o.staticInfo.w>>1, o.y + o.staticInfo.h>>1
 }
 
 // 宽度
@@ -178,24 +178,44 @@ func (o object) Bottom() int32 {
 	return o.y + int32(o.staticInfo.y0)
 }
 
-// 注冊進入碰撞檢測事件
-func (o *object) RegisterEnterCollisionEventHandle(handle func(args ...any)) {
-
+// 朝向角度
+func (o object) Orientation() int32 {
+	return o.orientation
 }
 
-// 注冊離開碰撞檢測事件
-func (o *object) RegisterLeaveCollisionEventHandle(handle func(args ...any)) {
-
+// 添加組件
+func (o *object) AddComp(comp IComponent) {
+	o.components = append(o.components, comp)
 }
 
-// 注銷進入碰撞檢測事件
-func (o *object) UnregisterEnterCollisionEventHandle(handle func(args ...any)) {
-
+// 去除組件
+func (o *object) RemoveComp(name string) {
+	for i, c := range o.components {
+		if c.Name() == name {
+			o.components = append(o.components[:i], o.components[i+1:]...)
+			break
+		}
+	}
 }
 
-// 注銷離開碰撞檢測事件
-func (o *object) UnregisterLeaveCollisionEventHandle(handle func(args ...any)) {
+// 獲取組件
+func (o *object) GetComp(name string) IComponent {
+	for _, c := range o.components {
+		if c.Name() == name {
+			return c
+		}
+	}
+	return nil
+}
 
+// 是否擁有組件
+func (o object) HasComp(name string) bool {
+	for _, c := range o.components {
+		if c.Name() == name {
+			return true
+		}
+	}
+	return false
 }
 
 // 静态物体
@@ -228,24 +248,25 @@ const (
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir           Direction       // 方向
-	speed         int32           // 当前移动速度（米/秒）
-	state         moveObjectState // 移动状态
-	checkPosEvent *base.Event     // 檢查坐標事件
-	moveEvent     *base.Event     // 移动事件
-	stopEvent     *base.Event     // 停止事件
-	updateEvent   *base.Event     // 更新事件
+	dir            Direction       // 方向
+	speed          int32           // 当前移动速度（米/秒）
+	lastX, lastY   int32           // 上次更新的位置
+	state          moveObjectState // 移动状态
+	checkMoveEvent *base.Event     // 檢查坐標事件
+	moveEvent      *base.Event     // 移动事件
+	stopEvent      *base.Event     // 停止事件
+	updateEvent    *base.Event     // 更新事件
 }
 
 // 创建可移动物体
 func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 	o := &MovableObject{
-		dir:           staticInfo.dir,
-		speed:         staticInfo.speed,
-		checkPosEvent: base.NewEvent(),
-		moveEvent:     base.NewEvent(),
-		stopEvent:     base.NewEvent(),
-		updateEvent:   base.NewEvent(),
+		dir:            staticInfo.dir,
+		speed:          staticInfo.speed,
+		checkMoveEvent: base.NewEvent(),
+		moveEvent:      base.NewEvent(),
+		stopEvent:      base.NewEvent(),
+		updateEvent:    base.NewEvent(),
 	}
 	o.object.Init(instId, staticInfo)
 	return o
@@ -256,7 +277,7 @@ func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
 	o.dir = staticInfo.dir
 	o.speed = staticInfo.speed
-	o.checkPosEvent = base.NewEvent()
+	o.checkMoveEvent = base.NewEvent()
 	o.moveEvent = base.NewEvent()
 	o.stopEvent = base.NewEvent()
 	o.updateEvent = base.NewEvent()
@@ -346,6 +367,12 @@ func (o *MovableObject) IsMoving() bool {
 	return o.state == isMoving
 }
 
+// 上次Update的位置
+func (o MovableObject) LastPos() (int32, int32) {
+	return o.lastX, o.lastY
+}
+
+// 獲得移動距離
 func GetMoveDistance(obj IMovableObject, duration time.Duration) float64 {
 	return float64(int64(obj.CurrentSpeed())*int64(duration)) / float64(time.Second)
 }
@@ -364,58 +391,77 @@ func (o *MovableObject) Update(tick time.Duration) {
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		if o.moveEvent != nil {
+			o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		}
 		log.Debug("@@@ object %v to move => moving", o.instId)
 		return
 	}
 
+	x, y := float64(o.x), float64(o.y)
 	distance := GetMoveDistance(o, tick)
 	switch o.dir {
 	case DirLeft:
-		x := float64(o.x)
 		x -= distance
-		o.x = int32(x)
 	case DirRight:
-		x := float64(o.x)
 		x += distance
-		o.x = int32(x)
 	case DirUp:
-		y := float64(o.y)
 		y += distance
-		o.y = int32(y)
 	case DirDown:
-		y := float64(o.y)
 		y -= distance
-		o.y = int32(y)
 	default:
 		panic("invalid direction")
 	}
 
-	o.checkPosEvent.Call(o)
+	if o.state != stopped && o.checkMoveEvent != nil {
+		var (
+			isMove, isCollision bool
+			resObj              IObject
+		)
+		o.checkMoveEvent.Call(o, o.dir, distance, &isMove, &isCollision, &resObj)
+		if isMove {
+			o.x, o.y = int32(x), int32(y)
+		}
+		if isCollision {
+			comp := o.GetComp("Collisoin")
+			if comp != nil {
+				collisionComp := comp.(*CollisionComp)
+				if collisionComp.onCollision != nil {
+					collisionComp.onCollision(resObj)
+				}
+			}
+		}
+	} else {
+		o.x, o.y = int32(x), int32(y)
+	}
 
 	if o.state == isMoving {
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		if o.updateEvent != nil {
+			o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		}
 	} else if o.state == toStop {
 		o.state = stopped
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		if o.stopEvent != nil {
+			o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		}
 		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
 }
 
 // 注冊檢查坐標事件
-func (o *MovableObject) RegisterCheckPosEventHandle(handle func(args ...any)) {
-	o.checkPosEvent.Register(handle)
+func (o *MovableObject) RegisterCheckMoveEventHandle(handle func(args ...any)) {
+	o.checkMoveEvent.Register(handle)
 }
 
 // 注銷檢查坐標事件
-func (o *MovableObject) UnregisterCheckPosEventHandle(handle func(args ...any)) {
-	o.checkPosEvent.Unregister(handle)
+func (o *MovableObject) UnregisterCheckMoveEventHandle(handle func(args ...any)) {
+	o.checkMoveEvent.Unregister(handle)
 }
 
 // 注册移动事件

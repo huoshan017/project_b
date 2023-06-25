@@ -1,6 +1,6 @@
 module project_b
 
-go 1.18
+go 1.21
 
 require (
 	github.com/blizzy78/ebitenui v0.0.0-20211114161546-ca1a302d930b

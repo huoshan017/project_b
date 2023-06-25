@@ -16,14 +16,14 @@ import (
 
 // 场景圖结构必须在单个goroutine中执行
 type SceneMap struct {
-	gmap                *game_map.Config
+	mapConfig           *game_map.Config
 	mapWidth, mapHeight int32
 	eventMgr            base.IEventManager
 	playerTankList      *ds.MapListUnion[uint64, *object.Tank]
 	enemyTankList       *ds.MapListUnion[uint32, *object.Tank]
 	playerTankListCache []PlayerTankKV
 	objFactory          *object.ObjectFactory
-	mapInstance         *game_map.MapInstance
+	pmap                *PartitionMap
 }
 
 func NewSceneMap(eventMgr base.IEventManager) *SceneMap {
@@ -32,17 +32,17 @@ func NewSceneMap(eventMgr base.IEventManager) *SceneMap {
 		playerTankList: ds.NewMapListUnion[uint64, *object.Tank](),
 		enemyTankList:  ds.NewMapListUnion[uint32, *object.Tank](),
 		objFactory:     object.NewObjectFactory(true),
-		mapInstance:    game_map.NewMapInstance(0),
+		pmap:           NewPartitionMap(0),
 	}
 }
 
 func (s *SceneMap) GetMapId() int32 {
-	return s.gmap.Id
+	return s.mapConfig.Id
 }
 
 func (s *SceneMap) LoadMap(m *game_map.Config) bool {
 	// 载入地图
-	s.mapInstance.Load(m)
+	s.pmap.Load(m)
 	// 地图载入前事件
 	s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
 	for line := 0; line < len(m.Layers); line++ {
@@ -52,12 +52,17 @@ func (s *SceneMap) LoadMap(m *game_map.Config) bool {
 				continue
 			}
 			tileObj := s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
+			// 碰撞組件
+			if common_data.StaticObjectConfigData[st].Collision() {
+				tileObj.AddComp(&object.CollisionComp{})
+			}
 			// 二維數組Y軸是自上而下的，而世界坐標Y軸是自下而上的，所以設置Y坐標要倒過來
 			tileObj.SetPos(m.TileWidth*int32(col), m.TileHeight*int32(len(m.Layers)-1-line))
-			s.mapInstance.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
+			// 加入網格分區地圖
+			s.pmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 		}
 	}
-	s.gmap = m
+	s.mapConfig = m
 	s.mapWidth = int32(len(m.Layers[0])) * m.TileWidth
 	s.mapHeight = int32(len(m.Layers)) * m.TileHeight
 	// 地图载入完成事件
@@ -67,31 +72,25 @@ func (s *SceneMap) LoadMap(m *game_map.Config) bool {
 }
 
 func (s *SceneMap) UnloadMap() {
-	/*if s.tileObjectArray == nil {
-		return
-	}
 	// 地图卸载前事件
 	s.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
-	for i := 0; i < len(s.tileObjectArray); i++ {
-		if s.tileObjectArray[i] == nil {
-			continue
-		}
-		for j := 0; j <= len(s.tileObjectArray[i]); j++ {
-			s.objFactory.RecycleStaticObject(s.tileObjectArray[i][j])
-			s.tileObjectArray[i][j] = nil
-		}
-	}
+	s.mapWidth = 0
+	s.mapHeight = 0
+	s.playerTankList.Clear()
+	s.enemyTankList.Clear()
+	s.playerTankListCache = s.playerTankListCache[:0]
+	s.pmap.Unload()
+	s.objFactory.Clear()
 	// 地图卸载后事件
 	s.eventMgr.InvokeEvent(EventIdMapUnloaded)
-	s.tileObjectArray = nil*/
 }
 
 func (s *SceneMap) GetMapConfig() *game_map.Config {
-	return s.gmap
+	return s.mapConfig
 }
 
-func (s *SceneMap) GetLayerObjsWithRange(rect *math.Rect) [game_map.MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
-	return s.mapInstance.GetLayerObjsWithRange(rect)
+func (s *SceneMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
+	return s.pmap.GetLayerObjsWithRange(rect)
 }
 
 func (s *SceneMap) GetObj(instId uint32) object.IObject {
@@ -107,21 +106,27 @@ func (s *SceneMap) GetPlayerTank(pid uint64) *object.Tank {
 }
 
 func (s *SceneMap) NewPlayerTank(pid uint64) *object.Tank {
-	tank := s.objFactory.NewTank(&s.gmap.PlayerTankInitData)
-	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	tank := s.objFactory.NewTank(&s.mapConfig.PlayerTankInitData)
+	// 注冊檢測移動事件處理
+	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
+	// 設置碰撞組件
+	if common_data.TankConfigData[s.mapConfig.PlayerTankInitData.Id()].Collision() {
+		tank.AddComp(&object.CollisionComp{})
+	}
 	// 随机并设置坦克位置
-	pos := utils.RandomPosInRect(s.gmap.PlayerTankInitRect)
+	pos := utils.RandomPosInRect(s.mapConfig.PlayerTankInitRect)
 	tank.SetPos(pos.X, pos.Y)
 	// 加入到玩家坦克列表
 	s.playerTankList.Add(pid, tank)
-	s.mapInstance.AddObj(tank)
+	// 加入網格分區地圖
+	s.pmap.AddObj(tank)
 	return tank
 }
 
 func (s *SceneMap) AddPlayerTank(pid uint64, tank *object.Tank) {
-	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	s.playerTankList.Add(pid, tank)
-	s.mapInstance.AddObj(tank)
+	s.pmap.AddObj(tank)
 }
 
 func (s *SceneMap) AddPlayerTankWithInfo(pid uint64, id int32, level int32, x, y int32, dir object.Direction, currSpeed int32) {
@@ -130,15 +135,22 @@ func (s *SceneMap) AddPlayerTankWithInfo(pid uint64, id int32, level int32, x, y
 	tank.SetLevel(level)
 	tank.SetDir(dir)
 	tank.SetCurrentSpeed(currSpeed)
-	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	// 注冊檢測移動事件處理
+	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
+	// 設置碰撞組件
+	if common_data.TankConfigData[id].Collision() {
+		tank.AddComp(&object.CollisionComp{})
+	}
+	// 加入玩家坦克列表
 	s.playerTankList.Add(pid, tank)
-	s.mapInstance.AddObj(tank)
+	// 加入網格分區地圖
+	s.pmap.AddObj(tank)
 }
 
 func (s *SceneMap) RemovePlayerTank(pid uint64) {
 	tank := s.playerTankList.Remove(pid)
-	tank.UnregisterCheckPosEventHandle(s.checkObjPosEventHandle)
-	s.mapInstance.RemoveObj(tank.InstId())
+	tank.UnregisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
+	s.pmap.RemoveObj(tank.InstId())
 	s.objFactory.RecycleTank(tank)
 }
 
@@ -164,9 +176,7 @@ func (s *SceneMap) PlayerTankMove(uid uint64, dir object.Direction) {
 		return
 	}
 	tank.SetDir(dir)
-	if s.checkObjCanMove(tank, nil, nil) {
-		tank.Move(dir)
-	}
+	tank.Move(dir)
 }
 
 func (s *SceneMap) PlayerTankStopMove(uid uint64) {
@@ -198,7 +208,7 @@ func (s *SceneMap) PlayerTankRestore(uid uint64) int32 {
 
 func (s *SceneMap) AddEnemyTank(instId uint32, tank *object.Tank) {
 	s.enemyTankList.Add(instId, tank)
-	tank.RegisterCheckPosEventHandle(s.checkObjPosEventHandle)
+	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 }
 
 func (s *SceneMap) GetEnemyTank(instId uint32) *object.Tank {
@@ -212,9 +222,28 @@ func (s *SceneMap) GetEnemyTank(instId uint32) *object.Tank {
 func (s *SceneMap) RemoveEnemyTank(id uint32) {
 	v, o := s.enemyTankList.Get(id)
 	if o {
-		v.UnregisterCheckPosEventHandle(s.checkObjPosEventHandle)
+		v.UnregisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	}
 	s.enemyTankList.Remove(id)
+}
+
+func (s *SceneMap) EnemyTankMove(id uint32, dir object.Direction) {
+	tank := s.GetEnemyTank(id)
+	if tank == nil {
+		log.Error("enemy tank %v not found", id)
+		return
+	}
+	tank.SetDir(dir)
+	tank.Move(dir)
+}
+
+func (s *SceneMap) EnemyTankStopMove(id uint32) {
+	tank := s.GetEnemyTank(id)
+	if tank == nil {
+		log.Error("enemy tank %v not found", id)
+		return
+	}
+	tank.Stop()
 }
 
 func (s *SceneMap) Update(tick time.Duration) {
@@ -222,13 +251,13 @@ func (s *SceneMap) Update(tick time.Duration) {
 	for i := int32(0); i < count; i++ {
 		_, tank := s.playerTankList.GetByIndex(i)
 		tank.Update(tick)
-		s.mapInstance.UpdateObj(tank)
+		s.pmap.UpdateMovable(tank)
 	}
 	count = s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.enemyTankList.GetByIndex(i)
 		tank.Update(tick)
-		s.mapInstance.UpdateObj(tank)
+		s.pmap.UpdateMovable(tank)
 	}
 }
 
@@ -336,31 +365,55 @@ func (s *SceneMap) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args 
 	}
 }
 
-func (s *SceneMap) checkObjPosEventHandle(args ...any) {
+func (s *SceneMap) checkObjMoveEventHandle(args ...any) {
 	obj := args[0].(object.IMovableObject)
-	var x, y int32
-	if !s.checkObjCanMove(obj, &x, &y) {
+	dir := args[1].(object.Direction)
+	distance := args[2].(float64)
+	isMove := args[3].(*bool)
+	isCollision := args[4].(*bool)
+	resObj := args[5].(*object.IObject)
+	var (
+		x, y int32
+	)
+	if !s.checkObjMoveRange(obj, dir, distance, &x, &y) {
 		obj.SetPos(x, y)
 		obj.Stop()
+		*isMove = false
+		*isCollision = false
+	} else if s.checkMovableObjCollision(obj, dir, distance, resObj) {
+		obj.Stop()
+		*isCollision = true
+		*isMove = false
+	} else {
+		*isMove = true
+		*isCollision = false
 	}
 }
 
-func (s *SceneMap) checkObjCanMove(obj object.IMovableObject, rx, ry *int32) bool {
+func (s *SceneMap) checkObjMoveRange(obj object.IMovableObject, dir object.Direction, distance float64, rx, ry *int32) bool {
 	x, y := obj.Pos()
 	var move bool = true
-	if x <= s.gmap.X && obj.Dir() == object.DirLeft {
-		move = false
-		x = s.gmap.X
-	} else if x >= s.gmap.X+s.mapWidth-obj.Width() && obj.Dir() == object.DirRight {
-		move = false
-		x = s.gmap.X + s.mapWidth - obj.Width()
-	}
-	if y <= s.gmap.Y && obj.Dir() == object.DirDown {
-		move = false
-		y = s.gmap.Y
-	} else if y >= s.gmap.Y+s.mapHeight-obj.Height() && obj.Dir() == object.DirUp {
-		move = false
-		y = s.gmap.Y + s.mapHeight - obj.Height()
+	switch dir {
+	case object.DirLeft:
+		if float64(x)-distance <= float64(s.mapConfig.X) {
+			move = false
+			x = s.mapConfig.X
+		}
+	case object.DirRight:
+		if float64(x)+distance >= float64(s.mapConfig.X+s.mapWidth-obj.Width()) {
+			move = false
+			x = s.mapConfig.X + s.mapWidth - obj.Width()
+		}
+	case object.DirUp:
+		if float64(y)+distance >= float64(s.mapConfig.Y+s.mapHeight-obj.Height()) {
+			move = false
+			y = s.mapConfig.Y + s.mapHeight - obj.Height()
+		}
+	case object.DirDown:
+		if float64(y)-distance <= float64(s.mapConfig.Y) {
+			move = false
+			y = s.mapConfig.Y
+		}
 	}
 	if !move {
 		if rx != nil {
@@ -371,4 +424,93 @@ func (s *SceneMap) checkObjCanMove(obj object.IMovableObject, rx, ry *int32) boo
 		}
 	}
 	return move
+}
+
+// 移動之前調用
+func (s *SceneMap) checkMovableObjCollision(obj object.IMovableObject, dir object.Direction, distance float64, collisionObj *object.IObject) bool {
+	// 是否擁有碰撞組件
+	comp := obj.GetComp("Collision")
+	if comp == nil {
+		return false
+	}
+
+	// 獲取檢測碰撞範圍
+	lx, by, rx, ty := s.pmap.objGridBounds(obj)
+	if rx < lx || ty < by {
+		return false
+	}
+
+	for y := by; y <= ty; y++ {
+		for x := lx; x <= rx; x++ {
+			gidx := s.pmap.gridLineCol2Index(y, x)
+			lis := s.pmap.grids[gidx].getMObjs().GetList()
+			for i := 0; i < len(lis); i++ {
+				item := lis[i]
+				obj2, o := s.pmap.mobjs.Get(item.Key)
+				if !o {
+					log.Warn("not found movable object %v", item.Key)
+					continue
+				}
+				if obj2.InstId() != obj.InstId() {
+					if s.checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
+						if collisionObj != nil {
+							*collisionObj = obj2
+						}
+						return true
+					}
+				}
+			}
+
+			lis = s.pmap.grids[gidx].getSObjs().GetList()
+			for i := 0; i < len(lis); i++ {
+				item := lis[i]
+				obj2, o := s.pmap.sobjs.Get(item.Key)
+				if !o {
+					log.Warn("not found static object %v", item.Key)
+					continue
+				}
+				if s.checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
+					if collisionObj != nil {
+						*collisionObj = obj2
+					}
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func (s *SceneMap) checkMovableObjCollisionObj(obj object.IMovableObject, comp object.IComponent, dir object.Direction, distance float64, obj2 object.IObject) bool {
+	// 遍歷範圍内的所有碰撞物體
+	var (
+		collisionComp *object.CollisionComp
+		aabb1         object.AABB
+	)
+	collisionComp = comp.(*object.CollisionComp)
+	aabb1 = collisionComp.GetAABB(obj)
+	aabb1.Move(dir, distance)
+	comp2 := obj2.GetComp("Collision")
+	if comp2 == nil {
+		return false
+	}
+	collisionComp2 := comp2.(*object.CollisionComp)
+	if collisionComp2 == nil {
+		return false
+	}
+	aabb2 := collisionComp2.GetAABB(obj2)
+	if aabb1.Intersect(&aabb2) {
+		switch dir {
+		case object.DirLeft:
+			obj.SetPos(obj2.Right(), obj.Bottom())
+		case object.DirRight:
+			obj.SetPos(obj2.Left()-obj.Width(), obj.Bottom())
+		case object.DirUp:
+			obj.SetPos(obj.Left(), obj2.Bottom()-obj.Height())
+		case object.DirDown:
+			obj.SetPos(obj.Left(), obj2.Top())
+		}
+		return true
+	}
+	return false
 }

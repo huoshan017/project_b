@@ -34,12 +34,14 @@ type SpriteAnim struct {
 	currFrame      int32
 	lastUpdateTime time.Time
 	currState      SpriteAnimState
+	images         []*ebiten.Image
 }
 
 // 创建精灵动画
 func NewSpriteAnim(config *SpriteAnimConfig) *SpriteAnim {
 	return &SpriteAnim{
 		Config: config,
+		images: make([]*ebiten.Image, len(config.FramePosList)),
 	}
 }
 
@@ -111,5 +113,8 @@ func (a *SpriteAnim) draw(frameIndex int32, screen *ebiten.Image, options *ebite
 	y0 := f.Y * c.FrameHeight
 	x1 := x0 + c.FrameWidth
 	y1 := y0 + c.FrameHeight
-	screen.DrawImage(c.Image.SubImage(image.Rect(x0, y0, x1, y1)).(*ebiten.Image), options)
+	if a.images[frameIndex] == nil {
+		a.images[frameIndex] = c.Image.SubImage(image.Rect(x0, y0, x1, y1)).(*ebiten.Image)
+	}
+	screen.DrawImage(a.images[frameIndex], options)
 }

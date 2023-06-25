@@ -95,15 +95,21 @@ func (s *PlayableSceneMap) Draw(dstImage *ebiten.Image) {
 		if layerObjs[i].Length() == 0 {
 			continue
 		}
-		// todo 這裏正確的做法是根據obj的邏輯距離由遠到近畫出來
-		id, _, o := layerObjs[i].Get()
+		var (
+			o  = true
+			id uint32
+		)
+		// 從大頂堆中取出obj，按邏輯距離由遠到近畫出來
 		for o {
+			id, _, o = layerObjs[i].Get()
+			if !o {
+				continue
+			}
 			obj := s.sceneMap.GetObj(id)
 			if obj == nil {
 				continue
 			}
 			s.drawObj(obj, dstImage)
-			id, _, o = layerObjs[i].Get()
 		}
 	}
 }
@@ -127,19 +133,27 @@ func (s *PlayableSceneMap) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 	sy := obj.Height() / tc.frameHeight
 	tc.op.GeoM.Scale(float64(sx), float64(sy))
 
-	// 插值
-	x, y := obj.Pos()
-	mapConfig := s.sceneMap.GetMapConfig()
-	mapWidth := mapConfig.TileWidth * int32(len(mapConfig.Layers[0]))
-	mapHeight := mapConfig.TileHeight * int32(len(mapConfig.Layers))
-	var dx, dy float64
-	if x >= mapConfig.X && x <= mapConfig.X+mapWidth-obj.Width() && y >= mapConfig.Y && y <= mapConfig.Y+mapHeight-obj.Height() {
-		dx, dy = tc.playableObj.Interpolation()
+	left, top, right, bottom := obj.Left(), obj.Top(), obj.Right(), obj.Bottom()
+	// 移動物體插值
+	if obj.Type() == object.ObjTypeMovable {
+		mapConfig := s.sceneMap.GetMapConfig()
+		mapWidth := mapConfig.TileWidth * int32(len(mapConfig.Layers[0]))
+		mapHeight := mapConfig.TileHeight * int32(len(mapConfig.Layers))
+		var dx, dy float64
+		x, y := obj.Pos()
+		if x >= mapConfig.X && x <= mapConfig.X+mapWidth-obj.Width() && y >= mapConfig.Y && y <= mapConfig.Y+mapHeight-obj.Height() {
+			dx, dy = tc.playableObj.Interpolation()
+			left += int32(dx)
+			right += int32(dx)
+			top += int32(dy)
+			bottom += int32(dy)
+		}
 	}
+
 	// todo 注意这里，i是y轴方向，j是x轴方向
 	// 由於世界坐標Y軸與屏幕坐標Y軸方向相反，所以變換左上角和右下角的世界坐標到屏幕坐標
-	lx, ly := s.camera.World2Screen(obj.Left()+int32(dx), obj.Top()+int32(dy))
-	rx, ry := s.camera.World2Screen(obj.Right()+int32(dx), obj.Bottom()+int32(dy))
+	lx, ly := s.camera.World2Screen(left, top)
+	rx, ry := s.camera.World2Screen(right, bottom)
 	scalex := float64(rx-lx) / float64(obj.Width())
 	scaley := float64(ry-ly) / float64(obj.Height())
 	tc.op.GeoM.Scale(scalex, scaley)
