@@ -223,7 +223,7 @@ func (m *PartitionMap) RemoveObj(instId uint32) {
 
 func (m *PartitionMap) UpdateMovable(obj object.IMovableObject) {
 	if !m.mobjs.Exists(obj.InstId()) {
-		log.Warn("obj %v not found in map", obj.InstId())
+		log.Warn("obj %v (type: %v, subtype: %v) not found in map", obj.InstId(), obj.Type(), obj.Subtype())
 		return
 	}
 
@@ -342,41 +342,7 @@ func (m *PartitionMap) UpdateMovable(obj object.IMovableObject) {
 }
 
 func (m *PartitionMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
-	// 獲得範圍内的瓦片
-	/*tl := (rect.X() - m.config.X) / m.config.TileWidth
-	if tl < 0 {
-		tl = 0
-	}
-	tb := (rect.Y() - m.config.Y) / m.config.TileHeight
-	if tb < 0 {
-		tb = 0
-	}
-	tr := (rect.X() + rect.W() - m.config.X) / m.config.TileWidth
-	if tr >= int32(len(m.config.Layers[0])) {
-		tr = int32(len(m.config.Layers[0])) - 1
-	}
-	tt := (rect.Y() + rect.H() - m.config.Y) / m.config.TileHeight
-	if tt >= int32(len(m.config.Layers)) {
-		tt = int32(len(m.config.Layers)) - 1
-	}
-
-	// 先把tiles插入
-	for i := tb; i <= tt; i++ {
-		for j := tl; j <= tr; j++ {
-			if m.tiles[i][j] <= 0 {
-				continue
-			}
-			obj, o := m.sobjs.Get(m.tiles[i][j])
-			if !o {
-				continue
-			}
-			layer := obj.StaticInfo().Layer()
-			m.resultLayerObjs[layer].Set(m.tiles[i][j], obj.Bottom())
-		}
-	}*/
-
-	// 獲得範圍内的其他obj
-	// 先获取grids
+	// 獲得範圍内的靜止和運動的obj
 	lx, by, rx, ty := m.gridBoundsBy(rect.X(), rect.Y(), rect.X()+rect.W(), rect.Y()+rect.H())
 	if rx >= lx && ty >= by {
 		for y := by; y <= ty; y++ {

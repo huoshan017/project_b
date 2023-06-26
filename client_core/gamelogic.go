@@ -40,3 +40,7 @@ func (l *GameLogic) MyPlayerTankMove(moveDir object.Direction) {
 func (l *GameLogic) MyPlayerTankStopMove() {
 	l.PlayerTankStopMove(l.myId)
 }
+
+func (l *GameLogic) MyPlayerTankFire() {
+	l.PlayerTankFire(l.myId)
+}

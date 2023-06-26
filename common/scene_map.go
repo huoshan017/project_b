@@ -21,6 +21,7 @@ type SceneMap struct {
 	eventMgr            base.IEventManager
 	playerTankList      *ds.MapListUnion[uint64, *object.Tank]
 	enemyTankList       *ds.MapListUnion[uint32, *object.Tank]
+	bulletList          *ds.MapListUnion[uint32, *object.Bullet]
 	playerTankListCache []PlayerTankKV
 	objFactory          *object.ObjectFactory
 	pmap                *PartitionMap
@@ -31,6 +32,7 @@ func NewSceneMap(eventMgr base.IEventManager) *SceneMap {
 		eventMgr:       eventMgr,
 		playerTankList: ds.NewMapListUnion[uint64, *object.Tank](),
 		enemyTankList:  ds.NewMapListUnion[uint32, *object.Tank](),
+		bulletList:     ds.NewMapListUnion[uint32, *object.Bullet](),
 		objFactory:     object.NewObjectFactory(true),
 		pmap:           NewPartitionMap(0),
 	}
@@ -78,6 +80,7 @@ func (s *SceneMap) UnloadMap() {
 	s.mapHeight = 0
 	s.playerTankList.Clear()
 	s.enemyTankList.Clear()
+	s.bulletList.Clear()
 	s.playerTankListCache = s.playerTankListCache[:0]
 	s.pmap.Unload()
 	s.objFactory.Clear()
@@ -188,7 +191,24 @@ func (s *SceneMap) PlayerTankStopMove(uid uint64) {
 	tank.Stop()
 }
 
-func (s *SceneMap) PlayerTankChange(uid uint64, staticInfo *object.ObjStaticInfo) bool {
+func (s *SceneMap) PlayerTankFire(uid uint64) {
+	tank := s.GetPlayerTank(uid)
+	if tank == nil {
+		log.Error("player %v tank not found", uid)
+		return
+	}
+	bulletConfig := common_data.BulletConfigData[tank.GetBulletConfig().BulletId]
+	bullet := tank.CheckAndFire(s.objFactory.NewBullet, bulletConfig)
+	if bullet != nil {
+		bullet.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
+		// 子彈移動
+		bullet.Move(tank.Dir())
+		s.bulletList.Add(bullet.InstId(), bullet)
+		s.pmap.AddObj(bullet)
+	}
+}
+
+func (s *SceneMap) PlayerTankChange(uid uint64, staticInfo *object.TankStaticInfo) bool {
 	tank := s.GetPlayerTank(uid)
 	if tank == nil {
 		return false
@@ -247,17 +267,54 @@ func (s *SceneMap) EnemyTankStopMove(id uint32) {
 }
 
 func (s *SceneMap) Update(tick time.Duration) {
+	var rlist []uint64
 	count := s.playerTankList.Count()
 	for i := int32(0); i < count; i++ {
-		_, tank := s.playerTankList.GetByIndex(i)
-		tank.Update(tick)
-		s.pmap.UpdateMovable(tank)
+		key, tank := s.playerTankList.GetByIndex(i)
+		tank.Update(tick) // 相當於MonoBehevior.Update
+		if tank.IsRecycle() {
+			s.objFactory.RecycleTank(tank)
+			s.pmap.RemoveObj(tank.InstId())
+			rlist = append(rlist, key)
+		} else {
+			s.pmap.UpdateMovable(tank) // 相當於MonoBehevior.FixedUpdate
+		}
 	}
+	for _, id := range rlist {
+		s.playerTankList.Remove(id)
+	}
+
+	var rrlist []uint32
 	count = s.enemyTankList.Count()
 	for i := int32(0); i < count; i++ {
-		_, tank := s.enemyTankList.GetByIndex(i)
+		key, tank := s.enemyTankList.GetByIndex(i)
 		tank.Update(tick)
+		if tank.IsRecycle() {
+			s.pmap.RemoveObj(key)
+			s.objFactory.RecycleTank(tank)
+			rrlist = append(rrlist, key)
+		}
 		s.pmap.UpdateMovable(tank)
+	}
+	for _, id := range rrlist {
+		s.enemyTankList.Remove(id)
+	}
+
+	rrlist = rrlist[:0]
+	count = s.bulletList.Count()
+	for i := int32(0); i < count; i++ {
+		key, bullet := s.bulletList.GetByIndex(i)
+		bullet.Update(tick)
+		if bullet.IsRecycle() {
+			s.pmap.RemoveObj(bullet.InstId())
+			s.objFactory.RecycleBullet(bullet)
+			rrlist = append(rrlist, key)
+		} else {
+			s.pmap.UpdateMovable(bullet)
+		}
+	}
+	for _, id := range rrlist {
+		s.bulletList.Remove(id)
 	}
 }
 
@@ -366,22 +423,31 @@ func (s *SceneMap) UnregisterAllEnemiesEvent(eid base.EventId, handle func(args 
 }
 
 func (s *SceneMap) checkObjMoveEventHandle(args ...any) {
-	obj := args[0].(object.IMovableObject)
+	instId := args[0].(uint32)
 	dir := args[1].(object.Direction)
 	distance := args[2].(float64)
 	isMove := args[3].(*bool)
 	isCollision := args[4].(*bool)
 	resObj := args[5].(*object.IObject)
+
+	obj := s.objFactory.GetObj(instId)
+	if obj.Type() != object.ObjTypeMovable {
+		log.Error("SceneMap.checkObjMoveEventHandle object %v must be movable", instId)
+		return
+	}
+
 	var (
 		x, y int32
+		mobj = obj.(object.IMovableObject)
 	)
-	if !s.checkObjMoveRange(obj, dir, distance, &x, &y) {
-		obj.SetPos(x, y)
-		obj.Stop()
+	if !s.checkObjMoveRange(mobj, dir, distance, &x, &y) {
+		mobj.SetPos(x, y)
+		mobj.Stop()
 		*isMove = false
 		*isCollision = false
-	} else if s.checkMovableObjCollision(obj, dir, distance, resObj) {
-		obj.Stop()
+		s.onMovableObjReachMapBorder(mobj)
+	} else if s.checkMovableObjCollision(mobj, dir, distance, resObj) {
+		mobj.Stop()
 		*isCollision = true
 		*isMove = false
 	} else {
@@ -513,4 +579,10 @@ func (s *SceneMap) checkMovableObjCollisionObj(obj object.IMovableObject, comp o
 		return true
 	}
 	return false
+}
+
+func (s *SceneMap) onMovableObjReachMapBorder(obj object.IMovableObject) {
+	if obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubTypeBullet {
+		obj.ToRecycle()
+	}
 }

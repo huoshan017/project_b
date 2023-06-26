@@ -2,14 +2,14 @@ package object
 
 import "project_b/common/time"
 
-type CollisionInfo struct {
-}
-
-type TriggerInfo struct {
+type IRecycle interface {
+	ToRecycle()
+	IsRecycle() bool
 }
 
 // 物体接口
 type IObject interface {
+	IRecycle
 	Init(uint32, *ObjStaticInfo)    // 初始化
 	Uninit()                        // 反初始化
 	InstId() uint32                 // 实例id
@@ -72,7 +72,7 @@ type IVehicle interface {
 // 坦克接口
 type ITank interface {
 	IVehicle
-	Change(info *ObjStaticInfo)
+	Change(info *TankStaticInfo)
 	Restore()
 
 	// ---------------------------------

@@ -1,5 +1,7 @@
 package object
 
+import "project_b/common/base"
+
 type IComponent interface {
 	Name() string
 }
@@ -34,7 +36,7 @@ func (ab *AABB) Move(dir Direction, distance float64) {
 
 // 碰撞組件
 type CollisionComp struct {
-	onCollision func(...any)
+	collisionEvent base.Event
 }
 
 // 組件名稱
@@ -52,12 +54,17 @@ func (c CollisionComp) GetAABB(obj IObject) AABB {
 	}
 }
 
-// 設置碰撞事件處理
-func (c *CollisionComp) SetOnCollisionEventHandle(onCollision func(...any)) {
-	c.onCollision = onCollision
+// 注冊碰撞事件處理
+func (c *CollisionComp) RegisterCollisionEventHandle(handle func(...any)) {
+	c.collisionEvent.Register(handle)
 }
 
-// 獲得碰撞事件處理函數
-func (c CollisionComp) GetOnCollisionEventHandle() func(...any) {
-	return c.onCollision
+// 注銷碰撞事件處理
+func (c *CollisionComp) UnregisterCollisionEventHandle(handle func(...any)) {
+	c.collisionEvent.Unregister(handle)
+}
+
+// 執行
+func (c *CollisionComp) Call(args ...any) {
+	c.collisionEvent.Call(args...)
 }

@@ -41,6 +41,16 @@ var (
 			int32(object.StaticObjRuins), object.ObjTypeStatic, object.ObjSubTypeRuins, 0, 0, 320, 320, 0, object.DirNone, 1, true),
 	}
 
+	// 炮彈靜態配置
+	BulletConfigData = map[int32]*object.BulletStaticInfo{
+		1: {
+			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, 0, 0, 80, 80, 500, object.DirUp, 1, true),
+			Range:         1000,
+			Damage:        100,
+			BlastRadius:   10,
+		},
+	}
+
 	// 坦克id列表
 	TankIdList = []int32{1, 2, 1000, 1001, 1002}
 
@@ -54,13 +64,27 @@ var (
 	}
 
 	// 坦克静态配置数据，全部是逻辑数据
-	TankConfigData = map[int32]*object.ObjStaticInfo{
-		1: object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
-		2: object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
-
-		1000: object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
-		1001: object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 650, object.DirUp, 1, true),
-		1002: object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 300, object.DirUp, 1, true),
+	TankConfigData = map[int32]*object.TankStaticInfo{
+		1: {
+			ObjStaticInfo:    *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
+			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
+		},
+		2: {
+			ObjStaticInfo:    *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
+			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
+		},
+		1000: {
+			ObjStaticInfo:    *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
+			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 3500},
+		},
+		1001: {
+			ObjStaticInfo:    *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 650, object.DirUp, 1, true),
+			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
+		},
+		1002: {
+			ObjStaticInfo:    *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 300, object.DirUp, 1, true),
+			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
+		},
 	}
 
 	// 玩家坦克配置信息
@@ -74,7 +98,7 @@ var (
 	TeammateTankInfoPos = object.Pos{X: 1500, Y: 1000}
 
 	// 敌人坦克配置信息
-	EnemyTankInitData = map[int32]*object.ObjStaticInfo{
+	EnemyTankInitData = map[int32]*object.TankStaticInfo{
 		1000: TankConfigData[1000],
 		1001: TankConfigData[1001],
 	}

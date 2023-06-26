@@ -19,7 +19,7 @@ type PlayerTankKV struct {
 // 场景结构必须在单个goroutine中执行
 type Scene struct {
 	gmap                *game_map.Config
-	tileObjectArray     [][]*object.StaticObject
+	tileObjectArray     [][]object.IStaticObject
 	eventMgr            base.IEventManager
 	playerTankList      *ds.MapListUnion[uint64, *object.Tank]
 	enemyTankList       *ds.MapListUnion[uint32, *object.Tank]
@@ -39,12 +39,12 @@ func NewScene(eventMgr base.IEventManager) *Scene {
 func (s *Scene) LoadMap(m *game_map.Config) bool {
 	// 载入地图
 	if s.tileObjectArray == nil {
-		s.tileObjectArray = make([][]*object.StaticObject, len(m.Layers))
+		s.tileObjectArray = make([][]object.IStaticObject, len(m.Layers))
 	}
 	// 地图载入前事件
 	s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
 	for i := 0; i < len(s.tileObjectArray); i++ {
-		s.tileObjectArray[i] = make([]*object.StaticObject, len(m.Layers[i]))
+		s.tileObjectArray[i] = make([]object.IStaticObject, len(m.Layers[i]))
 		for j := 0; j < len(s.tileObjectArray[i]); j++ {
 			st := object.StaticObjType(m.Layers[i][j])
 			if common_data.StaticObjectConfigData[st] == nil {
@@ -144,12 +144,12 @@ func (s *Scene) PlayerTankStopMove(uid uint64) {
 	tank.Stop()
 }
 
-func (s *Scene) PlayerTankChange(uid uint64, staticInfo *object.ObjStaticInfo) bool {
+func (s *Scene) PlayerTankChange(uid uint64, tankInfo *object.TankStaticInfo) bool {
 	tank := s.GetPlayerTank(uid)
 	if tank == nil {
 		return false
 	}
-	tank.Change(staticInfo)
+	tank.Change(tankInfo)
 	return true
 }
 

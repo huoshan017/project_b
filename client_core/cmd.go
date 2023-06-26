@@ -43,6 +43,7 @@ func CreateCmdHandleManager(net *NetClient, logic *GameLogic) *CmdHandleManager 
 		{CMD_STOP_MOVE, m.handleStopMove},
 		{CMD_CHANGE_TANK, m.handleChangeTank},
 		{CMD_RESTORE_TANK, m.handleRestoreTank},
+		{CMD_FIRE, m.handleFire},
 	}
 	m.handles = handles
 	return m
@@ -97,4 +98,8 @@ func (m *CmdHandleManager) handleRestoreTank(args ...any) {
 	if err != nil {
 		Log().Warn("send tank restore req err: %v", err)
 	}
+}
+
+func (m *CmdHandleManager) handleFire(args ...any) {
+	m.logic.MyPlayerTankFire()
 }

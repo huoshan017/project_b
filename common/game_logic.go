@@ -175,7 +175,7 @@ func (g *GameLogic) PlayerTankStopMove(uid uint64) {
 }
 
 // 玩家坦克改变
-func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.ObjStaticInfo) bool {
+func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.TankStaticInfo) bool {
 	return g.sceneMap.PlayerTankChange(uid, staticInfo)
 }
 
@@ -184,8 +184,9 @@ func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
 	return g.sceneMap.PlayerTankRestore(uid)
 }
 
-func (g *GameLogic) PlayerFire() {
-
+// 玩家坦克開炮
+func (g *GameLogic) PlayerTankFire(uid uint64) {
+	g.sceneMap.PlayerTankFire(uid)
 }
 
 // 检测玩家

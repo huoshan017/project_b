@@ -52,3 +52,22 @@ func (info ObjStaticInfo) Layer() int32 {
 func (info ObjStaticInfo) Collision() bool {
 	return info.collision
 }
+
+type BulletStaticInfo struct {
+	ObjStaticInfo
+	Range       int32 // 射程
+	Damage      int32 // 傷害
+	BlastRadius int32 // 爆炸半徑
+}
+
+type TankBulletConfig struct {
+	BulletId          int32 // 子彈配置ID
+	AmountFireOneTime int8  // 一次發射炮彈量
+	IntervalInFire    int32 // 一次發射的幾發炮彈之間的間隔時間(毫秒)
+	Cooldown          int32 // 每次發射冷卻時間(毫秒)
+}
+
+type TankStaticInfo struct {
+	ObjStaticInfo
+	TankBulletConfig
+}

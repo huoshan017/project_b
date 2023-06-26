@@ -435,7 +435,7 @@ func initAnimConfigs() {
 			},
 		}, // 重型坦克红
 		{
-			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeBullet,
+			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeBullet, Id: 1, Level: 0,
 			AnimConfig: []*base.SpriteAnimConfig{
 				nil,
 				createBulletAnimConfig(object.DirLeft),
@@ -516,8 +516,8 @@ func GetTankAnimConfig(id int32, level int32) *MovableObjectAnimConfig {
 }
 
 // 获得子弹动画配置
-func GetBulletAnimConfig() *MovableObjectAnimConfig {
-	return GetMovableObjAnimConfig(object.MovableObjBullet, 0, 0)
+func GetBulletAnimConfig(id int32) *MovableObjectAnimConfig {
+	return GetMovableObjAnimConfig(object.MovableObjBullet, id, 0)
 }
 
 // 获得静态物体动画配置

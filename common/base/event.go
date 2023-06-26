@@ -42,7 +42,7 @@ func (e *Event) Call(args ...any) {
 
 type eventData struct {
 	eid  EventId
-	args []interface{}
+	args []any
 }
 
 type EventManager struct {

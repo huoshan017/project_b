@@ -15,7 +15,7 @@ func TestGameLogic_PlayerTankChange(t *testing.T) {
 	}
 	type args struct {
 		uid        uint64
-		staticInfo *object.ObjStaticInfo
+		staticInfo *object.TankStaticInfo
 	}
 	tests := []struct {
 		name   string

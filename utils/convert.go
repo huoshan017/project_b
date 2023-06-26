@@ -22,7 +22,7 @@ func TankObj2ProtoInfo(obj *object.Tank, protoInfo *game_proto.TankInfo) {
 
 func TankProtoInfo2Obj(protoInfo *game_proto.TankInfo, obj *object.Tank) {
 	td := common_data.TankConfigData[protoInfo.Id]
-	obj.Init(protoInfo.InstId, td)
+	obj.Init(protoInfo.InstId, &td.ObjStaticInfo)
 	obj.SetLevel(protoInfo.Level)
 	obj.SetPos(protoInfo.CurrPos.X, protoInfo.CurrPos.Y)
 	obj.SetDir(object.Direction(protoInfo.Direction))
