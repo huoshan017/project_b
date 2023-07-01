@@ -7,6 +7,7 @@ import (
 	"project_b/common/log"
 	"project_b/common/object"
 	custom_time "project_b/common/time"
+	"project_b/game_map"
 
 	"time"
 
@@ -112,7 +113,8 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) e
 	}
 
 	// 载入地图
-	if !h.logic.LoadSceneMap(ack.MapId) {
+	config := game_map.MapConfigArray[ack.MapId]
+	if !h.logic.LoadScene(config) {
 		log.Error("load map %v error", ack.MapId)
 		return fmt.Errorf("load map %v failed", ack.MapId)
 	}

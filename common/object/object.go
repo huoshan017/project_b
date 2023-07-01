@@ -35,12 +35,14 @@ type Rect struct {
 type object struct {
 	instId            uint32         // 实例id
 	ownerType         ObjOwnerType   // 所有制类型，可被动态临时改变，所以需要在对象中另外缓存
+	currentCamp       CampType       // 當前陣營
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
 	orientation       int32          // 旋轉角度，以Y軸正方向為0度，逆時針方向為旋轉正方向
 	components        []IComponent   // 組件
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
+	super             IObject        // 派生類對象
 }
 
 // 回收
@@ -57,9 +59,10 @@ func (o object) IsRecycle() bool {
 func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.instId = instId
 	o.ownerType = staticInfo.ownerType
+	o.currentCamp = staticInfo.camp
 	o.staticInfo = staticInfo
 	if staticInfo.collision {
-		o.AddComp(&CollisionComp{})
+		o.AddComp(&ColliderComp{})
 	}
 }
 
@@ -118,6 +121,11 @@ func (o object) OwnerType() ObjOwnerType {
 	return o.ownerType
 }
 
+// 陣營
+func (o object) Camp() CampType {
+	return o.currentCamp
+}
+
 // 靜態信息
 func (o object) StaticInfo() *ObjStaticInfo {
 	if o.changedStaticInfo != nil {
@@ -128,7 +136,10 @@ func (o object) StaticInfo() *ObjStaticInfo {
 
 // 位置
 func (o object) Pos() (int32, int32) {
-	return o.x, o.y
+	if o.changedStaticInfo != nil {
+		return o.x + o.changedStaticInfo.x0, o.y + o.changedStaticInfo.y0
+	}
+	return o.x + o.staticInfo.x0, o.y + o.staticInfo.y0
 }
 
 // 坐标位置，相对于父坐标系
@@ -198,6 +209,16 @@ func (o object) Orientation() int32 {
 	return o.orientation
 }
 
+// 設置陣營
+func (o *object) SetCamp(camp CampType) {
+	o.currentCamp = camp
+}
+
+// 重置陣營
+func (o *object) RestoreCamp() {
+	o.currentCamp = o.staticInfo.camp
+}
+
 // 添加組件
 func (o *object) AddComp(comp IComponent) {
 	o.components = append(o.components, comp)
@@ -233,6 +254,11 @@ func (o object) HasComp(name string) bool {
 	return false
 }
 
+// 設置派生類
+func (o *object) setSuper(super IObject) {
+	o.super = super
+}
+
 // 静态物体
 type StaticObject struct {
 	object
@@ -248,6 +274,7 @@ func NewStaticObject(instId uint32, info *ObjStaticInfo) *StaticObject {
 // 初始化
 func (o *StaticObject) Init(instId uint32, info *ObjStaticInfo) {
 	o.object.Init(instId, info)
+	o.object.setSuper(o)
 }
 
 // 反初始化
@@ -299,6 +326,7 @@ func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.moveEvent = base.NewEvent()
 	o.stopEvent = base.NewEvent()
 	o.updateEvent = base.NewEvent()
+	o.setSuper(o)
 }
 
 // 反初始化
@@ -382,7 +410,7 @@ func (o *MovableObject) Stop() {
 
 // 是否正在移动
 func (o *MovableObject) IsMoving() bool {
-	return o.state == isMoving
+	return o.state == isMoving || o.state == toStop
 }
 
 // 上次Update的位置
@@ -441,10 +469,10 @@ func (o *MovableObject) Update(tick time.Duration) {
 			o.x, o.y = int32(x), int32(y)
 		}
 		if isCollision {
-			comp := o.GetComp("Collisoin")
+			comp := o.GetComp("Collider")
 			if comp != nil {
-				collisionComp := comp.(*CollisionComp)
-				collisionComp.Call(resObj)
+				collisionComp := comp.(*ColliderComp)
+				collisionComp.CallCollisionEventHandle(o.super, resObj)
 			}
 		}
 	} else {
@@ -525,6 +553,7 @@ func NewVehicle(instId uint32, staticInfo *ObjStaticInfo) *Vehicle {
 // 初始化
 func (v *Vehicle) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	v.MovableObject.Init(instId, staticInfo)
+	v.setSuper(v)
 }
 
 // 反初始化
@@ -556,6 +585,7 @@ func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	t.bulletConfig = &(*TankStaticInfo)(unsafe.Pointer(staticInfo)).TankBulletConfig
 	t.level = 1
 	t.changeEvent = base.NewEvent()
+	t.setSuper(t)
 }
 
 // 反初始化
@@ -639,7 +669,8 @@ func (t *Tank) GetBulletConfig() *TankBulletConfig {
 // 子弹
 type Bullet struct {
 	MovableObject
-	info *BulletStaticInfo
+	info         *BulletStaticInfo
+	explodeEvent base.Event
 }
 
 // 创建车辆
@@ -650,12 +681,28 @@ func NewBullet(instId uint32, staticInfo *BulletStaticInfo) *Bullet {
 }
 
 // 初始化
-func (v *Bullet) Init(instId uint32, staticInfo *ObjStaticInfo) {
-	v.MovableObject.Init(instId, staticInfo)
-	v.info = (*BulletStaticInfo)(unsafe.Pointer(staticInfo))
+func (b *Bullet) Init(instId uint32, staticInfo *ObjStaticInfo) {
+	b.MovableObject.Init(instId, staticInfo)
+	b.info = (*BulletStaticInfo)(unsafe.Pointer(staticInfo))
+	b.setSuper(b)
 }
 
 // 反初始化
-func (v *Bullet) Uninit() {
-	v.MovableObject.Uninit()
+func (b *Bullet) Uninit() {
+	b.MovableObject.Uninit()
+}
+
+// 爆炸
+func (b *Bullet) Explode() {
+	b.explodeEvent.Call()
+}
+
+// 注冊爆炸事件
+func (b *Bullet) RegisterExplodeEventHandle(handle func(...any)) {
+	b.explodeEvent.Register(handle)
+}
+
+// 注銷爆炸事件
+func (b *Bullet) UnregisterExplodeEventHandle(handle func(...any)) {
+	b.explodeEvent.Unregister(handle)
 }

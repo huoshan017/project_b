@@ -42,11 +42,11 @@ type Game struct {
 	//---------------------------------------
 	// 表现相关
 
-	viewport         *client_base.Viewport // 视口
-	playableSceneMap *PlayableSceneMap     // 場景圖繪製
-	uiMgr            *UIManager            // UI管理
-	eventHandles     *EventHandles         // 事件处理
-	gameData         GameData              // 其他游戏数据
+	viewport      *client_base.Viewport // 视口
+	playableScene *PlayableScene        // 場景圖繪製
+	uiMgr         *UIManager            // UI管理
+	eventHandles  *EventHandles         // 事件处理
+	gameData      GameData              // 其他游戏数据
 }
 
 // 创建游戏
@@ -61,8 +61,8 @@ func NewGame(conf *Config) *Game {
 	g.playerMgr = core.CreateCPlayerManager()
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = NewUIMgr(g)
-	g.playableSceneMap = CreatePlayableSceneMap(g.viewport)
-	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableSceneMap, &g.gameData)
+	g.playableScene = CreatePlayableScene(g.viewport)
+	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
 	return g
 }
 
@@ -124,7 +124,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	if g.gameData.state == GameStateInGame && g.logic.IsStart() {
 		// 画场景
-		g.playableSceneMap.Draw(screen)
+		g.playableScene.Draw(screen)
 		// 显示帧数
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("TPS: %0.2f", ebiten.ActualTPS()))
 	}
@@ -171,19 +171,19 @@ func (g *Game) handleInput() {
 
 func (g *Game) initInputHandles() {
 	g.cmdMgr.Add(CMD_CAMERA_UP, func(...any) {
-		g.playableSceneMap.CameraMove(0, 10)
+		g.playableScene.CameraMove(0, 10)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_DOWN, func(...any) {
-		g.playableSceneMap.CameraMove(0, -10)
+		g.playableScene.CameraMove(0, -10)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_LEFT, func(...any) {
-		g.playableSceneMap.CameraMove(-10, 0)
+		g.playableScene.CameraMove(-10, 0)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_RIGHT, func(...any) {
-		g.playableSceneMap.CameraMove(10, 0)
+		g.playableScene.CameraMove(10, 0)
 	})
 	g.cmdMgr.Add(CMD_CAMERA_HEIGHT, func(args ...any) {
 		delta := args[0].(int)
-		g.playableSceneMap.CameraChangeHeight(int32(delta))
+		g.playableScene.CameraChangeHeight(int32(delta))
 	})
 }

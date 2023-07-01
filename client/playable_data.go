@@ -18,6 +18,8 @@ var (
 	tankFrameConfig           map[int32]*frameConfig                          // 帧配置map
 	bulletAnimOriginalConfig  *base.SpriteAnimConfig                          // 子弹动画初始配置
 	bulletFrameConfig         *frameConfig                                    // 子弹帧配置
+	effectAnimOriginalConfig  map[int32]*base.SpriteAnimConfig                // 爆炸動畫初始配置
+	//effectFrameConfig         map[int32]*frameConfig                          // 爆炸幀配置
 )
 
 // 初始化动画初始配置
@@ -221,6 +223,26 @@ func initAnimOriginalConfigs() {
 		},
 		frameLevelList: [][]int32{{0, 1, 2, 3}},
 	}
+
+	effectAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
+		1: {
+			Image: explode1_img, FrameWidth: 28, FrameHeight: 28, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+		},
+		2: {
+			Image: explode2_img, FrameWidth: 64, FrameHeight: 64, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+		},
+	}
+
+	/*effectFrameConfig = map[int32]*frameConfig{
+		1: {
+			frameNum:       1,
+			frameLevelList: [][]int32{{0}},
+		},
+		2: {
+			frameNum:       1,
+			frameLevelList: [][]int32{{0}},
+		},
+	}*/
 }
 
 // 静态物体动画配置
@@ -496,6 +518,11 @@ func createBulletAnimConfig(dir object.Direction) *base.SpriteAnimConfig {
 	dirIdx := bulletFrameConfig.dirMap[dir]
 	anim.FramePosList = []base.SpriteIndex{bulletAnimOriginalConfig.FramePosList[dirIdx]}
 	return anim
+}
+
+// 獲得效果動畫配置
+func getEffectAnimConfig(id int32) *base.SpriteAnimConfig {
+	return effectAnimOriginalConfig[id]
 }
 
 // 获得可移动物体的动画配置

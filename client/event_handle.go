@@ -16,10 +16,10 @@ type event2Handle struct {
 }
 
 type EventHandles struct {
-	net              *core.NetClient
-	logic            *core.GameLogic
-	playableSceneMap *PlayableSceneMap
-	gameData         *GameData
+	net           *core.NetClient
+	logic         *core.GameLogic
+	playableScene *PlayableScene
+	gameData      *GameData
 	// --------------------------------------
 	// 事件处理
 	gameEvent2Handles   []event2Handle // 游戏事件
@@ -27,12 +27,12 @@ type EventHandles struct {
 }
 
 // 创建EventHandles
-func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableSceneMap *PlayableSceneMap, gameData *GameData) *EventHandles {
+func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableScene *PlayableScene, gameData *GameData) *EventHandles {
 	eh := &EventHandles{
-		net:              net,
-		logic:            logic,
-		playableSceneMap: playableSceneMap,
-		gameData:         gameData,
+		net:           net,
+		logic:         logic,
+		playableScene: playableScene,
+		gameData:      gameData,
 	}
 	return eh
 }
@@ -236,8 +236,8 @@ func (g *EventHandles) onEventBeforeMapLoad(args ...any) {
  * 处理地图载入完成事件
  */
 func (eh *EventHandles) onEventMapLoaded(args ...any) {
-	currentSceneMap := args[0].(*common.SceneMap)
-	eh.playableSceneMap.SetMap(currentSceneMap)
+	currentScene := args[0].(*common.SceneLogic)
+	eh.playableScene.SetMap(currentScene)
 }
 
 /**

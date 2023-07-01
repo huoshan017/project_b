@@ -9,7 +9,7 @@ import (
 func TestGameLogic_PlayerTankChange(t *testing.T) {
 	type fields struct {
 		eventMgr base.IEventManager
-		sceneMap *SceneMap
+		scene    *SceneLogic
 		state    int32
 		mapIndex int32
 	}
@@ -29,7 +29,7 @@ func TestGameLogic_PlayerTankChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &GameLogic{
 				eventMgr: tt.fields.eventMgr,
-				sceneMap: tt.fields.sceneMap,
+				scene:    tt.fields.scene,
 				state:    tt.fields.state,
 				mapIndex: tt.fields.mapIndex,
 			}

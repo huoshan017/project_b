@@ -5,6 +5,7 @@ import (
 	"project_b/common/object"
 	custom_time "project_b/common/time"
 	"project_b/common_data"
+	"project_b/game_map"
 	"project_b/game_proto"
 	"project_b/utils"
 	"time"
@@ -58,7 +59,9 @@ func (t *GameLogicThread) Close() {
 func (t *GameLogicThread) init() {
 	t.registerHandles()
 	// todo 临时代码，初始化时载入第一张地图
-	t.gameLogic.LoadSceneMap(common_data.MapIdList[t.gameLogic.MapIndex()])
+	mapId := common_data.MapIdList[t.gameLogic.MapIndex()]
+	config := game_map.MapConfigArray[mapId]
+	t.gameLogic.LoadScene(config)
 }
 
 // 注册处理器
@@ -76,7 +79,10 @@ func (t *GameLogicThread) PlayerEnter(pid uint64, data *playerData) {
 	t.AddAgent(pid, data, func(d any) error {
 		pd := d.(*playerData)
 		if pd.tank == nil {
-			pd.tank = t.gameLogic.NewPlayerEnter(pid)
+			// 随机并设置坦克位置
+			mapId := common_data.MapIdList[t.gameLogic.MapIndex()]
+			pos := utils.RandomPosInRect(game_map.MapConfigArray[mapId].PlayerTankInitRect)
+			pd.tank = t.gameLogic.NewPlayerEnterWithPos(pid, pos.X, pos.Y)
 		} else {
 			t.gameLogic.PlayerEnterWithTank(pid, pd.tank)
 		}

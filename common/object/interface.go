@@ -18,7 +18,7 @@ type IObject interface {
 	Subtype() ObjSubType            // 子类型
 	OwnerType() ObjOwnerType        // 所有者类型
 	StaticInfo() *ObjStaticInfo     // 靜態信息
-	Pos() (x, y int32)              // 位置
+	Pos() (x, y int32)              // 左下角位置
 	SetPos(x, y int32)              // 设置位
 	Center() (x, y int32)           // 中心點坐標
 	Width() int32                   // 宽度
@@ -29,6 +29,9 @@ type IObject interface {
 	Bottom() int32                  // 下坐标
 	Orientation() int32             // 朝向角度
 	Update(tick time.Duration)      // 更新
+	Camp() CampType                 // 陣營
+	SetCamp(CampType)               // 設置陣營
+	RestoreCamp()                   // 重置陣營
 	AddComp(comp IComponent)        // 添加組件
 	RemoveComp(name string)         // 去除組件
 	GetComp(name string) IComponent // 獲取組件
@@ -79,4 +82,16 @@ type ITank interface {
 	// 事件接口
 	RegisterChangeEventHandle(handle func(args ...any))   // 注册变化事件
 	UnregisterChangeEventHandle(handle func(args ...any)) // 注销变化事件
+}
+
+// 效果接口
+type IEffect interface {
+	InstId() uint32
+	StaticInfo() *EffectStaticInfo
+	SetCenter(int32, int32)
+	Center() (int32, int32)
+	Width() int32
+	Height() int32
+	Update()
+	IsOver() bool
 }

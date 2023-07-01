@@ -54,10 +54,10 @@ const (
 type ObjOwnerType int
 
 const (
-	OwnerNone      = ObjOwnerType(0) // 无所有者或者系统所有
-	OwnerPlayer    = ObjOwnerType(1) // 玩家
-	OwnerAI        = ObjOwnerType(2) // AI
-	OwnerAI4Player = ObjOwnerType(3) // 玩家拥有的AI对象
+	OwnerNone       = ObjOwnerType(0) // 无所有者或者系统所有
+	OwnerPlayer     = ObjOwnerType(1) // 玩家
+	OwnerBOT        = ObjOwnerType(2) // BOT
+	OwnerBOT4Player = ObjOwnerType(3) // 玩家拥有的BOT对象
 )
 
 // 相对关系类型
@@ -85,4 +85,23 @@ const (
 // 其他常量
 const (
 	DefaultMinMoveDistance = 1 // 默认最小移动距离
+)
+
+// 效果作用類型
+type EffectType int
+
+const (
+	EffectTypeTime     = iota // 時間
+	EffectTypeRequency = 1    // 次數
+)
+
+// 陣營類型
+type CampType int
+
+const (
+	CampTypeNone  = iota // 無陣營
+	CampTypeOne   = 1    // 陣營1
+	CampTypeTwo   = 2    // 陣營2
+	CampTypeThree = 3    // 陣營3
+	CampTypeFour  = 4    // 陣營4
 )

@@ -1,7 +1,5 @@
 package object
 
-import "project_b/common/base"
-
 type IComponent interface {
 	Name() string
 }
@@ -35,17 +33,17 @@ func (ab *AABB) Move(dir Direction, distance float64) {
 }
 
 // 碰撞組件
-type CollisionComp struct {
-	collisionEvent base.Event
+type ColliderComp struct {
+	collisionHandle func(...any)
 }
 
 // 組件名稱
-func (c CollisionComp) Name() string {
-	return "Collision"
+func (c ColliderComp) Name() string {
+	return "Collider"
 }
 
 // 獲得AABB
-func (c CollisionComp) GetAABB(obj IObject) AABB {
+func (c ColliderComp) GetAABB(obj IObject) AABB {
 	return AABB{
 		Left:   obj.Left(),
 		Bottom: obj.Bottom(),
@@ -55,16 +53,11 @@ func (c CollisionComp) GetAABB(obj IObject) AABB {
 }
 
 // 注冊碰撞事件處理
-func (c *CollisionComp) RegisterCollisionEventHandle(handle func(...any)) {
-	c.collisionEvent.Register(handle)
-}
-
-// 注銷碰撞事件處理
-func (c *CollisionComp) UnregisterCollisionEventHandle(handle func(...any)) {
-	c.collisionEvent.Unregister(handle)
+func (c *ColliderComp) SetCollisionHandle(handle func(...any)) {
+	c.collisionHandle = handle
 }
 
 // 執行
-func (c *CollisionComp) Call(args ...any) {
-	c.collisionEvent.Call(args...)
+func (c *ColliderComp) CallCollisionEventHandle(args ...any) {
+	c.collisionHandle(args...)
 }

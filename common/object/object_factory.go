@@ -100,7 +100,6 @@ func (f *ObjectFactory) NewTank(info *TankStaticInfo) *Tank {
 
 func (f *ObjectFactory) RecycleTank(tank *Tank) bool {
 	tank.Uninit()
-	//mobj := (*MovableObject)(unsafe.Pointer(tank))
 	return f.RecycleMovableObject(tank)
 }
 
@@ -125,7 +124,6 @@ func (f *ObjectFactory) NewBullet(info *BulletStaticInfo) *Bullet {
 
 func (f *ObjectFactory) RecycleBullet(bullet *Bullet) bool {
 	bullet.Uninit()
-	//mobj := (*MovableObject)(unsafe.Pointer(bullet))
 	return f.RecycleMovableObject(bullet)
 }
 

@@ -3,6 +3,7 @@ package common
 import (
 	"math"
 	"project_b/common/base"
+	"project_b/common/ds"
 	"project_b/common/log"
 	"project_b/common/object"
 	"project_b/common/time"
@@ -13,13 +14,15 @@ const (
 	defaultLogicFrameMax = math.MaxInt32
 )
 
+// 基於SceneLogic增加了玩家(Player)概念的游戲邏輯
 type GameLogic struct {
-	eventMgr base.IEventManager // 事件管理
-	sceneMap *SceneMap          // 場景圖
-	state    int32              // 0 未开始  1. 运行中
-	mapIndex int32              // 地图索引
-	frame    int32              // 帧序号，每Update一次加1
-	maxFrame int32              // 最大帧序号
+	eventMgr    base.IEventManager               // 事件管理
+	state       int32                            // 0 未开始  1. 运行中
+	mapIndex    int32                            // 地图索引
+	frame       int32                            // 帧序号，每Update一次加1
+	maxFrame    int32                            // 最大帧序号
+	scene       *SceneLogic                      // 場景圖
+	player2Tank *ds.MapListUnion[uint64, uint32] // 玩家與坦克之間對應關係
 }
 
 // 创建游戏逻辑
@@ -29,34 +32,30 @@ func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
 		eventMgr = base.NewEventManager()
 	}
 	gl.eventMgr = eventMgr
-	gl.sceneMap = NewSceneMap(gl.eventMgr)
+	gl.scene = NewSceneLogic(gl.eventMgr)
+	gl.player2Tank = ds.NewMapListUnion[uint64, uint32]()
 	return gl
 }
 
-// 载入地图
-func (g *GameLogic) LoadMap(mapId int32) bool {
-	m := game_map.MapConfigArray[mapId]
-	return g.sceneMap.LoadMap(m)
-}
-
 // 載入場景地圖
-func (g *GameLogic) LoadSceneMap(mapId int32) bool {
+func (g *GameLogic) LoadScene(config *game_map.Config) bool {
 	g.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
-	loaded := g.sceneMap.LoadMap(game_map.MapConfigArray[mapId])
-	g.eventMgr.InvokeEvent(EventIdMapLoaded, g.sceneMap)
+	loaded := g.scene.LoadMap(config)
+	g.eventMgr.InvokeEvent(EventIdMapLoaded, g.scene)
 	return loaded
 }
 
 // 卸載場景圖
-func (g *GameLogic) UnloadSceneMap() {
+func (g *GameLogic) UnloadScene() {
 	g.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
-	g.sceneMap.UnloadMap()
+	g.scene.UnloadMap()
+	g.player2Tank.Clear()
 	g.eventMgr.InvokeEvent(EventIdMapUnloaded)
 }
 
 // 場景圖
-func (g *GameLogic) CurrentSceneMap() *SceneMap {
-	return g.sceneMap
+func (g *GameLogic) CurrentScene() *SceneLogic {
+	return g.scene
 }
 
 // 地图索引
@@ -76,7 +75,7 @@ func (g *GameLogic) GetCurrFrame() int32 {
 
 // 在逻辑线程中更新
 func (g *GameLogic) Update(tick time.Duration) {
-	g.sceneMap.Update(tick)
+	g.scene.Update(tick)
 	g.frame += 1
 	if g.maxFrame > 0 {
 		if g.frame >= g.maxFrame {
@@ -114,79 +113,144 @@ func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interf
 
 // 注册场景事件
 func (g *GameLogic) RegisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
-	g.sceneMap.RegisterEvent(eid, handle)
+	g.scene.RegisterEvent(eid, handle)
 }
 
 // 注销场景事件
 func (g *GameLogic) UnregisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
-	g.sceneMap.UnregisterEvent(eid, handle)
+	g.scene.UnregisterEvent(eid, handle)
 }
 
 // 注册坦克事件
-func (g *GameLogic) RegisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
-	g.sceneMap.RegisterPlayerEvent(uid, eid, handle)
+func (g *GameLogic) RegisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...any)) {
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.RegisterTankEvent(tankId, eid, handle)
 }
 
 // 注销坦克事件
 func (g *GameLogic) UnregisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
-	g.sceneMap.UnregisterPlayerEvent(uid, eid, handle)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.UnregisterTankEvent(tankId, eid, handle)
 }
 
 // 获得玩家坦克
 func (g *GameLogic) GetPlayerTank(uid uint64) *object.Tank {
-	return g.sceneMap.GetPlayerTank(uid)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return nil
+	}
+	return g.scene.GetTank(tankId)
 }
 
 // 获得玩家坦克列表
 func (g *GameLogic) GetPlayerTankList() []PlayerTankKV {
-	return g.sceneMap.GetPlayerTankList()
+	var kvs []PlayerTankKV
+	lis := g.player2Tank.GetList()
+	for _, v := range lis {
+		tankId, o := g.player2Tank.Get(v.Key)
+		if !o {
+			continue
+		}
+		tank := g.scene.GetTank(tankId)
+		if tank == nil {
+			continue
+		}
+		kvs = append(kvs, PlayerTankKV{v.Key, tank})
+	}
+	return kvs
 }
 
-// 玩家进入
-func (g *GameLogic) NewPlayerEnter(pid uint64) *object.Tank {
-	return g.sceneMap.NewPlayerTank(pid)
+// 新玩家进入
+func (g *GameLogic) NewPlayerEnterWithPos(pid uint64, x, y int32) *object.Tank {
+	tank := g.scene.NewTankWithPos(x, y)
+	if tank == nil {
+		log.Error("player %v enter with pos (%v, %v) to tank failed", pid, x, y)
+		return nil
+	}
+	g.player2Tank.Add(pid, tank.InstId())
+	return tank
+}
+
+// 玩家進入
+func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32, dir object.Direction, currentSpeed int32) uint32 {
+	tankId := g.scene.NewTankWithStaticInfo(id, level, x, y, dir, currentSpeed)
+	if tankId == 0 {
+		log.Error("player %v enter with static info to create tank failed", pid)
+	}
+	g.player2Tank.Add(pid, tankId)
+	return tankId
 }
 
 // 玩家坦克进入
 func (g *GameLogic) PlayerEnterWithTank(uid uint64, tank *object.Tank) {
-	if g.sceneMap.GetPlayerTank(uid) == nil {
-		g.sceneMap.AddPlayerTank(uid, tank)
+	tankId, o := g.player2Tank.Get(uid)
+	if o {
+		log.Warn("player %v already entered with tank %v", tankId)
+		return
 	}
+	g.scene.AddTank(tank)
+	g.player2Tank.Add(uid, tank.InstId())
 }
 
 // 玩家离开
 func (g *GameLogic) PlayerLeave(pid uint64) {
-	g.sceneMap.RemovePlayerTank(pid)
-}
-
-// 获得敌人坦克
-func (g *GameLogic) GetEnemyTank(instId uint32) *object.Tank {
-	return g.sceneMap.GetEnemyTank(instId)
+	tankId, o := g.player2Tank.Get(pid)
+	if !o {
+		return
+	}
+	g.scene.RemoveTank(tankId)
+	g.player2Tank.Remove(pid)
 }
 
 // 玩家坦克移动
 func (g *GameLogic) PlayerTankMove(uid uint64, moveDir object.Direction) {
-	g.sceneMap.PlayerTankMove(uid, moveDir)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.TankMove(tankId, moveDir)
 }
 
-// 玩家坦克停止移动
+// 玩家坦克停止
 func (g *GameLogic) PlayerTankStopMove(uid uint64) {
-	g.sceneMap.PlayerTankStopMove(uid)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.TankStopMove(tankId)
 }
 
 // 玩家坦克改变
 func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.TankStaticInfo) bool {
-	return g.sceneMap.PlayerTankChange(uid, staticInfo)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return false
+	}
+	return g.scene.TankChange(tankId, staticInfo)
 }
 
 // 玩家坦克恢复
 func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
-	return g.sceneMap.PlayerTankRestore(uid)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return 0
+	}
+	return g.scene.TankRestore(tankId)
 }
 
 // 玩家坦克開炮
 func (g *GameLogic) PlayerTankFire(uid uint64) {
-	g.sceneMap.PlayerTankFire(uid)
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.TankFire(tankId)
 }
 
 // 检测玩家

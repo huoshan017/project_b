@@ -15,8 +15,6 @@ type IPlayable interface {
 	Init()
 	// 反初始化
 	Uninit()
-	// 重置对象
-	Reset(object.IObject)
 	// 播放
 	Play()
 	// 停止
@@ -58,11 +56,6 @@ func (po *PlayableObject) Uninit() {
 
 }
 
-// 重置对象
-func (po *PlayableObject) Reset(obj object.IObject) {
-	po.obj = obj
-}
-
 // 播放
 func (po *PlayableObject) Play() {
 	po.anim.Play()
@@ -80,7 +73,6 @@ func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 	po.anim.Update(screen, op)
 }
 
-// 插值
 func (po *PlayableObject) Interpolation() (float64, float64) {
 	return 0, 0
 }
@@ -97,6 +89,10 @@ func NewPlayableStaticObject(sobj object.IStaticObject, animConfig *StaticObject
 	}
 	playable.Play()
 	return playable
+}
+
+type IPlayableMovableObject interface {
+	IPlayable
 }
 
 // 可移动物体的播放对象，有四个方向的动画
@@ -143,11 +139,6 @@ func (po *PlayableMoveObject) Uninit() {
 	// 注销移动停止更新事件
 	po.mobj.UnregisterMoveEventHandle(po.onEventMove)
 	po.mobj.UnregisterStopMoveEventHandle(po.onEventStopMove)
-}
-
-// 重置对象
-func (po *PlayableMoveObject) Reset(obj object.IObject) {
-	po.mobj = obj.(object.IMovableObject)
 }
 
 // 播放
@@ -242,6 +233,51 @@ func (pt *PlayableTank) onChange(args ...any) {
 	pt.currSpeed = (info.Speed())
 	pt.changeAnim(GetTankAnimConfig(info.Id(), level))
 	pt.Play()
+}
+
+type PlayableEffect struct {
+	op     ebiten.DrawImageOptions
+	effect object.IEffect
+	anim   *base.SpriteAnim
+}
+
+func NewPlayableEffect(effect object.IEffect, animConfig *base.SpriteAnimConfig) *PlayableEffect {
+	return &PlayableEffect{
+		effect: effect,
+		anim:   base.NewSpriteAnim(getEffectAnimConfig(effect.StaticInfo().Id)),
+	}
+}
+
+// 初始化
+func (po *PlayableEffect) Init() {
+
+}
+
+// 反初始化
+func (po *PlayableEffect) Uninit() {
+
+}
+
+// 播放
+func (po *PlayableEffect) Play() {
+	po.anim.Play()
+}
+
+// 停止
+func (po *PlayableEffect) Stop() {
+	po.anim.Stop()
+}
+
+// 更新
+func (po *PlayableEffect) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	// 顯示根據邏輯數據插值
+	op.GeoM.Concat(po.op.GeoM)
+	po.anim.Update(screen, op)
+}
+
+// 插值
+func (po *PlayableEffect) Interpolation() (float64, float64) {
+	return 0, 0
 }
 
 func GetPlayableObject(obj object.IObject) (IPlayable, *base.SpriteAnimConfig) {

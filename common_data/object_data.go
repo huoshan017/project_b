@@ -20,31 +20,31 @@ var (
 	StaticObjectConfigData = map[object.StaticObjType]*object.ObjStaticInfo{
 		// 砖
 		object.StaticObjBrick: object.NewObjStaticInfo(
-			int32(object.StaticObjBrick), object.ObjTypeStatic, object.ObjSubTypeBrick, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjBrick), object.ObjTypeStatic, object.ObjSubTypeBrick, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
 		// 铁
 		object.StaticObjIron: object.NewObjStaticInfo(
-			int32(object.StaticObjIron), object.ObjTypeStatic, object.ObjSubTypeIron, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjIron), object.ObjTypeStatic, object.ObjSubTypeIron, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
 		// 樹
 		object.StaticObjTree: object.NewObjStaticInfo(
-			int32(object.StaticObjTree), object.ObjTypeStatic, object.ObjSubTypeTree, 0, 0, 320, 320, 0, object.DirNone, 2, false),
+			int32(object.StaticObjTree), object.ObjTypeStatic, object.ObjSubTypeTree, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 2, false),
 		// 水
 		object.StaticObjWater: object.NewObjStaticInfo(
-			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, 0, 0, 320, 320, 0, object.DirNone, 0, true),
+			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 0, true),
 		// 冰
 		object.StaticObjIce: object.NewObjStaticInfo(
-			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, 0, 0, 320, 320, 0, object.DirNone, 0, false),
+			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 0, false),
 		// 基地
 		object.StaticObjHome: object.NewObjStaticInfo(
-			int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
 		// 廢墟
 		object.StaticObjRuins: object.NewObjStaticInfo(
-			int32(object.StaticObjRuins), object.ObjTypeStatic, object.ObjSubTypeRuins, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjRuins), object.ObjTypeStatic, object.ObjSubTypeRuins, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
 	}
 
 	// 炮彈靜態配置
 	BulletConfigData = map[int32]*object.BulletStaticInfo{
 		1: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, 0, 0, 80, 80, 500, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1000, object.DirUp, 1, true),
 			Range:         1000,
 			Damage:        100,
 			BlastRadius:   10,
@@ -66,23 +66,23 @@ var (
 	// 坦克静态配置数据，全部是逻辑数据
 	TankConfigData = map[int32]*object.TankStaticInfo{
 		1: {
-			ObjStaticInfo:    *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
+			ObjStaticInfo:    *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 500, object.DirUp, 1, true),
 			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
 		},
 		2: {
-			ObjStaticInfo:    *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
+			ObjStaticInfo:    *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 500, object.DirUp, 1, true),
 			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
 		},
 		1000: {
-			ObjStaticInfo:    *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 250, object.DirUp, 1, true),
+			ObjStaticInfo:    *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 700, object.DirUp, 1, true),
 			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 3500},
 		},
 		1001: {
-			ObjStaticInfo:    *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 650, object.DirUp, 1, true),
+			ObjStaticInfo:    *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 700, object.DirUp, 1, true),
 			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
 		},
 		1002: {
-			ObjStaticInfo:    *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, 0, 0, 280, 280, 300, object.DirUp, 1, true),
+			ObjStaticInfo:    *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 700, object.DirUp, 1, true),
 			TankBulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
 		},
 	}
@@ -101,5 +101,23 @@ var (
 	EnemyTankInitData = map[int32]*object.TankStaticInfo{
 		1000: TankConfigData[1000],
 		1001: TankConfigData[1001],
+	}
+
+	// 效果配置信息
+	EffectConfigData = map[int32]*object.EffectStaticInfo{
+		1: {
+			Id:     1,
+			Et:     object.EffectTypeRequency,
+			Param:  1,
+			Width:  280,
+			Height: 280,
+		},
+		2: {
+			Id:     2,
+			Et:     object.EffectTypeTime,
+			Param:  500,
+			Width:  640,
+			Height: 640,
+		},
 	}
 )

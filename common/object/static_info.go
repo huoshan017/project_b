@@ -6,6 +6,7 @@ type ObjStaticInfo struct {
 	typ       ObjectType
 	subType   ObjSubType
 	ownerType ObjOwnerType // 所有者类型
+	camp      CampType     // 陣營
 	x0, y0    int32        // 统一：矩形左下角相对于位于局部坐标系的坐标
 	w, h      int32        // 宽度高度
 	dir       Direction
@@ -15,9 +16,9 @@ type ObjStaticInfo struct {
 }
 
 // 创建物体静态信息
-func NewObjStaticInfo(id int32, typ ObjectType, subType ObjSubType, x0, y0, w, h int32, speed int32, dir Direction, layer int32, collision bool) *ObjStaticInfo {
+func NewObjStaticInfo(id int32, typ ObjectType, subType ObjSubType, camp CampType, x0, y0, w, h int32, speed int32, dir Direction, layer int32, collision bool) *ObjStaticInfo {
 	return &ObjStaticInfo{
-		id: id, typ: typ, subType: subType, x0: x0, y0: y0, w: w, h: h, dir: dir, speed: speed, layer: layer, collision: collision,
+		id: id, typ: typ, subType: subType, camp: camp, x0: x0, y0: y0, w: w, h: h, dir: dir, speed: speed, layer: layer, collision: collision,
 	}
 }
 
@@ -70,4 +71,12 @@ type TankBulletConfig struct {
 type TankStaticInfo struct {
 	ObjStaticInfo
 	TankBulletConfig
+}
+
+// 效果靜態信息
+type EffectStaticInfo struct {
+	Id            int32      // 配置id
+	Et            EffectType // 效果類型
+	Param         int32      // 參數
+	Width, Height int32      // 寬高
 }
