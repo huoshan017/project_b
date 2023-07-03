@@ -70,7 +70,8 @@ type TankBulletConfig struct {
 
 type TankStaticInfo struct {
 	ObjStaticInfo
-	TankBulletConfig
+	Level        int32
+	BulletConfig TankBulletConfig
 }
 
 // 效果靜態信息

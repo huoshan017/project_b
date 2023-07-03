@@ -21,22 +21,25 @@ type PlayerTankKV struct {
 // 场景圖，沒有玩家(Player)概念的游戲邏輯
 // 必须在单个goroutine中执行
 type SceneLogic struct {
-	mapConfig                            *game_map.Config                               // 地圖配置
-	mapWidth, mapHeight                  int32                                          // 地圖寬高
-	eventMgr                             base.IEventManager                             // 事件管理器
-	staticObjList                        *ds.MapListUnion[uint32, *object.StaticObject] // 靜態對象列表，用map和list的聯合體是爲了遍歷時的有序性
-	tankList                             *ds.MapListUnion[uint32, *object.Tank]         // 坦克列表，不區分玩家和BOT
-	bulletList                           *ds.MapListUnion[uint32, *object.Bullet]       // 炮彈列表，不區分坦克的炮彈
-	objFactory                           *object.ObjectFactory                          // 對象池
-	effectList                           *ds.MapListUnion[uint32, *object.Effect]       // 效果列表
-	effectPool                           *object.EffectPool                             // 效果池
-	pmap                                 *PartitionMap                                  // 分區地圖
-	objCreatedEvent, objRemovedEvent     base.Event                                     // 對象創建刪除事件
-	effectAddedEvent, effectRemovedEvent base.Event                                     // 效果添加刪除事件
-	staticObjRecycleList                 []*object.StaticObject                         // 靜態對象回收列表
-	tankRecycleList                      []*object.Tank                                 // 坦克對象回收列表
-	bulletRecycleList                    []*object.Bullet                               // 炮彈對象回收列表
-	effectRecycleList                    []*object.Effect                               // 效果回收列表
+	mapConfig                                  *game_map.Config                               // 地圖配置
+	mapWidth, mapHeight                        int32                                          // 地圖寬高
+	pmap                                       *PartitionMap                                  // 分區地圖
+	eventMgr                                   base.IEventManager                             // 事件管理器
+	staticObjList                              *ds.MapListUnion[uint32, *object.StaticObject] // 靜態對象列表，用map和list的聯合體是爲了遍歷時的有序性
+	tankList                                   *ds.MapListUnion[uint32, *object.Tank]         // 坦克列表，不區分玩家和BOT
+	bulletList                                 *ds.MapListUnion[uint32, *object.Bullet]       // 炮彈列表，不區分坦克的炮彈
+	objFactory                                 *object.ObjectFactory                          // 對象池
+	effectList                                 *ds.MapListUnion[uint32, *object.Effect]       // 效果列表
+	effectPool                                 *object.EffectPool                             // 效果池
+	staticObjAddedEvent, staticObjRemovedEvent base.Event                                     // 靜態對象添加刪除事件
+	tankAddedEvent, tankRemovedEvent           base.Event                                     // 坦克添加刪除事件
+	bulletAddedEvent, bulletRemovedEvent       base.Event                                     // 子彈添加刪除事件
+	effectAddedEvent, effectRemovedEvent       base.Event                                     // 效果添加刪除事件
+	staticObjRecycleList                       []*object.StaticObject                         // 靜態對象回收列表
+	tankRecycleList                            []*object.Tank                                 // 坦克對象回收列表
+	bulletRecycleList                          []*object.Bullet                               // 炮彈對象回收列表
+	effectRecycleList                          []*object.Effect                               // 效果回收列表
+	effectSearchedList                         []uint32                                       // 效果搜索結果列表
 }
 
 func NewSceneLogic(eventMgr base.IEventManager) *SceneLogic {
@@ -70,7 +73,7 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 			tileObj := s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
 			// 二維數組Y軸是自上而下的，而世界坐標Y軸是自下而上的，所以設置Y坐標要倒過來
 			tileObj.SetPos(m.TileWidth*int32(col), m.TileHeight*int32(len(m.Layers)-1-line))
-			s.objCreatedEvent.Call(tileObj)
+			s.staticObjAddedEvent.Call(tileObj)
 			// 加入網格分區地圖
 			s.pmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 		}
@@ -92,21 +95,21 @@ func (s *SceneLogic) UnloadMap() {
 	for i := int32(0); i < s.staticObjList.Count(); i++ {
 		_, v := s.staticObjList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
+			s.staticObjRemovedEvent.Call(v)
 			s.objFactory.RecycleStaticObject(v)
 		}
 	}
 	for i := int32(0); i < s.tankList.Count(); i++ {
 		_, v := s.tankList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
+			s.tankRemovedEvent.Call(v)
 			s.objFactory.RecycleTank(v)
 		}
 	}
 	for i := int32(0); i < s.bulletList.Count(); i++ {
 		_, v := s.bulletList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
+			s.bulletRemovedEvent.Call(v)
 			s.objFactory.RecycleBullet(v)
 		}
 	}
@@ -128,20 +131,52 @@ func (s *SceneLogic) UnloadMap() {
 	s.eventMgr.InvokeEvent(EventIdMapUnloaded)
 }
 
-func (s *SceneLogic) RegisterNewObjCreatedHandle(handle func(...any)) {
-	s.objCreatedEvent.Register(handle)
+func (s *SceneLogic) RegisterStaticObjAddedHandle(handle func(...any)) {
+	s.staticObjAddedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterNewObjCreatedHandle(handle func(...any)) {
-	s.objCreatedEvent.Unregister(handle)
+func (s *SceneLogic) UnregisterStaticObjAddedHandle(handle func(...any)) {
+	s.staticObjAddedEvent.Unregister(handle)
 }
 
-func (s *SceneLogic) RegisterObjRemovedHandle(handle func(...any)) {
-	s.objRemovedEvent.Register(handle)
+func (s *SceneLogic) RegisterStaticObjRemovedHandle(handle func(...any)) {
+	s.staticObjRemovedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterObjRemovedHandle(handle func(...any)) {
-	s.objRemovedEvent.Unregister(handle)
+func (s *SceneLogic) UnregisterStaticObjRemovedHandle(handle func(...any)) {
+	s.staticObjRemovedEvent.Unregister(handle)
+}
+
+func (s *SceneLogic) RegisterTankAddedHandle(handle func(...any)) {
+	s.tankAddedEvent.Register(handle)
+}
+
+func (s *SceneLogic) UnregisterTankAddedHandle(handle func(...any)) {
+	s.tankAddedEvent.Unregister(handle)
+}
+
+func (s *SceneLogic) RegisterTankRemovedHandle(handle func(...any)) {
+	s.tankRemovedEvent.Register(handle)
+}
+
+func (s *SceneLogic) UnregisterTankRemovedHandle(handle func(...any)) {
+	s.tankRemovedEvent.Unregister(handle)
+}
+
+func (s *SceneLogic) RegisterBulletAddedHandle(handle func(...any)) {
+	s.bulletAddedEvent.Register(handle)
+}
+
+func (s *SceneLogic) UnregisterBulletAddedHandle(handle func(...any)) {
+	s.bulletAddedEvent.Unregister(handle)
+}
+
+func (s *SceneLogic) RegisterBulletRemovedHandle(handle func(...any)) {
+	s.bulletRemovedEvent.Register(handle)
+}
+
+func (s *SceneLogic) UnregisterBulletRemovedHandle(handle func(...any)) {
+	s.bulletRemovedEvent.Unregister(handle)
 }
 
 func (s *SceneLogic) RegisterEffectAddedHandle(handle func(...any)) {
@@ -172,8 +207,12 @@ func (s *SceneLogic) GetObj(instId uint32) object.IObject {
 	return s.objFactory.GetObj(instId)
 }
 
+func (s *SceneLogic) GetTankListWithRange(rect *math.Rect) []uint32 {
+	return s.pmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
+}
+
 func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
-	var effectIdList []uint32
+	s.effectSearchedList = s.effectSearchedList[:0]
 	count := s.effectList.Count()
 	for i := int32(0); i < count; i++ {
 		instId, effect := s.effectList.GetByIndex(i)
@@ -183,10 +222,10 @@ func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
 		et := ey + effect.Height()/2
 		eb := ey - effect.Height()/2
 		if !(er <= rect.X() || el >= rect.X()+rect.W() || et <= rect.Y() || eb >= rect.Y()+rect.H()) {
-			effectIdList = append(effectIdList, instId)
+			s.effectSearchedList = append(s.effectSearchedList, instId)
 		}
 	}
-	return effectIdList
+	return s.effectSearchedList
 }
 
 func (s *SceneLogic) GetEffect(instId uint32) object.IEffect {
@@ -215,7 +254,7 @@ func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
 	// 加入網格分區地圖
 	s.pmap.AddObj(tank)
 	// 物體創建事件
-	s.objCreatedEvent.Call(tank)
+	s.tankAddedEvent.Call(tank)
 	return tank
 }
 
@@ -225,7 +264,7 @@ func (s *SceneLogic) AddTank(tank *object.Tank) {
 	s.pmap.AddObj(tank)
 }
 
-func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, dir object.Direction, currSpeed int32) uint32 {
+func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, dir object.Direction, currSpeed int32) *object.Tank {
 	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
 	tank.SetPos(x, y)
 	tank.SetLevel(level)
@@ -237,15 +276,15 @@ func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, di
 	s.tankList.Add(tank.InstId(), tank)
 	// 加入網格分區地圖
 	s.pmap.AddObj(tank)
-	s.objCreatedEvent.Call(tank)
-	return tank.InstId()
+	s.tankAddedEvent.Call(tank)
+	return tank
 }
 
 func (s *SceneLogic) RemoveTank(instId uint32) {
 	tank := s.tankList.Remove(instId)
 	tank.UnregisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	s.pmap.RemoveObj(tank.InstId())
-	s.objRemovedEvent.Call(tank)
+	s.tankRemovedEvent.Call(tank)
 	s.objFactory.RecycleTank(tank)
 }
 
@@ -342,7 +381,7 @@ func (s *SceneLogic) Update(tick time.Duration) {
 		for _, obj := range s.staticObjRecycleList {
 			s.staticObjList.Remove(obj.InstId())
 			s.pmap.RemoveObj(obj.InstId())
-			s.objRemovedEvent.Call(obj)
+			s.staticObjRemovedEvent.Call(obj)
 			s.objFactory.RecycleStaticObject(obj)
 		}
 		s.staticObjRecycleList = s.staticObjRecycleList[:0]
@@ -352,7 +391,7 @@ func (s *SceneLogic) Update(tick time.Duration) {
 		for _, tank := range s.tankRecycleList {
 			s.tankList.Remove(tank.InstId())
 			s.pmap.RemoveObj(tank.InstId())
-			s.objRemovedEvent.Call(tank)
+			s.tankRemovedEvent.Call(tank)
 			s.objFactory.RecycleTank(tank)
 		}
 		s.tankRecycleList = s.tankRecycleList[:0]
@@ -362,7 +401,7 @@ func (s *SceneLogic) Update(tick time.Duration) {
 		for _, bullet := range s.bulletRecycleList {
 			s.bulletList.Remove(bullet.InstId())
 			s.pmap.RemoveObj(bullet.InstId())
-			s.objRemovedEvent.Call(bullet)
+			s.bulletRemovedEvent.Call(bullet)
 			s.objFactory.RecycleBullet(bullet)
 		}
 		s.bulletRecycleList = s.bulletRecycleList[:0]
@@ -500,14 +539,23 @@ func (s *SceneLogic) onBulletCollision(args ...any) {
 	// todo 處理子彈碰撞
 	bullet := args[0].(*object.Bullet)
 	obj := args[1].(object.IObject)
+	var effectFunc func(...any)
+	var effectId int32 = 1
 	if obj.Type() == object.ObjTypeStatic {
 		bullet.ToRecycle()
+		effectFunc = bulletExplodeEffect
 	} else if obj.Type() == object.ObjTypeMovable {
 		bullet.ToRecycle()
 		obj.ToRecycle()
+		if obj.Subtype() == object.ObjSubTypeBullet {
+			effectFunc = bulletExplodeEffect
+		} else if obj.Subtype() == object.ObjSubTypeTank {
+			effectFunc = bigBulletExplodeEffect
+			effectId = 2
+		}
 	}
 	// 生成爆炸效果
-	effect := s.effectPool.Get(common_data.EffectConfigData[1], bulletExplodeEffect, s.pmap, bullet)
+	effect := s.effectPool.Get(common_data.EffectConfigData[effectId], effectFunc, s.pmap, bullet)
 	effect.SetCenter(bullet.Center())
 	s.effectList.Add(effect.InstId(), effect)
 }

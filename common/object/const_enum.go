@@ -39,6 +39,7 @@ const (
 type ObjSubType int
 
 const (
+	ObjSubTypeNone   = iota
 	ObjSubTypeBrick  = ObjSubType(StaticObjBrick)
 	ObjSubTypeIron   = ObjSubType(StaticObjIron)
 	ObjSubTypeTree   = ObjSubType(StaticObjTree)

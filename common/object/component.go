@@ -59,5 +59,7 @@ func (c *ColliderComp) SetCollisionHandle(handle func(...any)) {
 
 // 執行
 func (c *ColliderComp) CallCollisionEventHandle(args ...any) {
-	c.collisionHandle(args...)
+	if c.collisionHandle != nil {
+		c.collisionHandle(args...)
+	}
 }

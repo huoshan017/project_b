@@ -292,7 +292,7 @@ func GetPlayableObject(obj object.IObject) (IPlayable, *base.SpriteAnimConfig) {
 		}
 		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
 		if config == nil {
-			glog.Error("can't get static object anim by type %v", obj.Subtype())
+			glog.Error("can't get static object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		playableObj = NewPlayableStaticObject(obj, config)
@@ -304,7 +304,7 @@ func GetPlayableObject(obj object.IObject) (IPlayable, *base.SpriteAnimConfig) {
 		mobj := obj.(object.IMovableObject)
 		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
 		if config == nil {
-			glog.Error("can't get static object anim by type %v", obj.Subtype())
+			glog.Error("can't get movable object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		if obj.Subtype() == object.ObjSubTypeTank {

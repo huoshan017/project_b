@@ -66,6 +66,7 @@ type PartitionMap struct {
 	mobjs                   *ds.MapListUnion[uint32, object.IMovableObject] // 移動對象map
 	grids                   []gridObjs                                      // 網格用於碰撞檢測，提高檢測性能
 	resultLayerObjs         [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32]  // 缓存返回的结果给调用者，主要为了提高性能，减少GC
+	resultMovableObjList    []uint32                                        // 緩存搜索的可移動物體的結果
 }
 
 func NewPartitionMap(gridTileSize int16) *PartitionMap {
@@ -373,6 +374,36 @@ func (m *PartitionMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap
 	}
 
 	return m.resultLayerObjs
+}
+
+func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype object.ObjSubType) []uint32 {
+	if len(m.resultMovableObjList) > 0 {
+		m.resultMovableObjList = m.resultMovableObjList[:0]
+	}
+	lx, by, rx, ty := m.gridBoundsBy(rect.X(), rect.Y(), rect.X()+rect.W(), rect.Y()+rect.H())
+	if rx >= lx && ty >= by {
+		for y := by; y <= ty; y++ {
+			for x := lx; x <= rx; x++ {
+				gidx := m.gridLineCol2Index(y, x)
+				lis := m.grids[gidx].getMObjs().GetList()
+				for i := 0; i < len(lis); i++ {
+					key := lis[i].Key
+					obj, o := m.mobjs.Get(key)
+					if !o {
+						continue
+					}
+					if subtype != object.ObjSubTypeNone && obj.Subtype() == subtype {
+						m.resultMovableObjList = append(m.resultMovableObjList, obj.InstId())
+					}
+				}
+			}
+		}
+	}
+	return m.resultMovableObjList
+}
+
+func (m *PartitionMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
+	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeNone)
 }
 
 func (m *PartitionMap) gridLineCol2Index(line, col int16) int32 {

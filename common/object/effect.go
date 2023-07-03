@@ -57,6 +57,7 @@ func (e *Effect) Update() {
 			if e.effectFunc != nil {
 				e.effectFunc(e.args...)
 			}
+			e.startTime = time.Now()
 		} else {
 			e.isOver = true
 		}
@@ -84,5 +85,6 @@ func (e *Effect) uninit() {
 	e.effectFunc = nil
 	e.args = nil
 	e.count = 0
+	e.startTime = time.CustomTime{}
 	e.isOver = false
 }

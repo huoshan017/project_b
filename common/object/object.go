@@ -582,8 +582,9 @@ func NewTank(instId uint32, staticInfo *TankStaticInfo) *Tank {
 // 初始化
 func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	t.Vehicle.Init(instId, staticInfo)
-	t.bulletConfig = &(*TankStaticInfo)(unsafe.Pointer(staticInfo)).TankBulletConfig
-	t.level = 1
+	tankStaticInfo := (*TankStaticInfo)(unsafe.Pointer(staticInfo))
+	t.bulletConfig = &tankStaticInfo.BulletConfig
+	t.level = tankStaticInfo.Level
 	t.changeEvent = base.NewEvent()
 	t.setSuper(t)
 }

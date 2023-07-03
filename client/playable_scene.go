@@ -139,12 +139,26 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 			frameHeight: int32(animConfig.FrameHeight),
 		}
 		s.playableObjs[obj.InstId()] = tc
-		s.scene.RegisterObjRemovedHandle(func(args ...any) {
-			robj := args[0].(object.IObject)
-			// 刪除map中的playable，讓之後的GC回收
-			// todo 希望做成對象池可以復用這部分内存
-			delete(s.playableObjs, robj.InstId())
-		})
+		if obj.Type() == object.ObjTypeStatic {
+			s.scene.RegisterStaticObjRemovedHandle(func(args ...any) {
+				robj := args[0].(object.IObject)
+				// 刪除map中的playable，讓之後的GC回收
+				// todo 希望做成對象池可以復用這部分内存
+				delete(s.playableObjs, robj.InstId())
+			})
+		} else if obj.Type() == object.ObjTypeMovable {
+			if obj.Subtype() == object.ObjSubTypeTank {
+				s.scene.RegisterTankRemovedHandle(func(args ...any) {
+					tank := args[0].(*object.Tank)
+					delete(s.playableObjs, tank.InstId())
+				})
+			} else if obj.Subtype() == object.ObjSubTypeBullet {
+				s.scene.RegisterBulletRemovedHandle(func(args ...any) {
+					bullet := args[0].(*object.Bullet)
+					delete(s.playableObjs, bullet.InstId())
+				})
+			}
+		}
 	}
 
 	s._draw(tc, obj.Left(), obj.Top(), obj.Right(), obj.Bottom(), obj.Width(), obj.Height(), dstImage)
