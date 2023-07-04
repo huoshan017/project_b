@@ -3,6 +3,7 @@ package main
 import (
 	"project_b/client/base"
 	"project_b/common"
+	"project_b/common/log"
 	"project_b/common/math"
 	"project_b/common/object"
 
@@ -40,20 +41,31 @@ func CreatePlayableScene(viewport *base.Viewport) *PlayableScene {
 /**
  * 载入地图
  */
-func (s *PlayableScene) SetMap(scene *common.SceneLogic) {
+func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
 	mapInfo := mapInfoArray[scene.GetMapId()]
 	s.camera = base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultCamera2ViewportDistance)
 	s.CameraMoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
 	s.CameraSetHeight(mapInfo.cameraHeight)
 	s.scene = scene
-	clear(s.playableObjs)
-	clear(s.playableEffects)
+
+	s.scene.RegisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
+	s.scene.RegisterTankRemovedHandle(s.onTankRemovedHandle)
+	s.scene.RegisterBulletRemovedHandle(s.onBulletRemovedHandle)
+	s.scene.RegisterEffectRemovedHandle(s.onEffectRemovedHandle)
 }
 
 /**
  * 卸载地图
  */
-func (s *PlayableScene) UnloadMap() {
+func (s *PlayableScene) UnloadScene() {
+	s.scene.UnregisterEffectRemovedHandle(s.onEffectRemovedHandle)
+	s.scene.UnregisterBulletRemovedHandle(s.onBulletRemovedHandle)
+	s.scene.UnregisterTankRemovedHandle(s.onTankRemovedHandle)
+	s.scene.UnregisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
+	clear(s.playableObjs)
+	clear(s.playableEffects)
+	s.scene = nil
+	s.camera = nil
 }
 
 /**
@@ -129,6 +141,9 @@ func (s *PlayableScene) Draw(dstImage *ebiten.Image) {
 }
 
 func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
+	if obj.InstId() == 0 {
+		log.Debug("obj.InstId() == %v", obj.InstId())
+	}
 	tc := s.playableObjs[obj.InstId()]
 	if tc == nil {
 		playableObj, animConfig := GetPlayableObject(obj)
@@ -139,26 +154,6 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 			frameHeight: int32(animConfig.FrameHeight),
 		}
 		s.playableObjs[obj.InstId()] = tc
-		if obj.Type() == object.ObjTypeStatic {
-			s.scene.RegisterStaticObjRemovedHandle(func(args ...any) {
-				robj := args[0].(object.IObject)
-				// 刪除map中的playable，讓之後的GC回收
-				// todo 希望做成對象池可以復用這部分内存
-				delete(s.playableObjs, robj.InstId())
-			})
-		} else if obj.Type() == object.ObjTypeMovable {
-			if obj.Subtype() == object.ObjSubTypeTank {
-				s.scene.RegisterTankRemovedHandle(func(args ...any) {
-					tank := args[0].(*object.Tank)
-					delete(s.playableObjs, tank.InstId())
-				})
-			} else if obj.Subtype() == object.ObjSubTypeBullet {
-				s.scene.RegisterBulletRemovedHandle(func(args ...any) {
-					bullet := args[0].(*object.Bullet)
-					delete(s.playableObjs, bullet.InstId())
-				})
-			}
-		}
 	}
 
 	s._draw(tc, obj.Left(), obj.Top(), obj.Right(), obj.Bottom(), obj.Width(), obj.Height(), dstImage)
@@ -175,12 +170,6 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 			frameHeight: int32(animConfig.FrameHeight),
 		}
 		s.playableEffects[effect.InstId()] = tc
-		s.scene.RegisterEffectRemovedHandle(func(args ...any) {
-			effect := args[0].(object.IEffect)
-			// 刪除map中的playable，讓之後的GC回收
-			// todo 希望做成對象池可以復用這部分内存
-			delete(s.playableEffects, effect.InstId())
-		})
 	}
 
 	cx, cy := effect.Center()
@@ -218,4 +207,33 @@ func (s *PlayableScene) _draw(tc *objOpCache, left, top, right, bottom, width, h
 	tc.op.GeoM.Translate(float64(lx), float64(ly))
 	// 判断是否插值
 	tc.playable.Draw(dstImage, &tc.op)
+}
+
+func (s *PlayableScene) onTankRemovedHandle(args ...any) {
+	tank := args[0].(*object.Tank)
+	delete(s.playableObjs, tank.InstId())
+}
+
+func (s *PlayableScene) onBulletRemovedHandle(args ...any) {
+	bullet := args[0].(*object.Bullet)
+	if s.playableObjs[bullet.InstId()] == nil {
+		log.Debug("playable bullet %v not found", bullet.InstId())
+	} else {
+		delete(s.playableObjs, bullet.InstId())
+		log.Debug("playable bullet %v removed", bullet.InstId())
+	}
+}
+
+func (s *PlayableScene) onStaticObjRemovedHandle(args ...any) {
+	robj := args[0].(object.IObject)
+	// 刪除map中的playable，讓之後的GC回收
+	// todo 希望做成對象池可以復用這部分内存
+	delete(s.playableObjs, robj.InstId())
+}
+
+func (s *PlayableScene) onEffectRemovedHandle(args ...any) {
+	effect := args[0].(object.IEffect)
+	// 刪除map中的playable，讓之後的GC回收
+	// todo 希望做成對象池可以復用這部分内存
+	delete(s.playableEffects, effect.InstId())
 }

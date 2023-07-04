@@ -48,7 +48,7 @@ func checkMovableObjCollision(pmap *PartitionMap, obj object.IMovableObject, dir
 					log.Warn("not found static object %v", item.Key)
 					continue
 				}
-				if obj2.StaticInfo().Layer() == obj.StaticInfo().Layer() && checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
+				if checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
 					if collisionObj != nil {
 						*collisionObj = obj2
 					}
@@ -62,6 +62,11 @@ func checkMovableObjCollision(pmap *PartitionMap, obj object.IMovableObject, dir
 
 // checkMovableObjCollisionObj 檢查可移動物體和物體是否碰撞
 func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent, dir object.Direction, distance float64, obj object.IObject) bool {
+	if !(mobj.StaticInfo().Layer() == obj.StaticInfo().Layer() ||
+		(obj.Type() == object.ObjTypeStatic && (obj.Subtype() == object.ObjSubTypeWater || obj.Subtype() == object.ObjSubTypeIce))) {
+		return false
+	}
+
 	var (
 		collisionComp *object.ColliderComp
 		aabb1         object.AABB
@@ -127,7 +132,7 @@ func onMovableObjCollisionObj(mobj object.IMovableObject, obj object.IObject) bo
 		switch obj.Type() {
 		case object.ObjTypeStatic:
 			switch obj.Subtype() {
-			case object.ObjSubTypeWater:
+			case object.ObjSubTypeBrick, object.ObjSubTypeIron, object.ObjSubTypeWater, object.ObjSubTypeIce, object.ObjSubTypeHome:
 				collision = true
 			default:
 			}
@@ -137,6 +142,8 @@ func onMovableObjCollisionObj(mobj object.IMovableObject, obj object.IObject) bo
 				if mobj.Camp() != obj.Camp() {
 					collision = true
 				}
+			case object.ObjSubTypeTank:
+				collision = true
 			default:
 			}
 		}

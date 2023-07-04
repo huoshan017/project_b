@@ -40,6 +40,10 @@ func (e *Event) Call(args ...any) {
 	}
 }
 
+func (e *Event) Clear() {
+	e.handles = e.handles[:0]
+}
+
 type eventData struct {
 	eid  EventId
 	args []any

@@ -43,6 +43,7 @@ type object struct {
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
 	super             IObject        // 派生類對象
+	destroyedEvent    base.Event     // 銷毀事件
 }
 
 // 回收
@@ -68,7 +69,18 @@ func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 
 // 反初始化
 func (o *object) Uninit() {
+	o.destroyedEvent.Call(o.instId)
+	o.instId = 0
+	o.ownerType = OwnerNone
+	o.currentCamp = CampTypeNone
+	o.staticInfo = nil
+	o.x, o.y = 0, 0
+	o.orientation = 0
+	o.components = o.components[:0]
+	o.changedStaticInfo = nil
+	o.super = nil
 	o.toRecycle = false
+	o.destroyedEvent.Clear()
 }
 
 // 设置静态信息
@@ -257,6 +269,16 @@ func (o object) HasComp(name string) bool {
 // 設置派生類
 func (o *object) setSuper(super IObject) {
 	o.super = super
+}
+
+// 注冊銷毀事件處理函數
+func (o *object) RegisterDestroyedEventHandle(handle func(...any)) {
+	o.destroyedEvent.Register(handle)
+}
+
+// 注銷銷毀事件處理函數
+func (o *object) UnregisterDestroyedEventHandle(handle func(...any)) {
+	o.destroyedEvent.Unregister(handle)
 }
 
 // 静态物体
@@ -657,6 +679,8 @@ func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulle
 		case DirDown:
 			bullet.SetPos(t.Left()+t.Width()>>1-bullet.Width()>>1, t.Bottom()-bullet.Height()-1)
 		}
+		bullet.SetCamp(t.currentCamp)
+		bullet.SetDir(t.dir)
 		bullet.SetCurrentSpeed(bulletInfo.speed)
 	}
 	return bullet

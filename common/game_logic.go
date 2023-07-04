@@ -340,4 +340,6 @@ func (g *GameLogic) onTankDestroyed(args ...any) {
 		g.tank2Player.Remove(instId)
 		g.player2Tank.Remove(pid)
 	}
+	// bot中處理坦克被擊毀
+	g.botMgr.onEnemyTankDestoryed(instId)
 }

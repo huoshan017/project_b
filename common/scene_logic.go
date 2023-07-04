@@ -63,7 +63,7 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	// 载入地图
 	s.pmap.Load(m)
 	// 地图载入前事件
-	s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
+	//s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
 			st := object.StaticObjType(m.Layers[line][col])
@@ -82,14 +82,14 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	s.mapWidth = int32(len(m.Layers[0])) * m.TileWidth
 	s.mapHeight = int32(len(m.Layers)) * m.TileHeight
 	// 地图载入完成事件
-	s.eventMgr.InvokeEvent(EventIdMapLoaded, s)
+	//s.eventMgr.InvokeEvent(EventIdMapLoaded, s)
 	log.Info("Load map %v done, map width %v, map height %v", m.Id, s.mapWidth, s.mapHeight)
 	return true
 }
 
 func (s *SceneLogic) UnloadMap() {
 	// 地图卸载前事件
-	s.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
+	//s.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
 	s.mapWidth = 0
 	s.mapHeight = 0
 	for i := int32(0); i < s.staticObjList.Count(); i++ {
@@ -127,8 +127,13 @@ func (s *SceneLogic) UnloadMap() {
 	s.objFactory.Clear()
 	s.effectList.Clear()
 	s.effectPool.Clear()
+	s.tankRecycleList = s.tankRecycleList[:0]
+	s.bulletRecycleList = s.bulletRecycleList[:0]
+	s.staticObjRecycleList = s.staticObjRecycleList[:0]
+	s.effectRecycleList = s.effectRecycleList[:0]
+	s.effectSearchedList = s.effectSearchedList[:0]
 	// 地图卸载后事件
-	s.eventMgr.InvokeEvent(EventIdMapUnloaded)
+	//s.eventMgr.InvokeEvent(EventIdMapUnloaded)
 }
 
 func (s *SceneLogic) RegisterStaticObjAddedHandle(handle func(...any)) {
@@ -539,23 +544,29 @@ func (s *SceneLogic) onBulletCollision(args ...any) {
 	// todo 處理子彈碰撞
 	bullet := args[0].(*object.Bullet)
 	obj := args[1].(object.IObject)
-	var effectFunc func(...any)
-	var effectId int32 = 1
+	var (
+		effectFunc func(...any)
+		effectId   int32 = 1
+		cx, cy     int32
+	)
 	if obj.Type() == object.ObjTypeStatic {
 		bullet.ToRecycle()
 		effectFunc = bulletExplodeEffect
+		cx, cy = bullet.Center()
 	} else if obj.Type() == object.ObjTypeMovable {
 		bullet.ToRecycle()
 		obj.ToRecycle()
 		if obj.Subtype() == object.ObjSubTypeBullet {
 			effectFunc = bulletExplodeEffect
+			cx, cy = bullet.Center()
 		} else if obj.Subtype() == object.ObjSubTypeTank {
 			effectFunc = bigBulletExplodeEffect
 			effectId = 2
+			cx, cy = obj.Center()
 		}
 	}
 	// 生成爆炸效果
 	effect := s.effectPool.Get(common_data.EffectConfigData[effectId], effectFunc, s.pmap, bullet)
-	effect.SetCenter(bullet.Center())
+	effect.SetCenter(cx, cy)
 	s.effectList.Add(effect.InstId(), effect)
 }

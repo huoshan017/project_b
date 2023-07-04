@@ -10,32 +10,34 @@ type IRecycle interface {
 // 物体接口
 type IObject interface {
 	IRecycle
-	Init(uint32, *ObjStaticInfo)    // 初始化
-	Uninit()                        // 反初始化
-	InstId() uint32                 // 实例id
-	Id() int32                      // 注意：这是配置id
-	Type() ObjectType               // 类型
-	Subtype() ObjSubType            // 子类型
-	OwnerType() ObjOwnerType        // 所有者类型
-	StaticInfo() *ObjStaticInfo     // 靜態信息
-	Pos() (x, y int32)              // 左下角位置
-	SetPos(x, y int32)              // 设置位
-	Center() (x, y int32)           // 中心點坐標
-	Width() int32                   // 宽度
-	Height() int32                  // 高度
-	Left() int32                    // 左坐标
-	Right() int32                   // 右坐标
-	Top() int32                     // 上坐标
-	Bottom() int32                  // 下坐标
-	Orientation() int32             // 朝向角度
-	Update(tick time.Duration)      // 更新
-	Camp() CampType                 // 陣營
-	SetCamp(CampType)               // 設置陣營
-	RestoreCamp()                   // 重置陣營
-	AddComp(comp IComponent)        // 添加組件
-	RemoveComp(name string)         // 去除組件
-	GetComp(name string) IComponent // 獲取組件
-	HasComp(name string) bool       // 是否擁有組件
+	Init(uint32, *ObjStaticInfo)                        // 初始化
+	Uninit()                                            // 反初始化
+	InstId() uint32                                     // 实例id
+	Id() int32                                          // 注意：这是配置id
+	Type() ObjectType                                   // 类型
+	Subtype() ObjSubType                                // 子类型
+	OwnerType() ObjOwnerType                            // 所有者类型
+	StaticInfo() *ObjStaticInfo                         // 靜態信息
+	Pos() (x, y int32)                                  // 左下角位置
+	SetPos(x, y int32)                                  // 设置位
+	Center() (x, y int32)                               // 中心點坐標
+	Width() int32                                       // 宽度
+	Height() int32                                      // 高度
+	Left() int32                                        // 左坐标
+	Right() int32                                       // 右坐标
+	Top() int32                                         // 上坐标
+	Bottom() int32                                      // 下坐标
+	Orientation() int32                                 // 朝向角度
+	Update(tick time.Duration)                          // 更新
+	Camp() CampType                                     // 陣營
+	SetCamp(CampType)                                   // 設置陣營
+	RestoreCamp()                                       // 重置陣營
+	AddComp(comp IComponent)                            // 添加組件
+	RemoveComp(name string)                             // 去除組件
+	GetComp(name string) IComponent                     // 獲取組件
+	HasComp(name string) bool                           // 是否擁有組件
+	RegisterDestroyedEventHandle(handle func(...any))   // 注冊銷毀事件函數
+	UnregisterDestroyedEventHandle(handle func(...any)) // 注銷銷毀事件函數
 }
 
 // 静态物体接口

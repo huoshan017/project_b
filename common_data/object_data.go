@@ -66,27 +66,27 @@ var (
 	// 坦克静态配置数据，全部是逻辑数据
 	TankConfigData = map[int32]*object.TankStaticInfo{
 		1: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 500, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
 			Level:         1,
 			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
 		},
 		2: {
-			ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 500, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
 			Level:         1,
 			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
 		},
 		1000: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 700, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
 			Level:         1,
 			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 3500},
 		},
 		1001: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 700, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 900, object.DirUp, 1, true),
 			Level:         1,
 			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
 		},
 		1002: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 700, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 650, object.DirUp, 1, true),
 			Level:         1,
 			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
 		},

@@ -237,21 +237,21 @@ func (g *EventHandles) onEventBeforeMapLoad(args ...any) {
  */
 func (eh *EventHandles) onEventMapLoaded(args ...any) {
 	currentScene := args[0].(*common.SceneLogic)
-	eh.playableScene.SetMap(currentScene)
+	eh.playableScene.SetScene(currentScene)
 }
 
 /**
  * 处理地图卸载前事件
  */
-func (g *EventHandles) onEventBeforeMapUnload(args ...any) {
+func (eh *EventHandles) onEventBeforeMapUnload(args ...any) {
 
 }
 
 /**
  * 处理地图卸载后事件
  */
-func (g *EventHandles) onEventMapUnloaded(args ...any) {
-
+func (eh *EventHandles) onEventMapUnloaded(args ...any) {
+	eh.playableScene.UnloadScene()
 }
 
 /*
@@ -261,11 +261,11 @@ args[0]: pos(object.Pos)
 args[1]: direction(object.Direction)
 args[2]: speed(int32)
 */
-func (g *EventHandles) onEventTankMove(args ...any) {
+func (eh *EventHandles) onEventTankMove(args ...any) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
-	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_StartMove, pos, dir, speed)
+	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_StartMove, pos, dir, speed)
 	if err != nil {
 		glog.Error("send tank move req err: %v", err)
 	}
@@ -278,11 +278,11 @@ args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
 */
-func (g *EventHandles) onEventTankStopMove(args ...any) {
+func (eh *EventHandles) onEventTankStopMove(args ...any) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
-	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos, dir, speed)
+	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos, dir, speed)
 	if err != nil {
 		glog.Error("send tank stop move req err: %v", err)
 	}
@@ -295,11 +295,11 @@ args[0]: object.Pos
 args[1]: object.Direction
 args[2]: int32
 */
-func (g *EventHandles) onEventTankSetPos(args ...any) {
+func (eh *EventHandles) onEventTankSetPos(args ...any) {
 	pos := args[0].(object.Pos)
 	dir := args[1].(object.Direction)
 	speed := args[2].(int32)
-	err := g.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos, dir, speed)
+	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos, dir, speed)
 	if err != nil {
 		glog.Error("send tank update pos req err: %v", err)
 	}
@@ -311,7 +311,7 @@ func (g *EventHandles) onEventTankSetPos(args ...any) {
 args[0]: uint64
 args[1]: *object.Tank
 */
-func (g *EventHandles) onEventTankChange(args ...any) {
+func (eh *EventHandles) onEventTankChange(args ...any) {
 	if len(args) < 2 {
 		glog.Error("onEventTankChange event need 3 args")
 		return
@@ -327,7 +327,7 @@ func (g *EventHandles) onEventTankChange(args ...any) {
 args[0]: uint64
 args[1]: *object.Tank
 */
-func (g *EventHandles) onEventTankRestore(args ...any) {
+func (eh *EventHandles) onEventTankRestore(args ...any) {
 	if len(args) < 2 {
 		glog.Error("onEventTankRestore event need 3 args")
 		return

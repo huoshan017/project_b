@@ -32,6 +32,15 @@ func (l *MapListUnion[Key, Value]) Add(k Key, v Value) {
 	l.key2index[k] = int32(len(l.list) - 1)
 }
 
+func (l *MapListUnion[Key, Value]) Set(k Key, v Value) {
+	idx, o := l.key2index[k]
+	if !o {
+		l.list = append(l.list, Pair[Key, Value]{Key: k, Value: v})
+	} else {
+		l.list[idx].Value = v
+	}
+}
+
 func (l *MapListUnion[Key, Value]) Exists(k Key) bool {
 	_, o := l.key2index[k]
 	return o

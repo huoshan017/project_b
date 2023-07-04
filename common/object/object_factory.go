@@ -70,12 +70,13 @@ func (f *ObjectFactory) RecycleStaticObject(obj IStaticObject) bool {
 	if _, o := f.objMap[obj.InstId()]; !o {
 		return false
 	}
+	id := obj.InstId()
 	obj.Uninit()
 	if f.isRecycleObjId {
-		f.freeObjIds = append(f.freeObjIds, obj.InstId())
+		f.freeObjIds = append(f.freeObjIds, id)
 	}
 	f.freeStaticObjs = append(f.freeStaticObjs, obj)
-	delete(f.objMap, obj.InstId())
+	delete(f.objMap, id)
 	return true
 }
 
@@ -99,8 +100,11 @@ func (f *ObjectFactory) NewTank(info *TankStaticInfo) *Tank {
 }
 
 func (f *ObjectFactory) RecycleTank(tank *Tank) bool {
-	tank.Uninit()
-	return f.RecycleMovableObject(tank)
+	res := f.recycleMovableObject(tank)
+	if res {
+		tank.Uninit()
+	}
+	return res
 }
 
 func (f *ObjectFactory) NewBullet(info *BulletStaticInfo) *Bullet {
@@ -123,11 +127,14 @@ func (f *ObjectFactory) NewBullet(info *BulletStaticInfo) *Bullet {
 }
 
 func (f *ObjectFactory) RecycleBullet(bullet *Bullet) bool {
-	bullet.Uninit()
-	return f.RecycleMovableObject(bullet)
+	res := f.recycleMovableObject(bullet)
+	if res {
+		bullet.Uninit()
+	}
+	return res
 }
 
-func (f *ObjectFactory) RecycleMovableObject(mobj IMovableObject) bool {
+func (f *ObjectFactory) recycleMovableObject(mobj IMovableObject) bool {
 	if _, o := f.objMap[mobj.InstId()]; !o {
 		return false
 	}
@@ -143,8 +150,10 @@ func (f *ObjectFactory) Clear() {
 	for _, obj := range f.objMap {
 		if obj.Type() == ObjTypeStatic {
 			f.RecycleStaticObject(obj.(*StaticObject))
+			obj.Uninit()
 		} else if obj.Type() == ObjTypeMovable {
-			f.RecycleMovableObject(obj.(*MovableObject))
+			f.recycleMovableObject(obj.(*MovableObject))
+			obj.Uninit()
 		}
 	}
 	clear(f.objMap)

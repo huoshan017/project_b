@@ -19,14 +19,15 @@ const (
 )
 
 type Bot struct {
-	id           int32
-	scene        *SceneLogic
-	tankInstId   uint32
-	searchRadius int32
-	state        BotStateType
-	totalTick    time.Duration
-	timer        time.Duration
-	enemyId      uint32
+	id                            int32
+	scene                         *SceneLogic
+	tankInstId                    uint32
+	searchRadius                  int32
+	state                         BotStateType
+	totalTick                     time.Duration
+	timer                         time.Duration
+	enemyId                       uint32
+	enemyGetEvent, enemyLostEvent base.Event
 }
 
 func NewBot(id int32, scene *SceneLogic, tankId uint32) *Bot {
@@ -62,14 +63,16 @@ func (b *Bot) Update(tick time.Duration) {
 	case BotStatePatrol:
 		b.enemyId = b.searchEnemyTank()
 		if b.enemyId == 0 {
+			// 沒有找到敵人，繼續巡邏
 			break
 		}
+		b.enemyGetEvent.Call(b.id, b.enemyId)
 		b.state = BotStateAttacking
 	case BotStateAttacking:
 		enemyTank := b.scene.GetTank(b.enemyId)
 		if enemyTank == nil {
 			b.state = BotStateIdle
-			log.Error("bot cant get enemy tank by id %v", b.enemyId)
+			log.Debug("bot cant get enemy tank by id %v", b.enemyId)
 			break
 		}
 		bx, by := botTank.Center()
@@ -142,16 +145,42 @@ func (b *Bot) searchEnemyTank() uint32 {
 	return getId
 }
 
+func (b *Bot) clearEnemy() {
+	if b.enemyId > 0 {
+		b.enemyLostEvent.Call(b.id, b.enemyId)
+		b.enemyId = 0
+		b.state = BotStateIdle
+	}
+}
+
+func (b *Bot) registerEnemyGetHandle(handle func(...any)) {
+	b.enemyGetEvent.Register(handle)
+}
+
+func (b *Bot) unregisterEnemyGetHandle(handle func(...any)) {
+	b.enemyGetEvent.Unregister(handle)
+}
+
+func (b *Bot) registerEnemyLostHandle(handle func(...any)) {
+	b.enemyLostEvent.Register(handle)
+}
+
+func (b *Bot) unregisterEnemyLostHandle(handle func(...any)) {
+	b.enemyLostEvent.Unregister(handle)
+}
+
 type BotManager struct {
-	botList   *ds.MapListUnion[int32, *Bot]
-	botPool   *base.ObjectPool[Bot]
-	idCounter int32
+	botList     *ds.MapListUnion[int32, *Bot]
+	botPool     *base.ObjectPool[Bot]
+	idCounter   int32
+	enemyId2Bot *ds.MapListUnion[uint32, []int32]
 }
 
 func NewBotManager() *BotManager {
 	return &BotManager{
-		botList: ds.NewMapListUnion[int32, *Bot](),
-		botPool: base.NewObjectPool[Bot](),
+		botList:     ds.NewMapListUnion[int32, *Bot](),
+		botPool:     base.NewObjectPool[Bot](),
+		enemyId2Bot: ds.NewMapListUnion[uint32, []int32](),
 	}
 }
 
@@ -159,6 +188,7 @@ func (bm *BotManager) NewBot(scene *SceneLogic, tankId uint32) *Bot {
 	bm.idCounter++
 	bot := bm.botPool.Get()
 	bot.init(bm.idCounter, scene, tankId)
+	bot.registerEnemyGetHandle(bm.onEmenyTankGet)
 	bm.botList.Add(bm.idCounter, bot)
 	return bot
 }
@@ -168,6 +198,7 @@ func (bm *BotManager) RemoveBot(id int32) bool {
 	if !o {
 		return false
 	}
+	bot.unregisterEnemyGetHandle(bm.onEmenyTankGet)
 	bm.botList.Remove(id)
 	bm.botPool.Put(bot)
 	return true
@@ -187,4 +218,31 @@ func (bm *BotManager) Update(tick time.Duration) {
 func (bm *BotManager) Clear() {
 	bm.botList.Clear()
 	bm.idCounter = 0
+	bm.enemyId2Bot.Clear()
+}
+
+func (bm *BotManager) onEmenyTankGet(args ...any) {
+	botId := args[0].(int32)
+	enemyId := args[1].(uint32)
+	bots, o := bm.enemyId2Bot.Get(enemyId)
+	if !o {
+		bm.enemyId2Bot.Add(enemyId, []int32{botId})
+	} else {
+		bots = append(bots, botId)
+		bm.enemyId2Bot.Set(enemyId, bots)
+	}
+}
+
+func (bm *BotManager) onEnemyTankDestoryed(args ...any) {
+	enemyId := args[0].(uint32)
+	botIdList, o := bm.enemyId2Bot.Get(enemyId)
+	if o {
+		for _, botId := range botIdList {
+			bot, o := bm.botList.Get(botId)
+			if o {
+				bot.clearEnemy()
+			}
+		}
+		bm.enemyId2Bot.Remove(enemyId)
+	}
 }
