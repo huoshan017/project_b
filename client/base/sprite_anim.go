@@ -97,9 +97,9 @@ func (a *SpriteAnim) Update(screen *ebiten.Image, options *ebiten.DrawImageOptio
 		if a.currFrame >= int32(len(a.Config.FramePosList)) {
 			a.currFrame = 0
 		}
-		a.draw(a.currFrame, screen, options)
 		sub -= a.Config.PlayInterval
 	}
+	a.draw(a.currFrame, screen, options)
 
 	// 更新时间，保证该时间的增长是刷新间隔PlayerInterval的整数倍
 	a.lastUpdateTime = now.Add(-time.Duration(sub * int32(time.Millisecond)))

@@ -75,6 +75,10 @@ func (b *Bot) Update(tick time.Duration) {
 			log.Debug("bot cant get enemy tank by id %v", b.enemyId)
 			break
 		}
+		if botTank.IsMoving() {
+			b.scene.TankFire(botTank.InstId())
+			break
+		}
 		bx, by := botTank.Center()
 		ex, ey := enemyTank.Center()
 		dx := ex - bx
@@ -161,14 +165,6 @@ func (b *Bot) unregisterEnemyGetHandle(handle func(...any)) {
 	b.enemyGetEvent.Unregister(handle)
 }
 
-func (b *Bot) registerEnemyLostHandle(handle func(...any)) {
-	b.enemyLostEvent.Register(handle)
-}
-
-func (b *Bot) unregisterEnemyLostHandle(handle func(...any)) {
-	b.enemyLostEvent.Unregister(handle)
-}
-
 type BotManager struct {
 	botList     *ds.MapListUnion[int32, *Bot]
 	botPool     *base.ObjectPool[Bot]
@@ -199,6 +195,16 @@ func (bm *BotManager) RemoveBot(id int32) bool {
 		return false
 	}
 	bot.unregisterEnemyGetHandle(bm.onEmenyTankGet)
+	bots, o := bm.enemyId2Bot.Get(bot.enemyId)
+	if o {
+		for i := 0; i < len(bots); i++ {
+			if bots[i] == bot.id {
+				bots = append(bots[:i], bots[i+1:]...)
+				bm.enemyId2Bot.Set(bot.enemyId, bots)
+				break
+			}
+		}
+	}
 	bm.botList.Remove(id)
 	bm.botPool.Put(bot)
 	return true

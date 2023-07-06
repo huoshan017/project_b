@@ -309,6 +309,7 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 		// todo 等級從1開始
 		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1, b.Pos.X, b.Pos.Y, staticInfo.Dir(), staticInfo.Speed())
 		tank.SetCamp(b.Camp)
+		tank.SetLevel(b.Level)
 		bot := g.botMgr.NewBot(g.scene, tank.InstId())
 		if bot == nil {
 			log.Error("GameLogic.createBots NewBot failed")

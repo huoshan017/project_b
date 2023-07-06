@@ -109,8 +109,9 @@ type PlayableMoveObject struct {
 // 创建可移动物体的播放对象
 func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObjectAnimConfig) *PlayableMoveObject {
 	pobj := &PlayableMoveObject{
-		op:   &ebiten.DrawImageOptions{},
-		mobj: mobj,
+		op:          &ebiten.DrawImageOptions{},
+		mobj:        mobj,
+		interpolate: mobj.IsMoving(),
 	}
 	pobj.changeAnim(animConfig)
 	return pobj
@@ -163,6 +164,9 @@ func (po *PlayableMoveObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOpt
 //	Draw      Update(Draw)    Draw         Draw         Draw       Update(Draw)      Draw           Draw           Draw        Update(Draw)
 func (po *PlayableMoveObject) Interpolation() (x, y float64) {
 	if !po.interpolate {
+		return
+	}
+	if !po.mobj.IsMoving() {
 		return
 	}
 	// 上一次Update的坐标点与当前的不一样，说明又Update了，重置LastX和LastY和开始时间

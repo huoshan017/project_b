@@ -6,7 +6,7 @@ type BotInfo struct {
 	TankId int32
 	Camp   object.CampType
 	Pos    object.Pos
-	Level  int8
+	Level  int32
 }
 
 // 地图配置，坐标系x轴朝上y轴朝右

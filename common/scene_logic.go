@@ -328,7 +328,6 @@ func (s *SceneLogic) TankFire(instId uint32) {
 			c := collider.(*object.ColliderComp)
 			c.SetCollisionHandle(s.onBulletCollision)
 		}
-		// 子彈移動
 		bullet.Move(tank.Dir())
 		s.pmap.AddObj(bullet)
 	}

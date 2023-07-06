@@ -322,7 +322,7 @@ const (
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir            Direction       // 方向
+	dir, toDir     Direction       // 方向
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
 	state          moveObjectState // 移动状态
@@ -343,6 +343,7 @@ func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
 	o.dir = staticInfo.dir
+	o.toDir = o.dir
 	o.speed = staticInfo.speed
 	o.checkMoveEvent = base.NewEvent()
 	o.moveEvent = base.NewEvent()
@@ -408,8 +409,11 @@ func (o *MovableObject) Move(dir Direction) {
 		panic(str)
 	}
 	if o.state == stopped {
+		o.toDir = dir
+		if !o.checkMove(dir, 0) {
+			return
+		}
 		o.state = toMove
-		o.dir = dir
 		log.Debug("@@@ object %v stopped => to move", o.instId)
 	}
 }
@@ -432,7 +436,7 @@ func (o *MovableObject) Stop() {
 
 // 是否正在移动
 func (o *MovableObject) IsMoving() bool {
-	return o.state == isMoving || o.state == toStop
+	return o.state == toMove || o.state == isMoving || o.state == toStop
 }
 
 // 上次Update的位置
@@ -455,6 +459,9 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 
 	if o.state == toMove {
+		if o.dir != o.toDir {
+			o.dir = o.toDir
+		}
 		o.state = isMoving
 		// args[0]: object.Pos
 		// args[1]: object.Direction
@@ -482,20 +489,8 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 
 	if o.state != stopped && o.checkMoveEvent != nil {
-		var (
-			isMove, isCollision bool
-			resObj              IObject
-		)
-		o.checkMoveEvent.Call(o.instId, o.dir, distance, &isMove, &isCollision, &resObj)
-		if isMove {
+		if o.checkMove(o.dir, distance) {
 			o.x, o.y = int32(x), int32(y)
-		}
-		if isCollision {
-			comp := o.GetComp("Collider")
-			if comp != nil {
-				collisionComp := comp.(*ColliderComp)
-				collisionComp.CallCollisionEventHandle(o.super, resObj)
-			}
 		}
 	} else {
 		o.x, o.y = int32(x), int32(y)
@@ -518,6 +513,22 @@ func (o *MovableObject) Update(tick time.Duration) {
 		}
 		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
+}
+
+func (o *MovableObject) checkMove(dir Direction, distance float64) bool {
+	var (
+		isMove, isCollision bool
+		resObj              IObject
+	)
+	o.checkMoveEvent.Call(o.instId, dir, distance, &isMove, &isCollision, &resObj)
+	if isCollision {
+		comp := o.GetComp("Collider")
+		if comp != nil {
+			collisionComp := comp.(*ColliderComp)
+			collisionComp.CallCollisionEventHandle(o.super, resObj)
+		}
+	}
+	return isMove
 }
 
 // 注冊檢查坐標事件
@@ -586,12 +597,11 @@ func (v *Vehicle) Uninit() {
 // 坦克
 type Tank struct {
 	Vehicle
-	bulletConfig     *TankBulletConfig
-	level            int32
-	changeEvent      *base.Event
-	fireTime         time.CustomTime
-	fireIntervalTime time.CustomTime
-	bulletFireCount  int8
+	bulletConfig    *TankBulletConfig
+	level           int32
+	changeEvent     *base.Event
+	fireTime        time.CustomTime
+	bulletFireCount int8
 }
 
 // 创建坦克
@@ -659,7 +669,7 @@ func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulle
 		t.bulletFireCount = 1
 	}
 	// 再檢測一次發射中的炮彈間隔
-	if t.bulletConfig.AmountFireOneTime > 1 && t.bulletFireCount < t.bulletConfig.AmountFireOneTime {
+	/*if t.bulletConfig.AmountFireOneTime > 1 && t.bulletFireCount < t.bulletConfig.AmountFireOneTime {
 		if t.fireIntervalTime.IsZero() || time.Since(t.fireIntervalTime) >= time.Duration(t.bulletConfig.IntervalInFire)*time.Millisecond {
 			if bullet == nil {
 				bullet = newBulletFunc(bulletInfo)
@@ -667,7 +677,7 @@ func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulle
 			t.fireIntervalTime = time.Now()
 			t.bulletFireCount += 1
 		}
-	}
+	}*/
 	if bullet != nil {
 		switch t.dir {
 		case DirLeft:
@@ -680,7 +690,6 @@ func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulle
 			bullet.SetPos(t.Left()+t.Width()>>1-bullet.Width()>>1, t.Bottom()-bullet.Height()-1)
 		}
 		bullet.SetCamp(t.currentCamp)
-		bullet.SetDir(t.dir)
 		bullet.SetCurrentSpeed(bulletInfo.speed)
 	}
 	return bullet
@@ -694,8 +703,7 @@ func (t *Tank) GetBulletConfig() *TankBulletConfig {
 // 子弹
 type Bullet struct {
 	MovableObject
-	info         *BulletStaticInfo
-	explodeEvent base.Event
+	info *BulletStaticInfo
 }
 
 // 创建车辆
@@ -715,19 +723,4 @@ func (b *Bullet) Init(instId uint32, staticInfo *ObjStaticInfo) {
 // 反初始化
 func (b *Bullet) Uninit() {
 	b.MovableObject.Uninit()
-}
-
-// 爆炸
-func (b *Bullet) Explode() {
-	b.explodeEvent.Call()
-}
-
-// 注冊爆炸事件
-func (b *Bullet) RegisterExplodeEventHandle(handle func(...any)) {
-	b.explodeEvent.Register(handle)
-}
-
-// 注銷爆炸事件
-func (b *Bullet) UnregisterExplodeEventHandle(handle func(...any)) {
-	b.explodeEvent.Unregister(handle)
 }

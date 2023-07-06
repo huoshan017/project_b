@@ -14,6 +14,22 @@ func (ab *AABB) Intersect(aabb *AABB) bool {
 	return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
 }
 
+// 移動相交
+func (ab *AABB) MoveIntersect(moveDir Direction, aabb *AABB) bool {
+	switch moveDir {
+	case DirLeft:
+		return !(ab.Left-1 >= aabb.Right || ab.Right-1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
+	case DirRight:
+		return !(ab.Left+1 >= aabb.Right || ab.Right+1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
+	case DirUp:
+		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top+1 <= aabb.Bottom || ab.Bottom+1 >= aabb.Top)
+	case DirDown:
+		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top-1 <= aabb.Bottom || ab.Bottom-1 >= aabb.Top)
+	default:
+		return false
+	}
+}
+
 // 移動
 func (ab *AABB) Move(dir Direction, distance float64) {
 	switch dir {

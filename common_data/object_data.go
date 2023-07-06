@@ -44,7 +44,7 @@ var (
 	// 炮彈靜態配置
 	BulletConfigData = map[int32]*object.BulletStaticInfo{
 		1: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1000, object.DirUp, 1, true),
+			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1200, object.DirUp, 1, true),
 			Range:         1000,
 			Damage:        100,
 			BlastRadius:   10,
@@ -83,12 +83,12 @@ var (
 		1001: {
 			ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 900, object.DirUp, 1, true),
 			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
+			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 		1002: {
 			ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 650, object.DirUp, 1, true),
 			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 100, Cooldown: 1000},
+			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 	}
 

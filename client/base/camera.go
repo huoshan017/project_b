@@ -11,15 +11,13 @@ import (
  * 相机坐标系与世界坐标系的轴向一致
  */
 type Camera struct {
-	sceneImage            *ebiten.Image
-	viewport              *Viewport
-	wx, wy                int32                    // world cordinate
-	height                int32                    // distance to world
-	fov                   int32                    // field of view
-	tanHalfFov            float64                  // tan value for fov
-	nearPlane             float64                  // near plane
-	viewportOptions       *ebiten.DrawImageOptions // 视口变换参数
-	viewProjectionOptions *ebiten.DrawImageOptions // 视图投影变换参数
+	sceneImage *ebiten.Image
+	viewport   *Viewport
+	wx, wy     int32   // world cordinate
+	height     int32   // distance to world
+	fov        int32   // field of view
+	tanHalfFov float64 // tan value for fov
+	nearPlane  float64 // near plane
 }
 
 /**
@@ -33,11 +31,9 @@ func CreateCamera(viewport *Viewport, fov int32, nearPlane float64) *Camera {
 	op := ebiten.GeoM{}
 	op.Translate(float64(viewport.x), float64(viewport.y))
 	c := &Camera{
-		sceneImage:            ebiten.NewImage(int(viewport.w), int(viewport.h)),
-		viewport:              viewport,
-		fov:                   fov,
-		viewportOptions:       &ebiten.DrawImageOptions{GeoM: op},
-		viewProjectionOptions: &ebiten.DrawImageOptions{GeoM: ebiten.GeoM{}},
+		sceneImage: ebiten.NewImage(int(viewport.w), int(viewport.h)),
+		viewport:   viewport,
+		fov:        fov,
 	}
 	c.tanHalfFov = math.Tan(float64(c.fov) * math.Pi / 360)
 	c.nearPlane = nearPlane //float64(c.viewport.w) / 2 * c.tanHalfFov
@@ -86,7 +82,7 @@ func (c *Camera) ChangeHeight(delta int32) {
 
 // Rotate 以屏幕中心點為旋轉軸逆時針旋轉angle度
 func (c *Camera) Rotate(angle int32) {
-	
+
 }
 
 /**

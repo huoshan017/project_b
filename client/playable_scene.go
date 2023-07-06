@@ -141,9 +141,6 @@ func (s *PlayableScene) Draw(dstImage *ebiten.Image) {
 }
 
 func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
-	if obj.InstId() == 0 {
-		log.Debug("obj.InstId() == %v", obj.InstId())
-	}
 	tc := s.playableObjs[obj.InstId()]
 	if tc == nil {
 		playableObj, animConfig := GetPlayableObject(obj)
@@ -153,6 +150,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 			frameWidth:  int32(animConfig.FrameWidth),
 			frameHeight: int32(animConfig.FrameHeight),
 		}
+		tc.op.ColorScale.SetA(0)
 		s.playableObjs[obj.InstId()] = tc
 	}
 
@@ -169,6 +167,7 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 			frameWidth:  int32(animConfig.FrameWidth),
 			frameHeight: int32(animConfig.FrameHeight),
 		}
+		tc.op.ColorScale.SetA(0)
 		s.playableEffects[effect.InstId()] = tc
 	}
 
@@ -216,9 +215,11 @@ func (s *PlayableScene) onTankRemovedHandle(args ...any) {
 
 func (s *PlayableScene) onBulletRemovedHandle(args ...any) {
 	bullet := args[0].(*object.Bullet)
-	if s.playableObjs[bullet.InstId()] == nil {
+	pobj := s.playableObjs[bullet.InstId()]
+	if pobj == nil {
 		log.Debug("playable bullet %v not found", bullet.InstId())
 	} else {
+		pobj.playable.Uninit()
 		delete(s.playableObjs, bullet.InstId())
 		log.Debug("playable bullet %v removed", bullet.InstId())
 	}
@@ -228,12 +229,20 @@ func (s *PlayableScene) onStaticObjRemovedHandle(args ...any) {
 	robj := args[0].(object.IObject)
 	// 刪除map中的playable，讓之後的GC回收
 	// todo 希望做成對象池可以復用這部分内存
-	delete(s.playableObjs, robj.InstId())
+	pobj := s.playableObjs[robj.InstId()]
+	if pobj != nil {
+		pobj.playable.Uninit()
+		delete(s.playableObjs, robj.InstId())
+	}
 }
 
 func (s *PlayableScene) onEffectRemovedHandle(args ...any) {
 	effect := args[0].(object.IEffect)
 	// 刪除map中的playable，讓之後的GC回收
 	// todo 希望做成對象池可以復用這部分内存
-	delete(s.playableEffects, effect.InstId())
+	peffect := s.playableEffects[effect.InstId()]
+	if peffect != nil {
+		peffect.playable.Uninit()
+		delete(s.playableEffects, effect.InstId())
+	}
 }

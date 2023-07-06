@@ -27,7 +27,7 @@ func checkMovableObjCollision(pmap *PartitionMap, obj object.IMovableObject, dir
 				item := lis[i]
 				obj2, o := pmap.mobjs.Get(item.Key)
 				if !o {
-					log.Warn("not found movable object %v", item.Key)
+					log.Warn("Collision: grid(x:%v y:%v) not found movable object %v", x, y, item.Key)
 					continue
 				}
 				if obj2.InstId() != obj.InstId() && obj2.StaticInfo().Layer() == obj.StaticInfo().Layer() {
@@ -45,7 +45,7 @@ func checkMovableObjCollision(pmap *PartitionMap, obj object.IMovableObject, dir
 				item := lis[i]
 				obj2, o := pmap.sobjs.Get(item.Key)
 				if !o {
-					log.Warn("not found static object %v", item.Key)
+					log.Warn("Collision: grid(x:%v y:%v) not found static object %v", x, y, item.Key)
 					continue
 				}
 				if checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
@@ -83,7 +83,7 @@ func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.ICompon
 		return false
 	}
 	aabb2 := collisionComp2.GetAABB(obj)
-	if aabb1.Intersect(&aabb2) {
+	if aabb1.MoveIntersect(dir, &aabb2) {
 		if onMovableObjCollisionObj(mobj, obj) {
 			switch dir {
 			case object.DirLeft:

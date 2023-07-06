@@ -412,7 +412,7 @@ func (m *PartitionMap) gridLineCol2Index(line, col int16) int32 {
 
 func (m *PartitionMap) objGridBounds(obj object.IObject) (lx, by, rx, ty int16) {
 	left, bottom := obj.Pos()
-	right, top := left+obj.Width(), bottom+obj.Height()
+	right, top := left+obj.Width()-1, bottom+obj.Height()-1
 	return m.gridBoundsBy(left, bottom, right, top)
 }
 
