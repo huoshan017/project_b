@@ -248,7 +248,7 @@ type PlayableEffect struct {
 func NewPlayableEffect(effect object.IEffect, animConfig *base.SpriteAnimConfig) *PlayableEffect {
 	return &PlayableEffect{
 		effect: effect,
-		anim:   base.NewSpriteAnim(getEffectAnimConfig(effect.StaticInfo().Id)),
+		anim:   base.NewSpriteAnim(animConfig),
 	}
 }
 

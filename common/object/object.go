@@ -322,14 +322,14 @@ const (
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir, toDir     Direction       // 方向
+	dir            Direction       // 方向
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
 	state          moveObjectState // 移动状态
-	checkMoveEvent *base.Event     // 檢查坐標事件
-	moveEvent      *base.Event     // 移动事件
-	stopEvent      *base.Event     // 停止事件
-	updateEvent    *base.Event     // 更新事件
+	checkMoveEvent base.Event      // 檢查坐標事件
+	moveEvent      base.Event      // 移动事件
+	stopEvent      base.Event      // 停止事件
+	updateEvent    base.Event      // 更新事件
 }
 
 // 创建可移动物体
@@ -343,17 +343,21 @@ func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
 	o.dir = staticInfo.dir
-	o.toDir = o.dir
 	o.speed = staticInfo.speed
-	o.checkMoveEvent = base.NewEvent()
-	o.moveEvent = base.NewEvent()
-	o.stopEvent = base.NewEvent()
-	o.updateEvent = base.NewEvent()
 	o.setSuper(o)
 }
 
 // 反初始化
 func (o *MovableObject) Uninit() {
+	o.dir = DirNone
+	o.speed = 0
+	o.lastX = 0
+	o.lastY = 0
+	o.state = stopped
+	o.checkMoveEvent.Clear()
+	o.moveEvent.Clear()
+	o.stopEvent.Clear()
+	o.updateEvent.Clear()
 	o.object.Uninit()
 }
 
@@ -409,7 +413,7 @@ func (o *MovableObject) Move(dir Direction) {
 		panic(str)
 	}
 	if o.state == stopped {
-		o.toDir = dir
+		o.dir = dir
 		if !o.checkMove(dir, 0) {
 			return
 		}
@@ -459,16 +463,11 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 
 	if o.state == toMove {
-		if o.dir != o.toDir {
-			o.dir = o.toDir
-		}
 		o.state = isMoving
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		if o.moveEvent != nil {
-			o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
-		}
+		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to move => moving", o.instId)
 		return
 	}
@@ -488,7 +487,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 		panic("invalid direction")
 	}
 
-	if o.state != stopped && o.checkMoveEvent != nil {
+	if o.state != stopped {
 		if o.checkMove(o.dir, distance) {
 			o.x, o.y = int32(x), int32(y)
 		}
@@ -500,17 +499,13 @@ func (o *MovableObject) Update(tick time.Duration) {
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		if o.updateEvent != nil {
-			o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
-		}
+		o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
 	} else if o.state == toStop {
 		o.state = stopped
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		if o.stopEvent != nil {
-			o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
-		}
+		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
 }
@@ -599,7 +594,7 @@ type Tank struct {
 	Vehicle
 	bulletConfig    *TankBulletConfig
 	level           int32
-	changeEvent     *base.Event
+	changeEvent     base.Event
 	fireTime        time.CustomTime
 	bulletFireCount int8
 }
@@ -617,7 +612,6 @@ func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	tankStaticInfo := (*TankStaticInfo)(unsafe.Pointer(staticInfo))
 	t.bulletConfig = &tankStaticInfo.BulletConfig
 	t.level = tankStaticInfo.Level
-	t.changeEvent = base.NewEvent()
 	t.setSuper(t)
 }
 

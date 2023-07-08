@@ -62,8 +62,6 @@ func (s *SceneLogic) GetMapId() int32 {
 func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	// 载入地图
 	s.pmap.Load(m)
-	// 地图载入前事件
-	//s.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
 			st := object.StaticObjType(m.Layers[line][col])
@@ -81,15 +79,11 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	s.mapConfig = m
 	s.mapWidth = int32(len(m.Layers[0])) * m.TileWidth
 	s.mapHeight = int32(len(m.Layers)) * m.TileHeight
-	// 地图载入完成事件
-	//s.eventMgr.InvokeEvent(EventIdMapLoaded, s)
 	log.Info("Load map %v done, map width %v, map height %v", m.Id, s.mapWidth, s.mapHeight)
 	return true
 }
 
 func (s *SceneLogic) UnloadMap() {
-	// 地图卸载前事件
-	//s.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
 	s.mapWidth = 0
 	s.mapHeight = 0
 	for i := int32(0); i < s.staticObjList.Count(); i++ {
@@ -132,8 +126,6 @@ func (s *SceneLogic) UnloadMap() {
 	s.staticObjRecycleList = s.staticObjRecycleList[:0]
 	s.effectRecycleList = s.effectRecycleList[:0]
 	s.effectSearchedList = s.effectSearchedList[:0]
-	// 地图卸载后事件
-	//s.eventMgr.InvokeEvent(EventIdMapUnloaded)
 }
 
 func (s *SceneLogic) RegisterStaticObjAddedHandle(handle func(...any)) {

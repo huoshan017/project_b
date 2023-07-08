@@ -36,7 +36,7 @@ func CreateCamera(viewport *Viewport, fov int32, nearPlane float64) *Camera {
 		fov:        fov,
 	}
 	c.tanHalfFov = math.Tan(float64(c.fov) * math.Pi / 360)
-	c.nearPlane = nearPlane //float64(c.viewport.w) / 2 * c.tanHalfFov
+	c.nearPlane = nearPlane
 	return c
 }
 
