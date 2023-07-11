@@ -31,11 +31,11 @@ func (e Effect) Height() int32 {
 	return e.staticInfo.Height
 }
 
-func (e Effect) Center() (int32, int32) {
+func (e Effect) Pos() (int32, int32) {
 	return e.center.X, e.center.Y
 }
 
-func (e *Effect) SetCenter(x, y int32) {
+func (e *Effect) SetPos(x, y int32) {
 	e.center.X, e.center.Y = x, y
 }
 

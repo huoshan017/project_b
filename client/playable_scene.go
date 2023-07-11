@@ -1,10 +1,10 @@
 package main
 
 import (
+	"math"
 	"project_b/client/base"
 	"project_b/common"
-	"project_b/common/log"
-	"project_b/common/math"
+	pmath "project_b/common/math"
 	"project_b/common/object"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -51,6 +51,7 @@ func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
 	s.scene.RegisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
 	s.scene.RegisterTankRemovedHandle(s.onTankRemovedHandle)
 	s.scene.RegisterBulletRemovedHandle(s.onBulletRemovedHandle)
+	s.scene.RegisterSurroundObjRemovedHandle(s.onSurroundObjRemovedHandle)
 	s.scene.RegisterEffectRemovedHandle(s.onEffectRemovedHandle)
 }
 
@@ -59,6 +60,7 @@ func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
  */
 func (s *PlayableScene) UnloadScene() {
 	s.scene.UnregisterEffectRemovedHandle(s.onEffectRemovedHandle)
+	s.scene.UnregisterSurroundObjRemovedHandle(s.onSurroundObjRemovedHandle)
 	s.scene.UnregisterBulletRemovedHandle(s.onBulletRemovedHandle)
 	s.scene.UnregisterTankRemovedHandle(s.onTankRemovedHandle)
 	s.scene.UnregisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
@@ -105,7 +107,7 @@ func (s *PlayableScene) Draw(dstImage *ebiten.Image) {
 	// 屏幕右上角
 	rx, ry := s.camera.Screen2World(s.viewport.W(), 0)
 	// 繪製場景
-	var rect = math.NewRectObj(lx, ly, rx-lx, ry-ly)
+	var rect = pmath.NewRectObj(lx, ly, rx-lx, ry-ly)
 	layerObjs := s.scene.GetLayerObjsWithRange(&rect)
 	for i := 0; i < len(layerObjs); i++ {
 		if layerObjs[i].Length() == 0 {
@@ -154,7 +156,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 		s.playableObjs[obj.InstId()] = tc
 	}
 
-	s._draw(tc, obj.Left(), obj.Top(), obj.Right(), obj.Bottom(), obj.Width(), obj.Height(), dstImage)
+	s._draw(tc, obj.OriginalLeft(), obj.OriginalTop(), obj.OriginalRight(), obj.OriginalBottom(), obj.Width(), obj.Length(), obj.Orientation(), dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image) {
@@ -171,38 +173,38 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 		s.playableEffects[effect.InstId()] = tc
 	}
 
-	cx, cy := effect.Center()
+	cx, cy := effect.Pos()
 	left, top, right, bottom := cx-effect.Width()/2, cy+effect.Height()/2, cx+effect.Width()/2, cy-effect.Height()/2
-	s._draw(tc, left, top, right, bottom, effect.Width(), effect.Height(), dstImage)
+	s._draw(tc, left, top, right, bottom, effect.Width(), effect.Height(), 0, dstImage)
 }
 
-func (s *PlayableScene) _draw(tc *objOpCache, left, top, right, bottom, width, height int32, dstImage *ebiten.Image) {
+func (s *PlayableScene) _draw(tc *objOpCache, left, top, right, bottom, width, length int32, orientation int32, dstImage *ebiten.Image) {
+	// 移動插值
+	dx, dy := tc.playable.Interpolation()
+	left += int32(dx)
+	right += int32(dx)
+	top += int32(dy)
+	bottom += int32(dy)
+	// todo 注意这里，i是y轴方向，j是x轴方向
+	// 由於世界坐標Y軸與屏幕坐標Y軸方向相反，所以變換左上角和右下角的世界坐標到屏幕坐標
+	// 遵循縮放、旋轉、平移的變換順序
 	tc.op.GeoM.Reset()
 	// tile本地坐標到世界坐標的縮放
 	sx := width / tc.frameWidth
-	sy := height / tc.frameHeight
+	sy := length / tc.frameHeight
 	tc.op.GeoM.Scale(float64(sx), float64(sy))
-
-	// 移動物體插值
-	mapConfig := s.scene.GetMapConfig()
-	mapWidth := mapConfig.TileWidth * int32(len(mapConfig.Layers[0]))
-	mapHeight := mapConfig.TileHeight * int32(len(mapConfig.Layers))
-	var dx, dy float64
-	if left >= mapConfig.X && left <= mapConfig.X+mapWidth-width && bottom >= mapConfig.Y && bottom <= mapConfig.Y+mapHeight-height {
-		dx, dy = tc.playable.Interpolation()
-		left += int32(dx)
-		right += int32(dx)
-		top += int32(dy)
-		bottom += int32(dy)
-	}
-
-	// todo 注意这里，i是y轴方向，j是x轴方向
-	// 由於世界坐標Y軸與屏幕坐標Y軸方向相反，所以變換左上角和右下角的世界坐標到屏幕坐標
 	lx, ly := s.camera.World2Screen(left, top)
 	rx, ry := s.camera.World2Screen(right, bottom)
-	scalex := float64(rx-lx) / float64(width)
-	scaley := float64(ry-ly) / float64(height)
+	dw, dh := rx-lx, ry-ly
+	scalex := float64(dw) / float64(width)
+	scaley := float64(dh) / float64(length)
 	tc.op.GeoM.Scale(scalex, scaley)
+	// 旋轉
+	if orientation > 0 {
+		tc.op.GeoM.Translate(-float64(dw)/2, -float64(dh)/2)
+		tc.op.GeoM.Rotate(-float64(orientation) * math.Pi / 180.0)
+		tc.op.GeoM.Translate(float64(dw)/2, float64(dh)/2)
+	}
 	tc.op.GeoM.Translate(float64(lx), float64(ly))
 	// 判断是否插值
 	tc.playable.Draw(dstImage, &tc.op)
@@ -210,24 +212,33 @@ func (s *PlayableScene) _draw(tc *objOpCache, left, top, right, bottom, width, h
 
 func (s *PlayableScene) onTankRemovedHandle(args ...any) {
 	tank := args[0].(*object.Tank)
-	delete(s.playableObjs, tank.InstId())
+	pobj := s.playableObjs[tank.InstId()]
+	if pobj != nil {
+		pobj.playable.Uninit()
+		delete(s.playableObjs, tank.InstId())
+	}
 }
 
 func (s *PlayableScene) onBulletRemovedHandle(args ...any) {
 	bullet := args[0].(*object.Bullet)
 	pobj := s.playableObjs[bullet.InstId()]
-	if pobj == nil {
-		log.Debug("playable bullet %v not found", bullet.InstId())
-	} else {
+	if pobj != nil {
 		pobj.playable.Uninit()
 		delete(s.playableObjs, bullet.InstId())
-		log.Debug("playable bullet %v removed", bullet.InstId())
+	}
+}
+
+func (s *PlayableScene) onSurroundObjRemovedHandle(args ...any) {
+	ball := args[0].(*object.SurroundObj)
+	bobj := s.playableObjs[ball.InstId()]
+	if bobj != nil {
+		bobj.playable.Uninit()
+		delete(s.playableObjs, ball.InstId())
 	}
 }
 
 func (s *PlayableScene) onStaticObjRemovedHandle(args ...any) {
 	robj := args[0].(object.IObject)
-	// 刪除map中的playable，讓之後的GC回收
 	// todo 希望做成對象池可以復用這部分内存
 	pobj := s.playableObjs[robj.InstId()]
 	if pobj != nil {
@@ -238,7 +249,6 @@ func (s *PlayableScene) onStaticObjRemovedHandle(args ...any) {
 
 func (s *PlayableScene) onEffectRemovedHandle(args ...any) {
 	effect := args[0].(object.IEffect)
-	// 刪除map中的playable，讓之後的GC回收
 	// todo 希望做成對象池可以復用這部分内存
 	peffect := s.playableEffects[effect.InstId()]
 	if peffect != nil {

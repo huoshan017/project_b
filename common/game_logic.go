@@ -278,6 +278,15 @@ func (g *GameLogic) PlayerTankFire(uid uint64) {
 	g.scene.TankFire(tankId)
 }
 
+// 坦克釋放環繞物體
+func (g *GameLogic) PlayerTankReleaseSurroundObj(uid uint64) {
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.TankReleaseSurroundObj(tankId)
+}
+
 // 检测玩家
 func (g *GameLogic) CheckPlayerTankStartMove(uid uint64, startPos object.Pos, dir object.Direction, speed int32) bool {
 	tank := g.GetPlayerTank(uid)

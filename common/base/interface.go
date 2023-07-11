@@ -5,6 +5,7 @@ type IEvent interface {
 	Register(handle EventHandle)
 	Unregister(handle EventHandle)
 	Call(args ...any)
+	Size() int32
 }
 
 // 事件注册器接口

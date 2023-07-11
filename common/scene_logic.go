@@ -21,37 +21,43 @@ type PlayerTankKV struct {
 // 场景圖，沒有玩家(Player)概念的游戲邏輯
 // 必须在单个goroutine中执行
 type SceneLogic struct {
-	mapConfig                                  *game_map.Config                               // 地圖配置
-	mapWidth, mapHeight                        int32                                          // 地圖寬高
-	pmap                                       *PartitionMap                                  // 分區地圖
-	eventMgr                                   base.IEventManager                             // 事件管理器
-	staticObjList                              *ds.MapListUnion[uint32, *object.StaticObject] // 靜態對象列表，用map和list的聯合體是爲了遍歷時的有序性
-	tankList                                   *ds.MapListUnion[uint32, *object.Tank]         // 坦克列表，不區分玩家和BOT
-	bulletList                                 *ds.MapListUnion[uint32, *object.Bullet]       // 炮彈列表，不區分坦克的炮彈
-	objFactory                                 *object.ObjectFactory                          // 對象池
-	effectList                                 *ds.MapListUnion[uint32, *object.Effect]       // 效果列表
-	effectPool                                 *object.EffectPool                             // 效果池
-	staticObjAddedEvent, staticObjRemovedEvent base.Event                                     // 靜態對象添加刪除事件
-	tankAddedEvent, tankRemovedEvent           base.Event                                     // 坦克添加刪除事件
-	bulletAddedEvent, bulletRemovedEvent       base.Event                                     // 子彈添加刪除事件
-	effectAddedEvent, effectRemovedEvent       base.Event                                     // 效果添加刪除事件
-	staticObjRecycleList                       []*object.StaticObject                         // 靜態對象回收列表
-	tankRecycleList                            []*object.Tank                                 // 坦克對象回收列表
-	bulletRecycleList                          []*object.Bullet                               // 炮彈對象回收列表
-	effectRecycleList                          []*object.Effect                               // 效果回收列表
-	effectSearchedList                         []uint32                                       // 效果搜索結果列表
+	mapConfig           *game_map.Config // 地圖配置
+	mapWidth, mapHeight int32            // 地圖寬高
+	//pmap                                       *PartitionMap                                  // 分區地圖
+	gmap                                           *GridMap                                       // 網格地圖
+	eventMgr                                       base.IEventManager                             // 事件管理器
+	staticObjList                                  *ds.MapListUnion[uint32, *object.StaticObject] // 靜態對象列表，用map和list的聯合體是爲了遍歷時的有序性
+	tankList                                       *ds.MapListUnion[uint32, *object.Tank]         // 坦克列表，不區分玩家和BOT
+	bulletList                                     *ds.MapListUnion[uint32, *object.Bullet]       // 炮彈列表，不區分坦克的炮彈
+	surroundObjList                                *ds.MapListUnion[uint32, *object.SurroundObj]  // 環繞物體列表
+	objFactory                                     *object.ObjectFactory                          // 對象池
+	effectList                                     *ds.MapListUnion[uint32, *object.Effect]       // 效果列表
+	effectPool                                     *object.EffectPool                             // 效果池
+	staticObjAddedEvent, staticObjRemovedEvent     base.Event                                     // 靜態對象添加刪除事件
+	tankAddedEvent, tankRemovedEvent               base.Event                                     // 坦克添加刪除事件
+	bulletAddedEvent, bulletRemovedEvent           base.Event                                     // 子彈添加刪除事件
+	surroundObjAddedEvent, surroundObjRemovedEvent base.Event                                     // 環繞物體添加刪除事件
+	effectAddedEvent, effectRemovedEvent           base.Event                                     // 效果添加刪除事件
+	staticObjRecycleList                           []*object.StaticObject                         // 靜態對象回收列表
+	tankRecycleList                                []*object.Tank                                 // 坦克對象回收列表
+	bulletRecycleList                              []*object.Bullet                               // 炮彈對象回收列表
+	surroundObjRecycleList                         []*object.SurroundObj                          // 環繞物體對象回收列表
+	effectRecycleList                              []*object.Effect                               // 效果回收列表
+	effectSearchedList                             []uint32                                       // 效果搜索結果列表
 }
 
 func NewSceneLogic(eventMgr base.IEventManager) *SceneLogic {
 	return &SceneLogic{
-		eventMgr:      eventMgr,
-		staticObjList: ds.NewMapListUnion[uint32, *object.StaticObject](),
-		tankList:      ds.NewMapListUnion[uint32, *object.Tank](),
-		bulletList:    ds.NewMapListUnion[uint32, *object.Bullet](),
-		objFactory:    object.NewObjectFactory(true),
-		effectList:    ds.NewMapListUnion[uint32, *object.Effect](),
-		effectPool:    object.NewEffectPool(),
-		pmap:          NewPartitionMap(0),
+		eventMgr:        eventMgr,
+		staticObjList:   ds.NewMapListUnion[uint32, *object.StaticObject](),
+		tankList:        ds.NewMapListUnion[uint32, *object.Tank](),
+		bulletList:      ds.NewMapListUnion[uint32, *object.Bullet](),
+		surroundObjList: ds.NewMapListUnion[uint32, *object.SurroundObj](),
+		objFactory:      object.NewObjectFactory(true),
+		effectList:      ds.NewMapListUnion[uint32, *object.Effect](),
+		effectPool:      object.NewEffectPool(),
+		//pmap:          NewPartitionMap(0),
+		gmap: NewGridMap(1),
 	}
 }
 
@@ -61,7 +67,8 @@ func (s *SceneLogic) GetMapId() int32 {
 
 func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	// 载入地图
-	s.pmap.Load(m)
+	//s.pmap.Load(m)
+	s.gmap.Load(m)
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
 			st := object.StaticObjType(m.Layers[line][col])
@@ -73,7 +80,8 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 			tileObj.SetPos(m.TileWidth*int32(col), m.TileHeight*int32(len(m.Layers)-1-line))
 			s.staticObjAddedEvent.Call(tileObj)
 			// 加入網格分區地圖
-			s.pmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
+			//s.pmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
+			s.gmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 		}
 	}
 	s.mapConfig = m
@@ -107,6 +115,13 @@ func (s *SceneLogic) UnloadMap() {
 			s.objFactory.RecycleBullet(v)
 		}
 	}
+	for i := int32(0); i < s.surroundObjList.Count(); i++ {
+		_, v := s.surroundObjList.GetByIndex(i)
+		if v != nil {
+			s.surroundObjRemovedEvent.Call(v)
+			s.objFactory.RecycleSurroundObj(v)
+		}
+	}
 	for i := int32(0); i < s.effectList.Count(); i++ {
 		_, v := s.effectList.GetByIndex(i)
 		if v != nil {
@@ -117,10 +132,13 @@ func (s *SceneLogic) UnloadMap() {
 	s.staticObjList.Clear()
 	s.tankList.Clear()
 	s.bulletList.Clear()
-	s.pmap.Unload()
+	s.surroundObjList.Clear()
+	//s.pmap.Unload()
+	s.gmap.Unload()
 	s.objFactory.Clear()
 	s.effectList.Clear()
 	s.effectPool.Clear()
+	s.surroundObjRecycleList = s.surroundObjRecycleList[:0]
 	s.tankRecycleList = s.tankRecycleList[:0]
 	s.bulletRecycleList = s.bulletRecycleList[:0]
 	s.staticObjRecycleList = s.staticObjRecycleList[:0]
@@ -176,6 +194,22 @@ func (s *SceneLogic) UnregisterBulletRemovedHandle(handle func(...any)) {
 	s.bulletRemovedEvent.Unregister(handle)
 }
 
+func (s *SceneLogic) RegisterSurroundObjAddedHandle(handle func(...any)) {
+	s.surroundObjAddedEvent.Register(handle)
+}
+
+func (s *SceneLogic) UnregisterSurroundObjAddedHandle(handle func(...any)) {
+	s.surroundObjAddedEvent.Unregister(handle)
+}
+
+func (s *SceneLogic) RegisterSurroundObjRemovedHandle(handle func(...any)) {
+	s.surroundObjRemovedEvent.Register(handle)
+}
+
+func (s *SceneLogic) UnregisterSurroundObjRemovedHandle(handle func(...any)) {
+	s.surroundObjRemovedEvent.Unregister(handle)
+}
+
 func (s *SceneLogic) RegisterEffectAddedHandle(handle func(...any)) {
 	s.effectAddedEvent.Register(handle)
 }
@@ -197,7 +231,8 @@ func (s *SceneLogic) GetMapConfig() *game_map.Config {
 }
 
 func (s *SceneLogic) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
-	return s.pmap.GetLayerObjsWithRange(rect)
+	//return s.pmap.GetLayerObjsWithRange(rect)
+	return s.gmap.GetLayerObjsWithRange(rect)
 }
 
 func (s *SceneLogic) GetObj(instId uint32) object.IObject {
@@ -205,7 +240,8 @@ func (s *SceneLogic) GetObj(instId uint32) object.IObject {
 }
 
 func (s *SceneLogic) GetTankListWithRange(rect *math.Rect) []uint32 {
-	return s.pmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
+	//return s.pmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
+	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
 }
 
 func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
@@ -213,7 +249,7 @@ func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
 	count := s.effectList.Count()
 	for i := int32(0); i < count; i++ {
 		instId, effect := s.effectList.GetByIndex(i)
-		ex, ey := effect.Center()
+		ex, ey := effect.Pos()
 		el := ex - effect.Width()/2
 		er := ex + effect.Width()/2
 		et := ey + effect.Height()/2
@@ -249,7 +285,8 @@ func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
 	// 加入到玩家坦克列表
 	s.tankList.Add(tank.InstId(), tank)
 	// 加入網格分區地圖
-	s.pmap.AddObj(tank)
+	//s.pmap.AddObj(tank)
+	s.gmap.AddObj(tank)
 	// 物體創建事件
 	s.tankAddedEvent.Call(tank)
 	return tank
@@ -258,21 +295,23 @@ func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
 func (s *SceneLogic) AddTank(tank *object.Tank) {
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	s.tankList.Add(tank.InstId(), tank)
-	s.pmap.AddObj(tank)
+	//s.pmap.AddObj(tank)
+	s.gmap.AddObj(tank)
 }
 
 func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, dir object.Direction, currSpeed int32) *object.Tank {
 	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
 	tank.SetPos(x, y)
 	tank.SetLevel(level)
-	tank.SetDir(dir)
+	//tank.SetDir(dir)
 	tank.SetCurrentSpeed(currSpeed)
 	// 注冊檢測移動事件處理
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	// 加入玩家坦克列表
 	s.tankList.Add(tank.InstId(), tank)
 	// 加入網格分區地圖
-	s.pmap.AddObj(tank)
+	//s.pmap.AddObj(tank)
+	s.gmap.AddObj(tank)
 	s.tankAddedEvent.Call(tank)
 	return tank
 }
@@ -280,7 +319,8 @@ func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, di
 func (s *SceneLogic) RemoveTank(instId uint32) {
 	tank := s.tankList.Remove(instId)
 	tank.UnregisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
-	s.pmap.RemoveObj(tank.InstId())
+	//s.pmap.RemoveObj(tank.InstId())
+	s.gmap.RemoveObj(tank.InstId())
 	s.tankRemovedEvent.Call(tank)
 	s.objFactory.RecycleTank(tank)
 }
@@ -310,7 +350,7 @@ func (s *SceneLogic) TankFire(instId uint32) {
 		log.Error("player %v tank not found", instId)
 		return
 	}
-	bulletConfig := common_data.BulletConfigData[tank.GetBulletConfig().BulletId]
+	bulletConfig := common_data.BulletConfigData[tank.TankStaticInfo().BulletConfig.BulletId]
 	bullet := tank.CheckAndFire(s.objFactory.NewBullet, bulletConfig)
 	if bullet != nil {
 		s.bulletList.Add(bullet.InstId(), bullet)
@@ -321,8 +361,23 @@ func (s *SceneLogic) TankFire(instId uint32) {
 			c.SetCollisionHandle(s.onBulletCollision)
 		}
 		bullet.Move(tank.Dir())
-		s.pmap.AddObj(bullet)
+		//s.pmap.AddObj(bullet)
+		s.gmap.AddObj(bullet)
 	}
+}
+
+func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
+	tank, o := s.tankList.Get(instId)
+	if !o {
+		log.Error("player %v tank not found", instId)
+		return
+	}
+	ball := s.objFactory.NewSurroundObj(common_data.SurroundObjConfigData[1])
+	ball.SetCenterObject(tank.InstId(), s.objFactory.GetObj)
+	s.surroundObjList.Add(ball.InstId(), ball)
+	s.surroundObjAddedEvent.Call(ball)
+	s.gmap.AddObj(ball)
+	ball.Move(object.DirNone)
 }
 
 func (s *SceneLogic) TankChange(instId uint32, staticInfo *object.TankStaticInfo) bool {
@@ -347,8 +402,9 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	count := s.tankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.tankList.GetByIndex(i)
-		tank.Update(tick)          // 相當於MonoBehevior.Update
-		s.pmap.UpdateMovable(tank) // 相當於MonoBehevior.FixedUpdate
+		tank.Update(tick) // 相當於MonoBehevior.Update
+		//s.pmap.UpdateMovable(tank) // 相當於MonoBehevior.FixedUpdate
+		s.gmap.UpdateMovable(tank)
 		if tank.IsRecycle() {
 			s.tankRecycleList = append(s.tankRecycleList, tank)
 		}
@@ -358,9 +414,20 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	for i := int32(0); i < count; i++ {
 		_, bullet := s.bulletList.GetByIndex(i)
 		bullet.Update(tick)
-		s.pmap.UpdateMovable(bullet)
+		//s.pmap.UpdateMovable(bullet)
+		s.gmap.UpdateMovable(bullet)
 		if bullet.IsRecycle() {
 			s.bulletRecycleList = append(s.bulletRecycleList, bullet)
+		}
+	}
+
+	count = s.surroundObjList.Count()
+	for i := int32(0); i < count; i++ {
+		_, ball := s.surroundObjList.GetByIndex(i)
+		ball.Update(tick)
+		s.gmap.UpdateMovable(ball)
+		if ball.IsRecycle() {
+			s.surroundObjRecycleList = append(s.surroundObjRecycleList, ball)
 		}
 	}
 
@@ -376,7 +443,8 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	if len(s.staticObjRecycleList) > 0 {
 		for _, obj := range s.staticObjRecycleList {
 			s.staticObjList.Remove(obj.InstId())
-			s.pmap.RemoveObj(obj.InstId())
+			//s.pmap.RemoveObj(obj.InstId())
+			s.gmap.RemoveObj(obj.InstId())
 			s.staticObjRemovedEvent.Call(obj)
 			s.objFactory.RecycleStaticObject(obj)
 		}
@@ -386,7 +454,8 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	if len(s.tankRecycleList) > 0 {
 		for _, tank := range s.tankRecycleList {
 			s.tankList.Remove(tank.InstId())
-			s.pmap.RemoveObj(tank.InstId())
+			//s.pmap.RemoveObj(tank.InstId())
+			s.gmap.RemoveObj(tank.InstId())
 			s.tankRemovedEvent.Call(tank)
 			s.objFactory.RecycleTank(tank)
 		}
@@ -396,11 +465,22 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	if len(s.bulletRecycleList) > 0 {
 		for _, bullet := range s.bulletRecycleList {
 			s.bulletList.Remove(bullet.InstId())
-			s.pmap.RemoveObj(bullet.InstId())
+			//s.pmap.RemoveObj(bullet.InstId())
+			s.gmap.RemoveObj(bullet.InstId())
 			s.bulletRemovedEvent.Call(bullet)
 			s.objFactory.RecycleBullet(bullet)
 		}
 		s.bulletRecycleList = s.bulletRecycleList[:0]
+	}
+
+	if len(s.surroundObjRecycleList) > 0 {
+		for _, ball := range s.surroundObjRecycleList {
+			s.surroundObjList.Remove(ball.InstId())
+			s.gmap.RemoveObj(ball.InstId())
+			s.surroundObjRemovedEvent.Call(ball)
+			s.objFactory.RecycleSurroundObj(ball)
+		}
+		s.surroundObjRecycleList = s.surroundObjRecycleList[:0]
 	}
 
 	if len(s.effectRecycleList) > 0 {
@@ -479,7 +559,7 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 		*isMove = false
 		*isCollision = false
 		s.onMovableObjReachMapBorder(mobj)
-	} else if checkMovableObjCollision(s.pmap, mobj, dir, distance, resObj) {
+	} else if s.gmap.CheckMovableObjCollision(mobj, dir, distance, resObj) { //s.pmap.CheckMovableObjCollision(mobj, dir, distance, resObj) {
 		mobj.Stop()
 		*isCollision = true
 		*isMove = false
@@ -504,9 +584,9 @@ func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dir object.Dir
 			x = s.mapConfig.X + s.mapWidth - obj.Width()
 		}
 	case object.DirUp:
-		if float64(y)+distance >= float64(s.mapConfig.Y+s.mapHeight-obj.Height()) {
+		if float64(y)+distance >= float64(s.mapConfig.Y+s.mapHeight-obj.Length()) {
 			move = false
-			y = s.mapConfig.Y + s.mapHeight - obj.Height()
+			y = s.mapConfig.Y + s.mapHeight - obj.Length()
 		}
 	case object.DirDown:
 		if float64(y)-distance <= float64(s.mapConfig.Y) {
@@ -536,28 +616,40 @@ func (s *SceneLogic) onBulletCollision(args ...any) {
 	bullet := args[0].(*object.Bullet)
 	obj := args[1].(object.IObject)
 	var (
-		effectFunc func(...any)
-		effectId   int32 = 1
-		cx, cy     int32
+		effectParams = [2]struct {
+			effectFunc func(...any)
+			effectId   int32
+			cx, cy     int32
+		}{}
 	)
 	if obj.Type() == object.ObjTypeStatic {
 		bullet.ToRecycle()
-		effectFunc = bulletExplodeEffect
-		cx, cy = bullet.Center()
+		effectParams[0].effectId = 1
+		effectParams[0].effectFunc = bulletExplodeEffect
+		effectParams[0].cx, effectParams[0].cy = bullet.Pos()
 	} else if obj.Type() == object.ObjTypeMovable {
 		bullet.ToRecycle()
 		obj.ToRecycle()
 		if obj.Subtype() == object.ObjSubTypeBullet {
-			effectFunc = bulletExplodeEffect
-			cx, cy = bullet.Center()
+			effectParams[0].effectId = 1
+			effectParams[0].effectFunc = bulletExplodeEffect
+			effectParams[0].cx, effectParams[0].cy = bullet.Pos()
+			effectParams[1].effectId = 1
+			effectParams[1].effectFunc = bulletExplodeEffect
+			effectParams[1].cx, effectParams[1].cy = obj.Pos()
 		} else if obj.Subtype() == object.ObjSubTypeTank {
-			effectFunc = bigBulletExplodeEffect
-			effectId = 2
-			cx, cy = obj.Center()
+			effectParams[0].effectFunc = bigBulletExplodeEffect
+			effectParams[0].effectId = 2
+			effectParams[0].cx, effectParams[0].cy = obj.Pos()
 		}
 	}
 	// 生成爆炸效果
-	effect := s.effectPool.Get(common_data.EffectConfigData[effectId], effectFunc, s.pmap, bullet)
-	effect.SetCenter(cx, cy)
-	s.effectList.Add(effect.InstId(), effect)
+	for i := 0; i < len(effectParams); i++ {
+		if effectParams[i].effectId <= 0 {
+			continue
+		}
+		effect := s.effectPool.Get(common_data.EffectConfigData[effectParams[i].effectId], effectParams[i].effectFunc /*s.pmap*/, s.gmap, bullet)
+		effect.SetPos(effectParams[i].cx, effectParams[i].cy)
+		s.effectList.Add(effect.InstId(), effect)
+	}
 }

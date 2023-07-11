@@ -10,20 +10,26 @@ func TestObjectFactory(t *testing.T) {
 	}
 	for i := 0; i < 1000; i++ {
 		tank := of.NewTank(&TankStaticInfo{
-			ObjStaticInfo: ObjStaticInfo{
-				typ:     ObjTypeMovable,
-				subType: ObjSubTypeTank,
-				id:      1,
-				w:       100,
-				h:       100,
-				dir:     DirUp,
-				speed:   10,
+			MovableObjStaticInfo: MovableObjStaticInfo{
+				ObjStaticInfo: ObjStaticInfo{
+					typ:     ObjTypeMovable,
+					subType: ObjSubTypeTank,
+					id:      1,
+					w:       100,
+					l:       100,
+					dir:     DirUp,
+					speed:   10,
+				},
 			},
 		})
 		of.RecycleTank(tank)
 	}
 	for i := 0; i < 1000; i++ {
-		bullet := of.NewBullet(&BulletStaticInfo{ObjStaticInfo: ObjStaticInfo{typ: ObjTypeMovable, subType: ObjSubTypeBullet}})
+		bullet := of.NewBullet(&BulletStaticInfo{
+			MovableObjStaticInfo: MovableObjStaticInfo{
+				ObjStaticInfo: ObjStaticInfo{typ: ObjTypeMovable, subType: ObjSubTypeBullet},
+			},
+		})
 		of.RecycleBullet(bullet)
 	}
 }

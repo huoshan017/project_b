@@ -22,33 +22,35 @@ const (
 	StaticObjIce     = StaticObjType(5) // 冰
 	StaticObjHome    = StaticObjType(6) // 基地
 	StaticObjRuins   = StaticObjType(7) // 被摧毁的基地
-	StaticObjEnumMax = 8
+	StaticObjEnumMax = 9
 )
 
 // 可移动物体类型
 type MovableObjType int
 
 const (
-	MovableObjNone    = MovableObjType(0) // 无
-	MovableObjTank    = MovableObjType(1) // 坦克
-	MovableObjBullet  = MovableObjType(2) // 子弹
-	MovableObjEnumMax = 3
+	MovableObjNone        = MovableObjType(0) // 无
+	MovableObjTank        = MovableObjType(1) // 坦克
+	MovableObjBullet      = MovableObjType(2) // 子弹
+	MovableObjSurroundObj = MovableObjType(3) // 環繞物體，測試用
+	MovableObjEnumMax     = 4
 )
 
 // 物体子类型
 type ObjSubType int
 
 const (
-	ObjSubTypeNone   = iota
-	ObjSubTypeBrick  = ObjSubType(StaticObjBrick)
-	ObjSubTypeIron   = ObjSubType(StaticObjIron)
-	ObjSubTypeTree   = ObjSubType(StaticObjTree)
-	ObjSubTypeIce    = ObjSubType(StaticObjIce)
-	ObjSubTypeWater  = ObjSubType(StaticObjWater)
-	ObjSubTypeHome   = ObjSubType(StaticObjHome)
-	ObjSubTypeRuins  = ObjSubType(StaticObjRuins)
-	ObjSubTypeTank   = ObjSubType(MovableObjTank)
-	ObjSubTypeBullet = ObjSubType(MovableObjBullet)
+	ObjSubTypeNone        = iota
+	ObjSubTypeBrick       = ObjSubType(StaticObjBrick)
+	ObjSubTypeIron        = ObjSubType(StaticObjIron)
+	ObjSubTypeTree        = ObjSubType(StaticObjTree)
+	ObjSubTypeIce         = ObjSubType(StaticObjIce)
+	ObjSubTypeWater       = ObjSubType(StaticObjWater)
+	ObjSubTypeHome        = ObjSubType(StaticObjHome)
+	ObjSubTypeRuins       = ObjSubType(StaticObjRuins)
+	ObjSubTypeTank        = ObjSubType(MovableObjTank)
+	ObjSubTypeBullet      = ObjSubType(MovableObjBullet)
+	ObjSubTypeSurroundObj = ObjSubType(MovableObjSurroundObj)
 )
 
 // 对象所有者类型
@@ -61,15 +63,6 @@ const (
 	OwnerBOT4Player = ObjOwnerType(3) // 玩家拥有的BOT对象
 )
 
-// 相对关系类型
-type RelationType int
-
-const (
-	RelationNeutral = RelationType(0) // 中立
-	RelationOwn     = RelationType(1) // 我方
-	RelationEnemy   = RelationType(2) // 敌方
-)
-
 // 方向
 type Direction int
 
@@ -79,7 +72,7 @@ const (
 	DirRight = Direction(2) // 右
 	DirUp    = Direction(3) // 上
 	DirDown  = Direction(4) // 下
-	DirMin   = DirLeft      // 最小
+	DirMin   = DirNone      // 最小
 	DirMax   = DirDown      // 最大
 )
 

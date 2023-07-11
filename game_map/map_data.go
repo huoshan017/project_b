@@ -125,19 +125,19 @@ var MapConfigArray = map[int32]*Config{
 			{
 				TankId: 1000,
 				Camp:   object.CampTypeTwo,
-				Pos:    object.Pos{X: 500, Y: 500},
+				Pos:    object.Pos{X: 10000, Y: 500},
 				Level:  1,
 			},
 			{
 				TankId: 1001,
 				Camp:   object.CampTypeTwo,
-				Pos:    object.Pos{X: 900, Y: 900},
+				Pos:    object.Pos{X: 11100, Y: 900},
 				Level:  1,
 			},
 			{
 				TankId: 1002,
 				Camp:   object.CampTypeTwo,
-				Pos:    object.Pos{X: 1500, Y: 1500},
+				Pos:    object.Pos{X: 11500, Y: 1500},
 				Level:  1,
 			},
 			{

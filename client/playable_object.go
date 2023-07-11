@@ -29,7 +29,7 @@ type IPlayable interface {
 type PlayableObject struct {
 	op   *ebiten.DrawImageOptions
 	obj  object.IObject
-	anim base.SpriteAnim
+	anim *base.SpriteAnim
 }
 
 // 创建可播放对象
@@ -42,7 +42,7 @@ func NewPlayableObject(obj object.IObject, spriteConfig *base.SpriteAnimConfig) 
 	return &PlayableObject{
 		obj:  obj,
 		op:   op,
-		anim: *base.NewSpriteAnim(spriteConfig),
+		anim: base.NewSpriteAnim(spriteConfig),
 	}
 }
 
@@ -99,7 +99,7 @@ type IPlayableMovableObject interface {
 type PlayableMoveObject struct {
 	op           *ebiten.DrawImageOptions
 	mobj         object.IMovableObject
-	anims        []*base.SpriteAnim
+	anim         *base.SpriteAnim
 	currSpeed    int32           // 当前速度
 	lastTime     time.CustomTime // 更新时间点
 	interpolate  bool            // 上次是停止状态
@@ -111,21 +111,10 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObject
 	pobj := &PlayableMoveObject{
 		op:          &ebiten.DrawImageOptions{},
 		mobj:        mobj,
+		anim:        base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
 		interpolate: mobj.IsMoving(),
 	}
-	pobj.changeAnim(animConfig)
 	return pobj
-}
-
-// 改变动画
-func (po *PlayableMoveObject) changeAnim(animConfig *MovableObjectAnimConfig) {
-	po.anims = []*base.SpriteAnim{
-		nil,
-		base.NewSpriteAnim(animConfig.AnimConfig[object.DirLeft]),
-		base.NewSpriteAnim(animConfig.AnimConfig[object.DirRight]),
-		base.NewSpriteAnim(animConfig.AnimConfig[object.DirUp]),
-		base.NewSpriteAnim(animConfig.AnimConfig[object.DirDown]),
-	}
 }
 
 // 初始化
@@ -144,18 +133,18 @@ func (po *PlayableMoveObject) Uninit() {
 
 // 播放
 func (po *PlayableMoveObject) Play() {
-	po.anims[po.mobj.Dir()].Play()
+	po.anim.Play()
 }
 
 // 停止
 func (po *PlayableMoveObject) Stop() {
-	po.anims[po.mobj.Dir()].Stop()
+	po.anim.Stop()
 }
 
 // 更新
 func (po *PlayableMoveObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	op.GeoM.Concat(po.op.GeoM)
-	po.anims[po.mobj.Dir()].Update(screen, op)
+	po.anim.Update(screen, op)
 }
 
 // 插值，在Draw前同步调用，得到位置插值
@@ -171,13 +160,14 @@ func (po *PlayableMoveObject) Interpolation() (x, y float64) {
 	}
 	// 上一次Update的坐标点与当前的不一样，说明又Update了，重置LastX和LastY和开始时间
 	// 所以每次Update后都要重置LastX,lastY,LastTime，是因为要从重置点开始计算位置插值
-	if po.lastX != po.mobj.Left() || po.lastY != po.mobj.Bottom() {
-		po.lastX = po.mobj.Left()
-		po.lastY = po.mobj.Bottom()
+	cx, cy := po.mobj.Pos()
+	if po.lastX != cx || po.lastY != cy {
+		po.lastX = cx
+		po.lastY = cy
 		po.lastTime = core.GetSyncServTime()
 	}
 	duration := time.Since(po.lastTime)
-	distance := object.GetMoveDistance(po.mobj, duration)
+	distance := object.GetDefaultLinearDistance(po.mobj, duration)
 	switch po.mobj.Dir() {
 	case object.DirLeft:
 		x = -distance
@@ -194,8 +184,7 @@ func (po *PlayableMoveObject) Interpolation() (x, y float64) {
 // 移动事件处理
 func (po *PlayableMoveObject) onEventMove(args ...any) {
 	po.Play()
-	po.lastX = po.mobj.Left()
-	po.lastY = po.mobj.Bottom()
+	po.lastX, po.lastY = po.mobj.Pos()
 	po.lastTime = core.GetSyncServTime()
 	po.interpolate = true
 }
@@ -233,9 +222,7 @@ func (pt *PlayableTank) Uninit() {
 // 变化事件
 func (pt *PlayableTank) onChange(args ...any) {
 	info := args[0].(*object.ObjStaticInfo)
-	level := args[1].(int32)
 	pt.currSpeed = (info.Speed())
-	pt.changeAnim(GetTankAnimConfig(info.Id(), level))
 	pt.Play()
 }
 
@@ -311,13 +298,14 @@ func GetPlayableObject(obj object.IObject) (IPlayable, *base.SpriteAnimConfig) {
 			glog.Error("can't get movable object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
-		if obj.Subtype() == object.ObjSubTypeTank {
+		switch obj.Subtype() {
+		case object.ObjSubTypeTank:
 			playableObj = NewPlayableTank(mobj.(object.ITank), config)
-		} else if obj.Subtype() == object.ObjSubTypeBullet {
+		default:
 			playableObj = NewPlayableMoveObject(mobj, config)
 		}
 		playableObj.Init()
-		animConfig = config.AnimConfig[mobj.Dir()]
+		animConfig = config.AnimConfig //[mobj.Dir()]
 	}
 	return playableObj, animConfig
 }

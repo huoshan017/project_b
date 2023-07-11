@@ -79,8 +79,8 @@ func (b *Bot) Update(tick time.Duration) {
 			b.scene.TankFire(botTank.InstId())
 			break
 		}
-		bx, by := botTank.Center()
-		ex, ey := enemyTank.Center()
+		bx, by := botTank.Pos()
+		ex, ey := enemyTank.Pos()
 		dx := ex - bx
 		dy := ey - by
 		var dir object.Direction
@@ -127,7 +127,7 @@ func (b *Bot) searchEnemyTank() uint32 {
 	var (
 		distance int32 = -1
 		getId    uint32
-		tcx, tcy = botTank.Center()
+		tcx, tcy = botTank.Pos()
 	)
 	var rect = math.NewRectObj(tcx-b.searchRadius, tcy-b.searchRadius, 2*b.searchRadius, 2*b.searchRadius)
 	tankList := b.scene.GetTankListWithRange(&rect)
@@ -139,7 +139,7 @@ func (b *Bot) searchEnemyTank() uint32 {
 		if searchTank.Camp() == botTank.Camp() {
 			continue
 		}
-		scx, scy := searchTank.Center()
+		scx, scy := searchTank.Pos()
 		d := (tcx-scx)*(tcx-scx) + (tcy-scy)*(tcy-scy)
 		if distance < 0 || distance > d {
 			distance = d

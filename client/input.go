@@ -41,6 +41,7 @@ var keyReleased2CmdMap = map[ebiten.Key]core.CmdCode{
 	ebiten.KeyD: core.CMD_STOP_MOVE,
 	ebiten.KeyW: core.CMD_STOP_MOVE,
 	ebiten.KeyS: core.CMD_STOP_MOVE,
-	ebiten.Key1: core.CMD_CHANGE_TANK,
-	ebiten.Key2: core.CMD_RESTORE_TANK,
+	ebiten.KeyC: core.CMD_CHANGE_TANK,
+	ebiten.KeyR: core.CMD_RESTORE_TANK,
+	ebiten.Key1: core.CMD_RELEASE_SMALL_BALL,
 }

@@ -11,7 +11,6 @@ import (
  * 相机坐标系与世界坐标系的轴向一致
  */
 type Camera struct {
-	sceneImage *ebiten.Image
 	viewport   *Viewport
 	wx, wy     int32   // world cordinate
 	height     int32   // distance to world
@@ -31,9 +30,8 @@ func CreateCamera(viewport *Viewport, fov int32, nearPlane float64) *Camera {
 	op := ebiten.GeoM{}
 	op.Translate(float64(viewport.x), float64(viewport.y))
 	c := &Camera{
-		sceneImage: ebiten.NewImage(int(viewport.w), int(viewport.h)),
-		viewport:   viewport,
-		fov:        fov,
+		viewport: viewport,
+		fov:      fov,
 	}
 	c.tanHalfFov = math.Tan(float64(c.fov) * math.Pi / 360)
 	c.nearPlane = nearPlane

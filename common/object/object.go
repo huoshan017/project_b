@@ -2,6 +2,7 @@ package object
 
 import (
 	"fmt"
+	"math"
 	"project_b/common/base"
 	"project_b/common/log"
 	"project_b/common/time"
@@ -38,7 +39,7 @@ type object struct {
 	currentCamp       CampType       // 當前陣營
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
-	orientation       int32          // 旋轉角度，以Y軸正方向為0度，逆時針方向為旋轉正方向
+	orientation       int32          // 旋轉角度，以X軸正方向為0度，逆時針方向為旋轉正方向
 	components        []IComponent   // 組件
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
@@ -70,6 +71,7 @@ func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 // 反初始化
 func (o *object) Uninit() {
 	o.destroyedEvent.Call(o.instId)
+	o.destroyedEvent.Clear()
 	o.instId = 0
 	o.ownerType = OwnerNone
 	o.currentCamp = CampTypeNone
@@ -80,7 +82,11 @@ func (o *object) Uninit() {
 	o.changedStaticInfo = nil
 	o.super = nil
 	o.toRecycle = false
-	o.destroyedEvent.Clear()
+}
+
+// 靜態信息
+func (o *object) ObjStaticInfo() *ObjStaticInfo {
+	return o.staticInfo
 }
 
 // 设置静态信息
@@ -156,16 +162,21 @@ func (o object) Pos() (int32, int32) {
 
 // 坐标位置，相对于父坐标系
 func (o *object) SetPos(x, y int32) {
-	o.x = x
-	o.y = y
+	if o.changedStaticInfo != nil {
+		o.x = x - o.changedStaticInfo.x0
+		o.y = y - o.changedStaticInfo.y0
+	} else {
+		o.x = x - o.staticInfo.x0
+		o.y = y - o.staticInfo.y0
+	}
 }
 
 // 中心點坐標
 func (o object) Center() (x, y int32) {
 	if o.changedStaticInfo != nil {
-		return o.x + o.changedStaticInfo.w>>1, o.y + o.changedStaticInfo.h>>1
+		return o.changedStaticInfo.x0, o.changedStaticInfo.y0
 	}
-	return o.x + o.staticInfo.w>>1, o.y + o.staticInfo.h>>1
+	return o.staticInfo.x0, o.staticInfo.y0
 }
 
 // 宽度
@@ -177,48 +188,118 @@ func (o object) Width() int32 {
 }
 
 // 长度
-func (o object) Height() int32 {
+func (o object) Length() int32 {
 	if o.changedStaticInfo != nil {
-		return o.changedStaticInfo.h
+		return o.changedStaticInfo.l
 	}
-	return o.staticInfo.h
+	return o.staticInfo.l
 }
 
-// 左侧坐标（相对于父坐标系）
-func (o object) Left() int32 {
+func (o *object) x_y(x1, y1 int32) (int32, int32) {
+	var (
+		x0, y0 int32
+	)
 	if o.changedStaticInfo != nil {
-		return o.x + int32(o.changedStaticInfo.x0)
+		x0, y0 = o.changedStaticInfo.x0, o.changedStaticInfo.y0
+	} else {
+		x0, y0 = o.staticInfo.x0, o.staticInfo.y0
 	}
-	return o.x + int32(o.staticInfo.x0)
+	cos, sin := math.Sincos(float64(o.orientation) * math.Pi / 180)
+	// 公式
+	// x = (x1-x0)*cos(a) - (y1-y0)*sin(a) + x0
+	// y = (x1-x0)*sin(a) + (y1-y0)*cos(a) + y0
+	x := o.x + int32(float64(x1-x0)*cos-float64(y1-y0)*sin) + x0
+	y := o.y + int32(float64(x1-x0)*sin+float64(y1-y0)*cos) + y0
+	return x, y
 }
 
-// 右侧坐标（相对于父坐标系）
-func (o object) Right() int32 {
+// 左上坐標(相對於本地坐標系)
+func (o object) LeftTop() (int32, int32) {
+	var (
+		x1, y1 int32
+	)
 	if o.changedStaticInfo != nil {
-		return o.Left() + int32(o.changedStaticInfo.w)
+		x1, y1 = o.changedStaticInfo.l/2+o.changedStaticInfo.x0, o.changedStaticInfo.w/2+o.changedStaticInfo.y0
+	} else {
+		x1, y1 = o.staticInfo.l/2+o.staticInfo.x0, o.staticInfo.w/2+o.staticInfo.y0
 	}
-	return o.Left() + int32(o.staticInfo.w)
+	return o.x_y(x1, y1)
 }
 
-// 顶部坐标（相对于父坐标系）
-func (o object) Top() int32 {
+// 左下坐标（相对于本地坐标系）
+func (o object) LeftBottom() (int32, int32) {
+	var (
+		x1, y1 int32
+	)
 	if o.changedStaticInfo != nil {
-		return o.Bottom() + int32(o.changedStaticInfo.h)
+		x1, y1 = o.changedStaticInfo.x0-o.changedStaticInfo.l/2, o.changedStaticInfo.y0+o.changedStaticInfo.w/2
+	} else {
+		x1, y1 = o.staticInfo.x0-o.staticInfo.l/2, o.staticInfo.y0+o.staticInfo.w/2
 	}
-	return o.Bottom() + int32(o.staticInfo.h)
+	return o.x_y(x1, y1)
 }
 
-// 底部坐标（相对于父坐标系）
-func (o object) Bottom() int32 {
+// 右下坐標 (相對於本地坐標系)
+func (o object) RightBottom() (int32, int32) {
+	var (
+		x1, y1 int32
+	)
 	if o.changedStaticInfo != nil {
-		return o.y + int32(o.changedStaticInfo.y0)
+		x1, y1 = o.changedStaticInfo.x0-o.changedStaticInfo.l/2, o.changedStaticInfo.y0-o.changedStaticInfo.w/2
+	} else {
+		x1, y1 = o.staticInfo.x0-o.staticInfo.l/2, o.staticInfo.y0-o.staticInfo.w/2
 	}
-	return o.y + int32(o.staticInfo.y0)
+	return o.x_y(x1, y1)
+}
+
+// 右上坐标（相对于本地坐标系）
+func (o object) RightTop() (int32, int32) {
+	var (
+		x1, y1 int32
+	)
+	if o.changedStaticInfo != nil {
+		x1, y1 = o.changedStaticInfo.x0+o.changedStaticInfo.l/2, o.changedStaticInfo.y0-o.changedStaticInfo.w/2
+	} else {
+		x1, y1 = o.staticInfo.x0+o.staticInfo.l/2, o.staticInfo.y0-o.staticInfo.w/2
+	}
+	return o.x_y(x1, y1)
 }
 
 // 朝向角度
 func (o object) Orientation() int32 {
 	return o.orientation
+}
+
+// 原始左坐標
+func (o object) OriginalLeft() int32 {
+	if o.changedStaticInfo != nil {
+		return o.x + o.changedStaticInfo.x0 - o.changedStaticInfo.w/2
+	}
+	return o.x + o.staticInfo.x0 - o.staticInfo.w/2
+}
+
+// 原始右坐標
+func (o object) OriginalRight() int32 {
+	if o.changedStaticInfo != nil {
+		return o.x + o.changedStaticInfo.x0 + o.changedStaticInfo.w/2
+	}
+	return o.x + o.staticInfo.x0 + o.staticInfo.w/2
+}
+
+// 原始上坐標
+func (o object) OriginalTop() int32 {
+	if o.changedStaticInfo != nil {
+		return o.y + o.changedStaticInfo.y0 + o.changedStaticInfo.l/2
+	}
+	return o.y + o.staticInfo.y0 + o.staticInfo.l/2
+}
+
+// 原始下坐標
+func (o object) OriginalBottom() int32 {
+	if o.changedStaticInfo != nil {
+		return o.y + o.changedStaticInfo.y0 - o.changedStaticInfo.l/2
+	}
+	return o.y + o.staticInfo.y0 - o.staticInfo.l/2
 }
 
 // 設置陣營
@@ -326,6 +407,8 @@ type MovableObject struct {
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
 	state          moveObjectState // 移动状态
+	updateDistance int32           // Update時更新的距離
+	mySuper        IMovableObject  // 父類
 	checkMoveEvent base.Event      // 檢查坐標事件
 	moveEvent      base.Event      // 移动事件
 	stopEvent      base.Event      // 停止事件
@@ -359,6 +442,10 @@ func (o *MovableObject) Uninit() {
 	o.stopEvent.Clear()
 	o.updateEvent.Clear()
 	o.object.Uninit()
+}
+
+func (o *MovableObject) MovableObjStaticInfo() *MovableObjStaticInfo {
+	return (*MovableObjStaticInfo)(unsafe.Pointer(o.staticInfo))
 }
 
 // 改变静态信息
@@ -406,6 +493,19 @@ func (o MovableObject) CurrentSpeed() int32 {
 	return o.speed
 }
 
+// 逆時針旋轉
+func (o *MovableObject) Rotate(angle int32) {
+	o.orientation += angle
+	if o.orientation >= 360 {
+		o.orientation -= 360
+	}
+}
+
+// 逆時針旋轉到
+func (o *MovableObject) RotateTo(angle int32) {
+	o.orientation = angle
+}
+
 // 移动
 func (o *MovableObject) Move(dir Direction) {
 	if dir < DirMin || dir > DirMax {
@@ -448,15 +548,10 @@ func (o MovableObject) LastPos() (int32, int32) {
 	return o.lastX, o.lastY
 }
 
-// 獲得移動距離
-func GetMoveDistance(obj IMovableObject, duration time.Duration) float64 {
-	return float64(int64(obj.CurrentSpeed())*int64(duration)) / float64(time.Second)
-}
-
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
 	// 每次Update都要更新lastX和lastY
-	o.lastX, o.lastY = o.x, o.y
+	o.lastX, o.lastY = o.Pos()
 
 	if o.state == stopped {
 		return
@@ -472,27 +567,23 @@ func (o *MovableObject) Update(tick time.Duration) {
 		return
 	}
 
-	x, y := float64(o.x), float64(o.y)
-	distance := GetMoveDistance(o, tick)
-	switch o.dir {
-	case DirLeft:
-		x -= distance
-	case DirRight:
-		x += distance
-	case DirUp:
-		y += distance
-	case DirDown:
-		y -= distance
-	default:
-		panic("invalid direction")
+	var x, y int32
+	o.updateDistance = int32(GetDefaultLinearDistance(o, tick))
+	if o.MovableObjStaticInfo().MoveFunc != nil {
+		if o.mySuper == nil {
+			o.mySuper = o.super.(IMovableObject)
+		}
+		x, y = o.MovableObjStaticInfo().MoveFunc(o.mySuper, tick)
+	} else {
+		x, y = DefaultMove(o, tick, float64(o.updateDistance))
 	}
 
 	if o.state != stopped {
-		if o.checkMove(o.dir, distance) {
-			o.x, o.y = int32(x), int32(y)
+		if o.checkMove(o.dir, float64(o.updateDistance)) {
+			o.SetPos(int32(x), int32(y))
 		}
 	} else {
-		o.x, o.y = int32(x), int32(y)
+		o.SetPos(int32(x), int32(y))
 	}
 
 	if o.state == isMoving {
@@ -515,12 +606,29 @@ func (o *MovableObject) checkMove(dir Direction, distance float64) bool {
 		isMove, isCollision bool
 		resObj              IObject
 	)
+
+	if dir == DirNone {
+		return true
+	}
+
 	o.checkMoveEvent.Call(o.instId, dir, distance, &isMove, &isCollision, &resObj)
 	if isCollision {
 		comp := o.GetComp("Collider")
 		if comp != nil {
 			collisionComp := comp.(*ColliderComp)
 			collisionComp.CallCollisionEventHandle(o.super, resObj)
+		}
+	}
+	if isMove {
+		switch dir {
+		case DirLeft:
+			o.orientation = 180
+		case DirRight:
+			o.orientation = 0
+		case DirUp:
+			o.orientation = 90
+		case DirDown:
+			o.orientation = 270
 		}
 	}
 	return isMove
@@ -564,157 +672,4 @@ func (o *MovableObject) RegisterUpdateEventHandle(handle func(args ...any)) {
 // 注销更新事件
 func (o *MovableObject) UnregisterUpdateEventHandle(handle func(args ...any)) {
 	o.updateEvent.Unregister(handle)
-}
-
-// 车辆
-type Vehicle struct {
-	MovableObject
-}
-
-// 创建车辆
-func NewVehicle(instId uint32, staticInfo *ObjStaticInfo) *Vehicle {
-	o := &Vehicle{}
-	o.Init(instId, staticInfo)
-	return o
-}
-
-// 初始化
-func (v *Vehicle) Init(instId uint32, staticInfo *ObjStaticInfo) {
-	v.MovableObject.Init(instId, staticInfo)
-	v.setSuper(v)
-}
-
-// 反初始化
-func (v *Vehicle) Uninit() {
-	v.MovableObject.Uninit()
-}
-
-// 坦克
-type Tank struct {
-	Vehicle
-	bulletConfig    *TankBulletConfig
-	level           int32
-	changeEvent     base.Event
-	fireTime        time.CustomTime
-	bulletFireCount int8
-}
-
-// 创建坦克
-func NewTank(instId uint32, staticInfo *TankStaticInfo) *Tank {
-	tank := &Tank{}
-	tank.Init(instId, &staticInfo.ObjStaticInfo)
-	return tank
-}
-
-// 初始化
-func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
-	t.Vehicle.Init(instId, staticInfo)
-	tankStaticInfo := (*TankStaticInfo)(unsafe.Pointer(staticInfo))
-	t.bulletConfig = &tankStaticInfo.BulletConfig
-	t.level = tankStaticInfo.Level
-	t.setSuper(t)
-}
-
-// 反初始化
-func (t *Tank) Uninit() {
-	t.Vehicle.Uninit()
-}
-
-// 等级
-func (t Tank) Level() int32 {
-	return t.level
-}
-
-// 设置等级
-func (t *Tank) SetLevel(level int32) {
-	t.level = level
-}
-
-// 变化
-func (t *Tank) Change(info *TankStaticInfo) {
-	t.ChangeStaticInfo(&info.ObjStaticInfo)
-	t.SetCurrentSpeed(info.Speed())
-	t.changeEvent.Call(info, t.level)
-}
-
-// 还原
-func (t *Tank) Restore() {
-	t.RestoreStaticInfo()
-	t.changeEvent.Call(t.staticInfo, t.level)
-}
-
-// 注册变化事件
-func (t *Tank) RegisterChangeEventHandle(handle func(args ...any)) {
-	t.changeEvent.Register(handle)
-}
-
-// 注销变化事件
-func (t *Tank) UnregisterChangeEventHandle(handle func(args ...any)) {
-	t.changeEvent.Unregister(handle)
-}
-
-// 檢測是否可以開炮
-func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulletInfo *BulletStaticInfo) *Bullet {
-	var bullet *Bullet
-	// 先檢測炮彈冷卻時間
-	if t.fireTime.IsZero() || time.Since(t.fireTime) >= time.Duration(t.bulletConfig.Cooldown)*time.Millisecond {
-		bullet = newBulletFunc(bulletInfo)
-		t.fireTime = time.Now()
-		t.bulletFireCount = 1
-	}
-	// 再檢測一次發射中的炮彈間隔
-	/*if t.bulletConfig.AmountFireOneTime > 1 && t.bulletFireCount < t.bulletConfig.AmountFireOneTime {
-		if t.fireIntervalTime.IsZero() || time.Since(t.fireIntervalTime) >= time.Duration(t.bulletConfig.IntervalInFire)*time.Millisecond {
-			if bullet == nil {
-				bullet = newBulletFunc(bulletInfo)
-			}
-			t.fireIntervalTime = time.Now()
-			t.bulletFireCount += 1
-		}
-	}*/
-	if bullet != nil {
-		switch t.dir {
-		case DirLeft:
-			bullet.SetPos(t.Left()-bullet.Height()-1, t.Top()-t.Width()>>1-bullet.Width()>>1)
-		case DirRight:
-			bullet.SetPos(t.Right()+1, t.Top()-t.Width()>>1-bullet.Width()>>1)
-		case DirUp:
-			bullet.SetPos(t.Left()+t.Width()>>1-bullet.Width()>>1, t.Top()+1)
-		case DirDown:
-			bullet.SetPos(t.Left()+t.Width()>>1-bullet.Width()>>1, t.Bottom()-bullet.Height()-1)
-		}
-		bullet.SetCamp(t.currentCamp)
-		bullet.SetCurrentSpeed(bulletInfo.speed)
-	}
-	return bullet
-}
-
-// 獲得炮彈配置
-func (t *Tank) GetBulletConfig() *TankBulletConfig {
-	return t.bulletConfig
-}
-
-// 子弹
-type Bullet struct {
-	MovableObject
-	info *BulletStaticInfo
-}
-
-// 创建车辆
-func NewBullet(instId uint32, staticInfo *BulletStaticInfo) *Bullet {
-	o := &Bullet{}
-	o.Init(instId, &staticInfo.ObjStaticInfo)
-	return o
-}
-
-// 初始化
-func (b *Bullet) Init(instId uint32, staticInfo *ObjStaticInfo) {
-	b.MovableObject.Init(instId, staticInfo)
-	b.info = (*BulletStaticInfo)(unsafe.Pointer(staticInfo))
-	b.setSuper(b)
-}
-
-// 反初始化
-func (b *Bullet) Uninit() {
-	b.MovableObject.Uninit()
 }

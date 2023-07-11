@@ -10,13 +10,14 @@ type CmdCode int32
 
 // 命令枚举
 const (
-	CMD_NONE         CmdCode = iota
-	CMD_MOVE         CmdCode = 1   // 移动
-	CMD_STOP_MOVE    CmdCode = 2   // 停止移动
-	CMD_CHANGE_TANK  CmdCode = 3   // 改变坦克
-	CMD_RESTORE_TANK CmdCode = 4   // 恢复坦克
-	CMD_FIRE         CmdCode = 5   // 開炮
-	CMD_RESTART      CmdCode = 100 // 重新开始
+	CMD_NONE               CmdCode = iota
+	CMD_MOVE               CmdCode = 1   // 移动
+	CMD_STOP_MOVE          CmdCode = 2   // 停止移动
+	CMD_CHANGE_TANK        CmdCode = 3   // 改变坦克
+	CMD_RESTORE_TANK       CmdCode = 4   // 恢复坦克
+	CMD_FIRE               CmdCode = 5   // 開炮
+	CMD_RELEASE_SMALL_BALL CmdCode = 6   // 釋放小球 測試用
+	CMD_RESTART            CmdCode = 100 // 重新开始
 )
 
 // 命令对应处理
@@ -44,6 +45,7 @@ func CreateCmdHandleManager(net *NetClient, logic *GameLogic) *CmdHandleManager 
 		{CMD_CHANGE_TANK, m.handleChangeTank},
 		{CMD_RESTORE_TANK, m.handleRestoreTank},
 		{CMD_FIRE, m.handleFire},
+		{CMD_RELEASE_SMALL_BALL, m.handleReleaseSurroundObj},
 	}
 	m.handles = handles
 	return m
@@ -102,4 +104,8 @@ func (m *CmdHandleManager) handleRestoreTank(args ...any) {
 
 func (m *CmdHandleManager) handleFire(args ...any) {
 	m.logic.MyPlayerTankFire()
+}
+
+func (m *CmdHandleManager) handleReleaseSurroundObj(args ...any) {
+	m.logic.MyPlayerTankReleaseSurroundObj()
 }

@@ -12,14 +12,14 @@ type frameConfig struct {
 }
 
 var (
-	mapTileAnimOriginalConfig map[object.StaticObjType]*base.SpriteAnimConfig // 地图瓦片动画初始配置
-	mapTileFrameConfig        map[object.StaticObjType]*frameConfig           // 地图瓦片动画初始配置
-	tankAnimOriginalConfig    map[int32]*base.SpriteAnimConfig                // 坦克动画初始配置map
-	tankFrameConfig           map[int32]*frameConfig                          // 帧配置map
-	bulletAnimOriginalConfig  *base.SpriteAnimConfig                          // 子弹动画初始配置
-	bulletFrameConfig         *frameConfig                                    // 子弹帧配置
-	effectAnimOriginalConfig  map[int32]*base.SpriteAnimConfig                // 爆炸動畫初始配置
-	//effectFrameConfig         map[int32]*frameConfig                          // 爆炸幀配置
+	mapTileAnimOriginalConfig     map[object.StaticObjType]*base.SpriteAnimConfig // 地图瓦片动画初始配置
+	mapTileFrameConfig            map[object.StaticObjType]*frameConfig           // 地图瓦片动画初始配置
+	tankAnimOriginalConfig        map[int32]*base.SpriteAnimConfig                // 坦克动画初始配置map
+	tankFrameConfig               map[int32]*frameConfig                          // 帧配置map
+	bulletAnimOriginalConfig      *base.SpriteAnimConfig                          // 子弹动画初始配置
+	bulletFrameConfig             *frameConfig                                    // 子弹帧配置
+	effectAnimOriginalConfig      map[int32]*base.SpriteAnimConfig                // 爆炸動畫初始配置
+	surroundObjAnimOriginalConfig map[int32]*base.SpriteAnimConfig                // 小球動畫初始配置
 )
 
 // 初始化动画初始配置
@@ -233,16 +233,11 @@ func initAnimOriginalConfigs() {
 		},
 	}
 
-	/*effectFrameConfig = map[int32]*frameConfig{
+	surroundObjAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
 		1: {
-			frameNum:       1,
-			frameLevelList: [][]int32{{0}},
+			Image: smallball_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
 		},
-		2: {
-			frameNum:       1,
-			frameLevelList: [][]int32{{0}},
-		},
-	}*/
+	}
 }
 
 // 静态物体动画配置
@@ -258,7 +253,7 @@ type MovableObjectAnimConfig struct {
 	Subtype    object.ObjSubType
 	Id         int32
 	Level      int32
-	AnimConfig []*base.SpriteAnimConfig // 使用物体方向枚举做索引
+	AnimConfig *base.SpriteAnimConfig // 使用物体方向枚举做索引
 }
 
 var (
@@ -294,178 +289,185 @@ func initAnimConfigs() {
 			AnimConfig: createStaticObjAnimConfig(object.StaticObjRuins),
 		},
 	}
+
 	moveableObjectAnimConfigList = []*MovableObjectAnimConfig{
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 1,
-			AnimConfig: []*base.SpriteAnimConfig{
-				// 空左右上下
-				nil,
-				createTankAnimConfig(1, 1, object.DirLeft),
-				createTankAnimConfig(1, 1, object.DirRight),
-				createTankAnimConfig(1, 1, object.DirUp),
-				createTankAnimConfig(1, 1, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			// 空左右上下
+			//nil,
+			//createTankAnimConfig(1, 1, object.DirLeft),
+			createTankAnimConfig(1, 1, object.DirRight),
+			//createTankAnimConfig(1, 1, object.DirUp),
+			//createTankAnimConfig(1, 1, object.DirDown),
+			//},
 		}, // 玩家坦克一级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 2,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1, 2, object.DirLeft),
-				createTankAnimConfig(1, 2, object.DirRight),
-				createTankAnimConfig(1, 2, object.DirUp),
-				createTankAnimConfig(1, 2, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1, 2, object.DirLeft),
+			createTankAnimConfig(1, 2, object.DirRight),
+			//createTankAnimConfig(1, 2, object.DirUp),
+			//createTankAnimConfig(1, 2, object.DirDown),
+			//},
 		}, // 玩家坦克二级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 3,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1, 3, object.DirLeft),
-				createTankAnimConfig(1, 3, object.DirRight),
-				createTankAnimConfig(1, 3, object.DirUp),
-				createTankAnimConfig(1, 3, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1, 3, object.DirLeft),
+			createTankAnimConfig(1, 3, object.DirRight),
+			//createTankAnimConfig(1, 3, object.DirUp),
+			//createTankAnimConfig(1, 3, object.DirDown),
+			//},
 		}, // 玩家坦克三级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1, Level: 4,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1, 4, object.DirLeft),
-				createTankAnimConfig(1, 4, object.DirRight),
-				createTankAnimConfig(1, 4, object.DirUp),
-				createTankAnimConfig(1, 4, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1, 4, object.DirLeft),
+			createTankAnimConfig(1, 4, object.DirRight),
+			//createTankAnimConfig(1, 4, object.DirUp),
+			//createTankAnimConfig(1, 4, object.DirDown),
+			//},
 		}, // 玩家坦克四级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 1,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(2, 1, object.DirLeft),
-				createTankAnimConfig(2, 1, object.DirRight),
-				createTankAnimConfig(2, 1, object.DirUp),
-				createTankAnimConfig(2, 1, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(2, 1, object.DirLeft),
+			createTankAnimConfig(2, 1, object.DirRight),
+			//createTankAnimConfig(2, 1, object.DirUp),
+			//createTankAnimConfig(2, 1, object.DirDown),
+			//},
 		}, // 同伴坦克一级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 2,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(2, 2, object.DirLeft),
-				createTankAnimConfig(2, 2, object.DirRight),
-				createTankAnimConfig(2, 2, object.DirUp),
-				createTankAnimConfig(2, 2, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(2, 2, object.DirLeft),
+			createTankAnimConfig(2, 2, object.DirRight),
+			//createTankAnimConfig(2, 2, object.DirUp),
+			//createTankAnimConfig(2, 2, object.DirDown),
+			//},
 		}, // 同伴坦克二级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 3,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(2, 3, object.DirLeft),
-				createTankAnimConfig(2, 3, object.DirRight),
-				createTankAnimConfig(2, 3, object.DirUp),
-				createTankAnimConfig(2, 3, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(2, 3, object.DirLeft),
+			createTankAnimConfig(2, 3, object.DirRight),
+			//createTankAnimConfig(2, 3, object.DirUp),
+			//createTankAnimConfig(2, 3, object.DirDown),
+			//},
 		}, // 同伴坦克三级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 2, Level: 4,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(2, 4, object.DirLeft),
-				createTankAnimConfig(2, 4, object.DirRight),
-				createTankAnimConfig(2, 4, object.DirUp),
-				createTankAnimConfig(2, 4, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(2, 4, object.DirLeft),
+			createTankAnimConfig(2, 4, object.DirRight),
+			//createTankAnimConfig(2, 4, object.DirUp),
+			//createTankAnimConfig(2, 4, object.DirDown),
+			//},
 		}, // 同伴坦克四级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 1,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1000, 1, object.DirLeft),
-				createTankAnimConfig(1000, 1, object.DirRight),
-				createTankAnimConfig(1000, 1, object.DirUp),
-				createTankAnimConfig(1000, 1, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1000, 1, object.DirLeft),
+			createTankAnimConfig(1000, 1, object.DirRight),
+			//createTankAnimConfig(1000, 1, object.DirUp),
+			//createTankAnimConfig(1000, 1, object.DirDown),
+			//},
 		}, // 轻型坦克
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1000, Level: 2,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1000, 2, object.DirLeft),
-				createTankAnimConfig(1000, 2, object.DirRight),
-				createTankAnimConfig(1000, 2, object.DirUp),
-				createTankAnimConfig(1000, 2, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1000, 2, object.DirLeft),
+			createTankAnimConfig(1000, 2, object.DirRight),
+			//createTankAnimConfig(1000, 2, object.DirUp),
+			//createTankAnimConfig(1000, 2, object.DirDown),
+			//},
 		}, // 轻型坦克红色
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 1,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1001, 1, object.DirLeft),
-				createTankAnimConfig(1001, 1, object.DirRight),
-				createTankAnimConfig(1001, 1, object.DirUp),
-				createTankAnimConfig(1001, 1, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1001, 1, object.DirLeft),
+			createTankAnimConfig(1001, 1, object.DirRight),
+			//createTankAnimConfig(1001, 1, object.DirUp),
+			//createTankAnimConfig(1001, 1, object.DirDown),
+			//},
 		}, // 快速坦克
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1001, Level: 2,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1001, 2, object.DirLeft),
-				createTankAnimConfig(1001, 2, object.DirRight),
-				createTankAnimConfig(1001, 2, object.DirUp),
-				createTankAnimConfig(1001, 2, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1001, 2, object.DirLeft),
+			createTankAnimConfig(1001, 2, object.DirRight),
+			//createTankAnimConfig(1001, 2, object.DirUp),
+			//createTankAnimConfig(1001, 2, object.DirDown),
+			//},
 		}, // 快速坦克红
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 1,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1002, 1, object.DirLeft),
-				createTankAnimConfig(1002, 1, object.DirRight),
-				createTankAnimConfig(1002, 1, object.DirUp),
-				createTankAnimConfig(1002, 1, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1002, 1, object.DirLeft),
+			createTankAnimConfig(1002, 1, object.DirRight),
+			//createTankAnimConfig(1002, 1, object.DirUp),
+			//createTankAnimConfig(1002, 1, object.DirDown),
+			//},
 		}, // 重型坦克
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 2,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1002, 2, object.DirLeft),
-				createTankAnimConfig(1002, 2, object.DirRight),
-				createTankAnimConfig(1002, 2, object.DirUp),
-				createTankAnimConfig(1002, 2, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1002, 2, object.DirLeft),
+			createTankAnimConfig(1002, 2, object.DirRight),
+			//createTankAnimConfig(1002, 2, object.DirUp),
+			//createTankAnimConfig(1002, 2, object.DirDown),
+			//},
 		}, // 重型坦克绿
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 3,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1002, 3, object.DirLeft),
-				createTankAnimConfig(1002, 3, object.DirRight),
-				createTankAnimConfig(1002, 3, object.DirUp),
-				createTankAnimConfig(1002, 3, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1002, 3, object.DirLeft),
+			createTankAnimConfig(1002, 3, object.DirRight),
+			//createTankAnimConfig(1002, 3, object.DirUp),
+			//createTankAnimConfig(1002, 3, object.DirDown),
+			//},
 		}, // 重型坦克黄
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeTank, Id: 1002, Level: 4,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createTankAnimConfig(1002, 4, object.DirLeft),
-				createTankAnimConfig(1002, 4, object.DirRight),
-				createTankAnimConfig(1002, 4, object.DirUp),
-				createTankAnimConfig(1002, 4, object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createTankAnimConfig(1002, 4, object.DirLeft),
+			createTankAnimConfig(1002, 4, object.DirRight),
+			//createTankAnimConfig(1002, 4, object.DirUp),
+			//createTankAnimConfig(1002, 4, object.DirDown),
+			//},
 		}, // 重型坦克红
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeBullet, Id: 1, Level: 0,
-			AnimConfig: []*base.SpriteAnimConfig{
-				nil,
-				createBulletAnimConfig(object.DirLeft),
-				createBulletAnimConfig(object.DirRight),
-				createBulletAnimConfig(object.DirUp),
-				createBulletAnimConfig(object.DirDown),
-			},
+			AnimConfig://[]*base.SpriteAnimConfig{
+			//nil,
+			//createBulletAnimConfig(object.DirLeft),
+			createBulletAnimConfig(object.DirRight),
+			//createBulletAnimConfig(object.DirUp),
+			//createBulletAnimConfig(object.DirDown),
+			//},
 		}, // 子弹
+		{
+			Type: object.ObjTypeMovable, Subtype: object.ObjSubTypeSurroundObj, Id: 1, Level: 0,
+			AnimConfig://[]*base.SpriteAnimConfig{
+			getSurroundObjAnimConfig(1),
+			//},
+		}, // 環繞物體
 	}
 }
 
@@ -518,11 +520,6 @@ func createBulletAnimConfig(dir object.Direction) *base.SpriteAnimConfig {
 	dirIdx := bulletFrameConfig.dirMap[dir]
 	anim.FramePosList = []base.SpriteIndex{bulletAnimOriginalConfig.FramePosList[dirIdx]}
 	return anim
-}
-
-// 獲得效果動畫配置
-func getEffectAnimConfig(id int32) *base.SpriteAnimConfig {
-	return effectAnimOriginalConfig[id]
 }
 
 // 获得可移动物体的动画配置
@@ -580,4 +577,14 @@ func GetHomeAnimConfig() *StaticObjectAnimConfig {
 // 获得廢墟动画配置
 func GetRuinsAnimConfig() *StaticObjectAnimConfig {
 	return GetStaticObjAnimConfig(object.StaticObjRuins)
+}
+
+// 獲得效果動畫配置
+func getEffectAnimConfig(id int32) *base.SpriteAnimConfig {
+	return effectAnimOriginalConfig[id]
+}
+
+// 獲得小球動畫配置
+func getSurroundObjAnimConfig(id int32) *base.SpriteAnimConfig {
+	return surroundObjAnimOriginalConfig[id]
 }

@@ -234,8 +234,8 @@ func (m *PartitionMap) UpdateMovable(obj object.IMovableObject) {
 		return
 	}
 
-	left1, bottom1, right1, top1 := m.gridBoundsBy(x, y, x+obj.Width(), y+obj.Height())
-	left0, bottom0, right0, top0 := m.gridBoundsBy(lastX, lastY, lastX+obj.Width(), lastY+obj.Height())
+	left1, bottom1, right1, top1 := m.gridBoundsBy(x, y, x+obj.Width(), y+obj.Length())
+	left0, bottom0, right0, top0 := m.gridBoundsBy(lastX, lastY, lastX+obj.Width(), lastY+obj.Length())
 
 	// ---------------|---------------|---------------|--
 	//                |               |               |
@@ -357,7 +357,8 @@ func (m *PartitionMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap
 						continue
 					}
 					layer := obj.StaticInfo().Layer()
-					m.resultLayerObjs[layer].Set(key, obj.Bottom())
+					_, y := obj.Pos()
+					m.resultLayerObjs[layer].Set(key, y)
 				}
 				lis = m.grids[gidx].getSObjs().GetList()
 				for i := 0; i < len(lis); i++ {
@@ -367,7 +368,8 @@ func (m *PartitionMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap
 						continue
 					}
 					layer := obj.StaticInfo().Layer()
-					m.resultLayerObjs[layer].Set(key, obj.Bottom())
+					_, y := obj.Pos()
+					m.resultLayerObjs[layer].Set(key, y)
 				}
 			}
 		}
@@ -406,13 +408,68 @@ func (m *PartitionMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
 	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeNone)
 }
 
+// checkMovableObjCollision 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
+func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, distance float64, collisionObj *object.IObject) bool {
+	// 是否擁有碰撞組件
+	comp := obj.GetComp("Collider")
+	if comp == nil {
+		return false
+	}
+
+	// 獲取檢測碰撞範圍
+	lx, by, rx, ty := m.objGridBounds(obj)
+	if rx < lx || ty < by {
+		return false
+	}
+
+	for y := by; y <= ty; y++ {
+		for x := lx; x <= rx; x++ {
+			gidx := m.gridLineCol2Index(y, x)
+			lis := m.grids[gidx].getMObjs().GetList()
+			for i := 0; i < len(lis); i++ {
+				item := lis[i]
+				obj2, o := m.mobjs.Get(item.Key)
+				if !o {
+					log.Warn("Collision: grid(x:%v y:%v) not found movable object %v", x, y, item.Key)
+					continue
+				}
+				if obj2.InstId() != obj.InstId() && obj2.StaticInfo().Layer() == obj.StaticInfo().Layer() {
+					if checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
+						if collisionObj != nil {
+							*collisionObj = obj2
+						}
+						return true
+					}
+				}
+			}
+
+			lis = m.grids[gidx].getSObjs().GetList()
+			for i := 0; i < len(lis); i++ {
+				item := lis[i]
+				obj2, o := m.sobjs.Get(item.Key)
+				if !o {
+					log.Warn("Collision: grid(x:%v y:%v) not found static object %v", x, y, item.Key)
+					continue
+				}
+				if checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
+					if collisionObj != nil {
+						*collisionObj = obj2
+					}
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func (m *PartitionMap) gridLineCol2Index(line, col int16) int32 {
 	return int32(line)*int32(m.gridColNum) + int32(col)
 }
 
 func (m *PartitionMap) objGridBounds(obj object.IObject) (lx, by, rx, ty int16) {
 	left, bottom := obj.Pos()
-	right, top := left+obj.Width()-1, bottom+obj.Height()-1
+	right, top := left+obj.Width()-1, bottom+obj.Length()-1
 	return m.gridBoundsBy(left, bottom, right, top)
 }
 

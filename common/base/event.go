@@ -40,6 +40,10 @@ func (e *Event) Call(args ...any) {
 	}
 }
 
+func (e *Event) Size() int32 {
+	return int32(len(e.handles))
+}
+
 func (e *Event) Clear() {
 	e.handles = e.handles[:0]
 }

@@ -10,6 +10,7 @@ type IRecycle interface {
 // 物体接口
 type IObject interface {
 	IRecycle
+	ObjStaticInfo() *ObjStaticInfo                      // 獲得靜態信息
 	Init(uint32, *ObjStaticInfo)                        // 初始化
 	Uninit()                                            // 反初始化
 	InstId() uint32                                     // 实例id
@@ -18,16 +19,20 @@ type IObject interface {
 	Subtype() ObjSubType                                // 子类型
 	OwnerType() ObjOwnerType                            // 所有者类型
 	StaticInfo() *ObjStaticInfo                         // 靜態信息
-	Pos() (x, y int32)                                  // 左下角位置
-	SetPos(x, y int32)                                  // 设置位
-	Center() (x, y int32)                               // 中心點坐標
+	Center() (x, y int32)                               // 中心點坐標，本地坐標係
+	Pos() (x, y int32)                                  // 中心位置，世界坐標係
+	SetPos(x, y int32)                                  // 设置中心位置，世界坐標係
 	Width() int32                                       // 宽度
-	Height() int32                                      // 高度
-	Left() int32                                        // 左坐标
-	Right() int32                                       // 右坐标
-	Top() int32                                         // 上坐标
-	Bottom() int32                                      // 下坐标
-	Orientation() int32                                 // 朝向角度
+	Length() int32                                      // 長度
+	LeftBottom() (int32, int32)                         // 左下坐标，相對於本地坐標系
+	LeftTop() (int32, int32)                            // 左上坐標，相對於本地坐標系
+	RightTop() (int32, int32)                           // 右上坐标，相對於本地坐標系
+	RightBottom() (int32, int32)                        // 右下坐標，相對於本地坐標系
+	Orientation() int32                                 // 朝向(x軸正向逆時針旋轉角度)，相對於世界坐標系，垂直於寬(Width)，平行於長(Height)
+	OriginalLeft() int32                                // 原始左坐標
+	OriginalRight() int32                               // 原始右坐標
+	OriginalTop() int32                                 // 原始上坐標
+	OriginalBottom() int32                              // 原始下坐標
 	Update(tick time.Duration)                          // 更新
 	Camp() CampType                                     // 陣營
 	SetCamp(CampType)                                   // 設置陣營
@@ -48,10 +53,13 @@ type IStaticObject interface {
 // 可移动的物体接口
 type IMovableObject interface {
 	IObject
+	MovableObjStaticInfo() *MovableObjStaticInfo
 	Level() int32          // 等级
 	Dir() Direction        // 方向
 	Speed() int32          // 速度
 	CurrentSpeed() int32   // 当前速度
+	Rotate(angle int32)    // 旋轉，逆時針為正方向
+	RotateTo(angle int32)  // 逆時針旋轉到
 	Move(Direction)        // 移动
 	Stop()                 // 停止
 	IsMoving() bool        // 是否在移动
@@ -69,6 +77,14 @@ type IMovableObject interface {
 	UnregisterUpdateEventHandle(handle func(args ...any))    // 注销更新事件
 }
 
+// 環繞物
+type ISurroundObject interface {
+	IMovableObject
+	SurroundObjStaticInfo() *SurroundObjStaticInfo                           // 靜態配置
+	SetCenterObject(centerObjInstId uint32, getObjFunc func(uint32) IObject) // 設置環繞中心物體
+	GetCenterPos() (int32, int32)                                            // 獲得中心點
+}
+
 // 车辆接口
 type IVehicle interface {
 	IMovableObject
@@ -77,6 +93,7 @@ type IVehicle interface {
 // 坦克接口
 type ITank interface {
 	IVehicle
+	TankStaticInfo() *TankStaticInfo
 	Change(info *TankStaticInfo)
 	Restore()
 
@@ -90,8 +107,8 @@ type ITank interface {
 type IEffect interface {
 	InstId() uint32
 	StaticInfo() *EffectStaticInfo
-	SetCenter(int32, int32)
-	Center() (int32, int32)
+	SetPos(int32, int32)
+	Pos() (int32, int32)
 	Width() int32
 	Height() int32
 	Update()

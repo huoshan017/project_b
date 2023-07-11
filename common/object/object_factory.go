@@ -134,6 +134,33 @@ func (f *ObjectFactory) RecycleBullet(bullet *Bullet) bool {
 	return res
 }
 
+func (f *ObjectFactory) NewSurroundObj(info *SurroundObjStaticInfo) *SurroundObj {
+	if info.typ != ObjTypeMovable && info.subType != ObjSubTypeSurroundObj {
+		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeSurroundObj")
+		return nil
+	}
+	id := f.getNewObjId()
+	l := len(f.freeMovableObjs[MovableObjSurroundObj])
+	var obj *SurroundObj
+	if l == 0 {
+		obj = NewSurroundObj(id, info)
+	} else {
+		obj = f.freeMovableObjs[MovableObjSurroundObj][l-1].(*SurroundObj)
+		obj.Init(id, &info.ObjStaticInfo)
+		f.freeMovableObjs[MovableObjSurroundObj] = f.freeMovableObjs[MovableObjSurroundObj][:l-1]
+	}
+	f.objMap[id] = obj
+	return obj
+}
+
+func (f *ObjectFactory) RecycleSurroundObj(sobj *SurroundObj) bool {
+	res := f.recycleMovableObject(sobj)
+	if res {
+		sobj.Uninit()
+	}
+	return res
+}
+
 func (f *ObjectFactory) recycleMovableObject(mobj IMovableObject) bool {
 	if _, o := f.objMap[mobj.InstId()]; !o {
 		return false

@@ -9,21 +9,22 @@ import (
 )
 
 var (
-	bonus_img    *ebiten.Image
-	bore_img     *ebiten.Image
-	bullet_img   *ebiten.Image
-	enemy_img    *ebiten.Image
-	explode1_img *ebiten.Image
-	explode2_img *ebiten.Image
-	flag_img     *ebiten.Image
-	gameover_img *ebiten.Image
-	misc_img     *ebiten.Image
-	num_img      *ebiten.Image
-	player1_img  *ebiten.Image
-	player2_img  *ebiten.Image
-	shield_img   *ebiten.Image
-	splash_img   *ebiten.Image
-	tile_img     *ebiten.Image
+	bonus_img     *ebiten.Image
+	bore_img      *ebiten.Image
+	bullet_img    *ebiten.Image
+	enemy_img     *ebiten.Image
+	explode1_img  *ebiten.Image
+	explode2_img  *ebiten.Image
+	flag_img      *ebiten.Image
+	gameover_img  *ebiten.Image
+	misc_img      *ebiten.Image
+	num_img       *ebiten.Image
+	player1_img   *ebiten.Image
+	player2_img   *ebiten.Image
+	shield_img    *ebiten.Image
+	splash_img    *ebiten.Image
+	tile_img      *ebiten.Image
+	smallball_img *ebiten.Image
 )
 
 func initImages() {
@@ -43,6 +44,7 @@ func initImages() {
 		&shield_img,
 		&splash_img,
 		&tile_img,
+		&smallball_img,
 	}
 
 	imgPathList := []string{
@@ -61,6 +63,7 @@ func initImages() {
 		"png/shield.png",
 		"png/splash.png",
 		"png/tile.png",
+		"png/small_ball.png",
 	}
 
 	var err error

@@ -7,5 +7,7 @@ var (
 	// 地图Id列表
 	MapIdList = []int32{2, 1, 3}
 	// 默認bot搜索半徑
-	DefaultSearchRadius int32 = 1000
+	DefaultSearchRadius int32 = 3000
+	// 默認角度
+	DefaultObjectOrientationAngle int32 = 90
 )

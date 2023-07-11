@@ -44,10 +44,12 @@ var (
 	// 炮彈靜態配置
 	BulletConfigData = map[int32]*object.BulletStaticInfo{
 		1: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1200, object.DirUp, 1, true),
-			Range:         1000,
-			Damage:        100,
-			BlastRadius:   10,
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1200, object.DirUp, 1, true),
+			},
+			Range:       1000,
+			Damage:      100,
+			BlastRadius: 10,
 		},
 	}
 
@@ -66,29 +68,44 @@ var (
 	// 坦克静态配置数据，全部是逻辑数据
 	TankConfigData = map[int32]*object.TankStaticInfo{
 		1: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
-			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
+			},
+			Orientation:  DefaultObjectOrientationAngle,
+			Level:        1,
+			BulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
 		},
 		2: {
-			ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
-			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
+			},
+			Orientation:  DefaultObjectOrientationAngle,
+			Level:        1,
+			BulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
 		},
 		1000: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
-			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 3500},
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
+			},
+			Orientation:  DefaultObjectOrientationAngle,
+			Level:        1,
+			BulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 3500},
 		},
 		1001: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 900, object.DirUp, 1, true),
-			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 900, object.DirUp, 1, true),
+			},
+			Orientation:  DefaultObjectOrientationAngle,
+			Level:        1,
+			BulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 		1002: {
-			ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 650, object.DirUp, 1, true),
-			Level:         1,
-			BulletConfig:  object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 650, object.DirUp, 1, true),
+			},
+			Orientation:  DefaultObjectOrientationAngle,
+			Level:        1,
+			BulletConfig: object.TankBulletConfig{BulletId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 	}
 
@@ -123,6 +140,20 @@ var (
 			Param:  500,
 			Width:  640,
 			Height: 640,
+		},
+	}
+
+	// todo 環繞物體配置信息，測試用
+	SurroundObjConfigData = map[int32]*object.SurroundObjStaticInfo{
+		1: {
+			MovableObjStaticInfo: object.MovableObjStaticInfo{
+				ObjStaticInfo: *object.NewObjStaticInfo(
+					1, object.ObjTypeMovable, object.ObjSubTypeSurroundObj, object.CampTypeNone, 0, 0, 80, 80, 0, object.DirNone, 1, true),
+				MoveFunc: object.SurroundObjMove,
+			},
+			AroundRadius:    600,
+			AngularVelocity: 10, // 10毫秒1度
+			Clockwise:       false,
 		},
 	}
 )

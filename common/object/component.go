@@ -31,7 +31,7 @@ func (ab *AABB) MoveIntersect(moveDir Direction, aabb *AABB) bool {
 }
 
 // 移動
-func (ab *AABB) Move(dir Direction, distance float64) {
+func (ab *AABB) Move(dir Direction, distance int32) {
 	switch dir {
 	case DirLeft:
 		ab.Left -= int32(distance)
@@ -60,11 +60,13 @@ func (c ColliderComp) Name() string {
 
 // 獲得AABB
 func (c ColliderComp) GetAABB(obj IObject) AABB {
+	//left, bottom := obj.LeftBottom()
+	//right, top := obj.RightTop()
 	return AABB{
-		Left:   obj.Left(),
-		Bottom: obj.Bottom(),
-		Right:  obj.Right(),
-		Top:    obj.Top(),
+		Left:   obj.OriginalLeft(),
+		Bottom: obj.OriginalBottom(),
+		Right:  obj.OriginalRight(),
+		Top:    obj.OriginalTop(),
 	}
 }
 
