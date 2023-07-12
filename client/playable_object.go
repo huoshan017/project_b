@@ -74,7 +74,8 @@ func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 }
 
 func (po *PlayableObject) Interpolation() (float64, float64) {
-	return 0, 0
+	x, y := po.obj.Pos()
+	return float64(x), float64(y)
 }
 
 // 可播放的静态对象
@@ -93,26 +94,33 @@ func NewPlayableStaticObject(sobj object.IStaticObject, animConfig *StaticObject
 
 type IPlayableMovableObject interface {
 	IPlayable
+	LastInterpolation() (float64, float64)
 }
 
 // 可移动物体的播放对象，有四个方向的动画
 type PlayableMoveObject struct {
-	op           *ebiten.DrawImageOptions
-	mobj         object.IMovableObject
-	anim         *base.SpriteAnim
-	currSpeed    int32           // 当前速度
-	lastTime     time.CustomTime // 更新时间点
-	interpolate  bool            // 上次是停止状态
-	lastX, lastY int32
+	op                                     *ebiten.DrawImageOptions
+	mobj                                   object.IMovableObject
+	anim                                   *base.SpriteAnim
+	currSpeed                              int32           // 当前速度
+	lastTime                               time.CustomTime // 更新时间点
+	interpolate                            bool            // 上次是停止状态
+	lastX, lastY                           int32           // 上次物體位置
+	lastInterpolationX, lastInterpolationY float64         // 上次插值位置
 }
 
 // 创建可移动物体的播放对象
 func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObjectAnimConfig) *PlayableMoveObject {
+	x, y := mobj.Pos()
 	pobj := &PlayableMoveObject{
-		op:          &ebiten.DrawImageOptions{},
-		mobj:        mobj,
-		anim:        base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
-		interpolate: mobj.IsMoving(),
+		op:                 &ebiten.DrawImageOptions{},
+		mobj:               mobj,
+		anim:               base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
+		interpolate:        mobj.IsMoving(),
+		lastX:              x,
+		lastY:              y,
+		lastInterpolationX: float64(x),
+		lastInterpolationY: float64(y),
 	}
 	return pobj
 }
@@ -147,38 +155,34 @@ func (po *PlayableMoveObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOpt
 	po.anim.Update(screen, op)
 }
 
+// 上次插值位置
+func (po *PlayableMoveObject) LastInterpolation() (float64, float64) {
+	return po.lastInterpolationX, po.lastInterpolationY
+}
+
 // 插值，在Draw前同步调用，得到位置插值
 // ----|------------|------------|------------|------------|-------------|--------------|--------------|--------------|--------------|----
 //
 //	Draw      Update(Draw)    Draw         Draw         Draw       Update(Draw)      Draw           Draw           Draw        Update(Draw)
 func (po *PlayableMoveObject) Interpolation() (x, y float64) {
+	cx, cy := po.mobj.Pos()
 	if !po.interpolate {
-		return
+		return float64(cx), float64(cy)
 	}
 	if !po.mobj.IsMoving() {
-		return
+		return float64(cx), float64(cy)
 	}
 	// 上一次Update的坐标点与当前的不一样，说明又Update了，重置LastX和LastY和开始时间
 	// 所以每次Update后都要重置LastX,lastY,LastTime，是因为要从重置点开始计算位置插值
-	cx, cy := po.mobj.Pos()
 	if po.lastX != cx || po.lastY != cy {
 		po.lastX = cx
 		po.lastY = cy
 		po.lastTime = core.GetSyncServTime()
 	}
 	duration := time.Since(po.lastTime)
-	distance := object.GetDefaultLinearDistance(po.mobj, duration)
-	switch po.mobj.Dir() {
-	case object.DirLeft:
-		x = -distance
-	case object.DirRight:
-		x = distance
-	case object.DirDown:
-		y = -distance
-	case object.DirUp:
-		y = distance
-	}
-	return
+	nx, ny := object.DefaultMove(po.mobj, duration)
+	po.lastInterpolationX, po.lastInterpolationY = float64(nx), float64(ny)
+	return po.lastInterpolationX, po.lastInterpolationY
 }
 
 // 移动事件处理
@@ -226,12 +230,74 @@ func (pt *PlayableTank) onChange(args ...any) {
 	pt.Play()
 }
 
+// 環繞物體播放對象
+type PlayableSurroundObj struct {
+	*PlayableMoveObject
+	sobj                    object.ISurroundObject
+	lastMoveInfo            object.SurroundMoveInfo
+	playableAroundCenterObj IPlayable
+}
+
+// 創建環繞物體播放對象
+func NewPlayableSurroundObj(sobj object.ISurroundObject, animConfig *MovableObjectAnimConfig, playableAroundCenterObj IPlayable) *PlayableSurroundObj {
+	pobj := &PlayableSurroundObj{
+		PlayableMoveObject:      NewPlayableMoveObject(sobj, animConfig),
+		sobj:                    sobj,
+		playableAroundCenterObj: playableAroundCenterObj,
+	}
+	pobj.interpolate = true
+	pobj.lastTime = core.GetSyncSendTime()
+	cobj := sobj.GetAroundCenterObject()
+	pobj.lastMoveInfo.LastCenterX, pobj.lastMoveInfo.LastCenterY = cobj.Pos()
+	return pobj
+}
+
+// 初始化
+func (ps *PlayableSurroundObj) Init() {
+	ps.sobj.RegisterUpdateEventHandle(ps.onEventUpdate)
+}
+
+// 反初始化
+func (ps *PlayableSurroundObj) Uninit() {
+	ps.sobj.UnregisterUpdateEventHandle(ps.onEventUpdate)
+}
+
+// 插值
+func (ps *PlayableSurroundObj) Interpolation() (x, y float64) {
+	nx, ny := ps.sobj.Pos()
+	if !ps.interpolate {
+		return float64(nx), float64(ny)
+	}
+	if !ps.mobj.IsMoving() {
+		return float64(nx), float64(ny)
+	}
+	duration := time.Since(ps.lastTime)
+	var interpolateX, interpolateY float64
+	if pobj, o := ps.playableAroundCenterObj.(IPlayableMovableObject); !o {
+		interpolateX, interpolateY = ps.playableAroundCenterObj.Interpolation()
+	} else {
+		interpolateX, interpolateY = pobj.LastInterpolation()
+	}
+	ps.lastMoveInfo.LastCenterX, ps.lastMoveInfo.LastCenterY = int32(interpolateX), int32(interpolateY)
+	nx, ny = object.GetSurroundObjMovedPos(ps.sobj.(*object.SurroundObj), duration, &ps.lastMoveInfo)
+	return float64(nx), float64(ny)
+}
+
+// 更新事件處理
+func (ps *PlayableSurroundObj) onEventUpdate(args ...any) {
+	ps.lastTime = core.GetSyncServTime()
+	//ps.lastMoveInfo.TurnAngle = 0
+	//ps.lastMoveInfo.AccumulateTime = 0
+}
+
+// 可播放效果
 type PlayableEffect struct {
 	op     ebiten.DrawImageOptions
 	effect object.IEffect
 	anim   *base.SpriteAnim
 }
 
+// 創建可播放效果
 func NewPlayableEffect(effect object.IEffect, animConfig *base.SpriteAnimConfig) *PlayableEffect {
 	return &PlayableEffect{
 		effect: effect,
@@ -268,44 +334,6 @@ func (po *PlayableEffect) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 
 // 插值
 func (po *PlayableEffect) Interpolation() (float64, float64) {
-	return 0, 0
-}
-
-func GetPlayableObject(obj object.IObject) (IPlayable, *base.SpriteAnimConfig) {
-	var (
-		playableObj IPlayable
-		animConfig  *base.SpriteAnimConfig
-	)
-	switch obj.Type() {
-	case object.ObjTypeStatic:
-		if object.StaticObjType(obj.Subtype()) == object.StaticObjNone {
-			return nil, nil
-		}
-		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
-		if config == nil {
-			glog.Error("can't get static object anim by subtype %v", obj.Subtype())
-			return nil, nil
-		}
-		playableObj = NewPlayableStaticObject(obj, config)
-		animConfig = config.AnimConfig
-	case object.ObjTypeMovable:
-		if object.MovableObjType(obj.Subtype()) == object.MovableObjNone {
-			return nil, nil
-		}
-		mobj := obj.(object.IMovableObject)
-		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
-		if config == nil {
-			glog.Error("can't get movable object anim by subtype %v", obj.Subtype())
-			return nil, nil
-		}
-		switch obj.Subtype() {
-		case object.ObjSubTypeTank:
-			playableObj = NewPlayableTank(mobj.(object.ITank), config)
-		default:
-			playableObj = NewPlayableMoveObject(mobj, config)
-		}
-		playableObj.Init()
-		animConfig = config.AnimConfig //[mobj.Dir()]
-	}
-	return playableObj, animConfig
+	x, y := po.effect.Pos()
+	return float64(x), float64(y)
 }

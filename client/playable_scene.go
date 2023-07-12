@@ -145,7 +145,7 @@ func (s *PlayableScene) Draw(dstImage *ebiten.Image) {
 func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 	tc := s.playableObjs[obj.InstId()]
 	if tc == nil {
-		playableObj, animConfig := GetPlayableObject(obj)
+		playableObj, animConfig := s.GetPlayableObject(obj, dstImage)
 		tc = &objOpCache{
 			playable:    playableObj,
 			op:          ebiten.DrawImageOptions{},
@@ -156,7 +156,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 		s.playableObjs[obj.InstId()] = tc
 	}
 
-	s._draw(tc, obj.OriginalLeft(), obj.OriginalTop(), obj.OriginalRight(), obj.OriginalBottom(), obj.Width(), obj.Length(), obj.Orientation(), dstImage)
+	s._draw(tc, obj.Width(), obj.Length(), obj.Orientation(), dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image) {
@@ -173,19 +173,16 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 		s.playableEffects[effect.InstId()] = tc
 	}
 
-	cx, cy := effect.Pos()
-	left, top, right, bottom := cx-effect.Width()/2, cy+effect.Height()/2, cx+effect.Width()/2, cy-effect.Height()/2
-	s._draw(tc, left, top, right, bottom, effect.Width(), effect.Height(), 0, dstImage)
+	s._draw(tc, effect.Width(), effect.Height(), 0, dstImage)
 }
 
-func (s *PlayableScene) _draw(tc *objOpCache, left, top, right, bottom, width, length int32, orientation int32, dstImage *ebiten.Image) {
+func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation int32, dstImage *ebiten.Image) {
 	// 移動插值
 	dx, dy := tc.playable.Interpolation()
-	left += int32(dx)
-	right += int32(dx)
-	top += int32(dy)
-	bottom += int32(dy)
-	// todo 注意这里，i是y轴方向，j是x轴方向
+	left := int32(dx) - width/2
+	right := int32(dx) + width/2
+	top := int32(dy) + length/2
+	bottom := int32(dy) - length/2
 	// 由於世界坐標Y軸與屏幕坐標Y軸方向相反，所以變換左上角和右下角的世界坐標到屏幕坐標
 	// 遵循縮放、旋轉、平移的變換順序
 	tc.op.GeoM.Reset()
@@ -206,8 +203,57 @@ func (s *PlayableScene) _draw(tc *objOpCache, left, top, right, bottom, width, l
 		tc.op.GeoM.Translate(float64(dw)/2, float64(dh)/2)
 	}
 	tc.op.GeoM.Translate(float64(lx), float64(ly))
-	// 判断是否插值
 	tc.playable.Draw(dstImage, &tc.op)
+}
+
+// 獲得可播放對象
+func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.Image) (IPlayable, *base.SpriteAnimConfig) {
+	var (
+		playableObj IPlayable
+		animConfig  *base.SpriteAnimConfig
+	)
+	switch obj.Type() {
+	case object.ObjTypeStatic:
+		if object.StaticObjType(obj.Subtype()) == object.StaticObjNone {
+			return nil, nil
+		}
+		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
+		if config == nil {
+			glog.Error("can't get static object anim by subtype %v", obj.Subtype())
+			return nil, nil
+		}
+		playableObj = NewPlayableStaticObject(obj, config)
+		animConfig = config.AnimConfig
+	case object.ObjTypeMovable:
+		if object.MovableObjType(obj.Subtype()) == object.MovableObjNone {
+			return nil, nil
+		}
+		mobj := obj.(object.IMovableObject)
+		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
+		if config == nil {
+			glog.Error("can't get movable object anim by subtype %v", obj.Subtype())
+			return nil, nil
+		}
+		switch obj.Subtype() {
+		case object.ObjSubTypeTank:
+			playableObj = NewPlayableTank(mobj.(object.ITank), config)
+		case object.ObjSubTypeSurroundObj:
+			surroundObj := mobj.(object.ISurroundObject)
+			aroundCenterObj := surroundObj.GetAroundCenterObject()
+			// 環繞物體需要先創建被環繞物體
+			cobjCache := s.playableObjs[aroundCenterObj.InstId()]
+			if cobjCache == nil {
+				s.drawObj(aroundCenterObj, dstImage)
+				cobjCache = s.playableObjs[aroundCenterObj.InstId()]
+			}
+			playableObj = NewPlayableSurroundObj(surroundObj, config, cobjCache.playable)
+		default:
+			playableObj = NewPlayableMoveObject(mobj, config)
+		}
+		playableObj.Init()
+		animConfig = config.AnimConfig //[mobj.Dir()]
+	}
+	return playableObj, animConfig
 }
 
 func (s *PlayableScene) onTankRemovedHandle(args ...any) {

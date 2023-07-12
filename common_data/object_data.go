@@ -152,7 +152,7 @@ var (
 				MoveFunc: object.SurroundObjMove,
 			},
 			AroundRadius:    600,
-			AngularVelocity: 10, // 10毫秒1度
+			AngularVelocity: 20, // 10毫秒1度
 			Clockwise:       false,
 		},
 	}

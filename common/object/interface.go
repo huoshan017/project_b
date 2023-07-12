@@ -54,16 +54,17 @@ type IStaticObject interface {
 type IMovableObject interface {
 	IObject
 	MovableObjStaticInfo() *MovableObjStaticInfo
-	Level() int32          // 等级
-	Dir() Direction        // 方向
-	Speed() int32          // 速度
-	CurrentSpeed() int32   // 当前速度
-	Rotate(angle int32)    // 旋轉，逆時針為正方向
-	RotateTo(angle int32)  // 逆時針旋轉到
-	Move(Direction)        // 移动
-	Stop()                 // 停止
-	IsMoving() bool        // 是否在移动
-	LastPos() (x, y int32) // 上次Update時位置
+	Level() int32             // 等级
+	Dir() Direction           // 方向
+	Speed() int32             // 速度
+	CurrentSpeed() int32      // 当前速度
+	Rotate(angle int32)       // 旋轉，逆時針為正方向
+	RotateTo(angle int32)     // 逆時針旋轉到
+	Move(Direction)           // 移动
+	MovedDistance(x, y int32) // 移動了距離
+	Stop()                    // 停止
+	IsMoving() bool           // 是否在移动
+	LastPos() (x, y int32)    // 上次Update時位置
 
 	// ----------------------------------
 	// 事件接口
@@ -80,9 +81,9 @@ type IMovableObject interface {
 // 環繞物
 type ISurroundObject interface {
 	IMovableObject
-	SurroundObjStaticInfo() *SurroundObjStaticInfo                           // 靜態配置
-	SetCenterObject(centerObjInstId uint32, getObjFunc func(uint32) IObject) // 設置環繞中心物體
-	GetCenterPos() (int32, int32)                                            // 獲得中心點
+	SurroundObjStaticInfo() *SurroundObjStaticInfo                                 // 靜態配置
+	SetAroundCenterObject(centerObjInstId uint32, getObjFunc func(uint32) IObject) // 設置環繞中心物體
+	GetAroundCenterObject() IObject                                                // 獲得中心點
 }
 
 // 车辆接口

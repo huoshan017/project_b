@@ -31,20 +31,20 @@ func (ab *AABB) MoveIntersect(moveDir Direction, aabb *AABB) bool {
 }
 
 // 移動
-func (ab *AABB) Move(dir Direction, distance int32) {
+func (ab *AABB) Move(dir Direction, dx, dy int32) {
 	switch dir {
 	case DirLeft:
-		ab.Left -= int32(distance)
-		ab.Right -= int32(distance)
+		ab.Left += dx
+		ab.Right += dx
 	case DirRight:
-		ab.Left += int32(distance)
-		ab.Right += int32(distance)
+		ab.Left += dx
+		ab.Right += dx
 	case DirUp:
-		ab.Top += int32(distance)
-		ab.Bottom += int32(distance)
+		ab.Top += dy
+		ab.Bottom += dy
 	case DirDown:
-		ab.Top -= int32(distance)
-		ab.Bottom -= int32(distance)
+		ab.Top += dy
+		ab.Bottom += dy
 	}
 }
 

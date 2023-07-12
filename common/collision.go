@@ -5,7 +5,7 @@ import (
 )
 
 // checkMovableObjCollisionObj 檢查可移動物體和物體是否碰撞
-func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent, dir object.Direction, distance float64, obj object.IObject) bool {
+func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent, dir object.Direction, dx, dy float64, obj object.IObject) bool {
 	if !(mobj.StaticInfo().Layer() == obj.StaticInfo().Layer() ||
 		(obj.Type() == object.ObjTypeStatic && (obj.Subtype() == object.ObjSubTypeWater || obj.Subtype() == object.ObjSubTypeIce))) {
 		return false
@@ -17,7 +17,7 @@ func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.ICompon
 	)
 	collisionComp = comp.(*object.ColliderComp)
 	aabb1 = collisionComp.GetAABB(mobj)
-	aabb1.Move(dir, int32(distance))
+	aabb1.Move(dir, int32(dx), int32(dy))
 	comp2 := obj.GetComp("Collider")
 	if comp2 == nil {
 		return false

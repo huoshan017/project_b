@@ -373,7 +373,7 @@ func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
 		return
 	}
 	ball := s.objFactory.NewSurroundObj(common_data.SurroundObjConfigData[1])
-	ball.SetCenterObject(tank.InstId(), s.objFactory.GetObj)
+	ball.SetAroundCenterObject(tank.InstId(), s.objFactory.GetObj)
 	s.surroundObjList.Add(ball.InstId(), ball)
 	s.surroundObjAddedEvent.Call(ball)
 	s.gmap.AddObj(ball)
@@ -421,6 +421,7 @@ func (s *SceneLogic) Update(tick time.Duration) {
 		}
 	}
 
+	// todo 環繞物體一定要在坦克後面更新
 	count = s.surroundObjList.Count()
 	for i := int32(0); i < count; i++ {
 		_, ball := s.surroundObjList.GetByIndex(i)
@@ -538,10 +539,11 @@ func (s *SceneLogic) UnregisterTankEvent(instId uint32, eid base.EventId, handle
 func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	instId := args[0].(uint32)
 	dir := args[1].(object.Direction)
-	distance := args[2].(float64)
-	isMove := args[3].(*bool)
-	isCollision := args[4].(*bool)
-	resObj := args[5].(*object.IObject)
+	dx := args[2].(float64)
+	dy := args[3].(float64)
+	isMove := args[4].(*bool)
+	isCollision := args[5].(*bool)
+	resObj := args[6].(*object.IObject)
 
 	obj := s.objFactory.GetObj(instId)
 	if obj.Type() != object.ObjTypeMovable {
@@ -553,13 +555,13 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 		x, y int32
 		mobj = obj.(object.IMovableObject)
 	)
-	if !s.checkObjMoveRange(mobj, dir, distance, &x, &y) {
+	if !s.checkObjMoveRange(mobj, dir, dx, dy, &x, &y) {
 		mobj.SetPos(x, y)
 		mobj.Stop()
 		*isMove = false
 		*isCollision = false
 		s.onMovableObjReachMapBorder(mobj)
-	} else if s.gmap.CheckMovableObjCollision(mobj, dir, distance, resObj) { //s.pmap.CheckMovableObjCollision(mobj, dir, distance, resObj) {
+	} else if s.gmap.CheckMovableObjCollision(mobj, dir, dx, dy, resObj) { //s.pmap.CheckMovableObjCollision(mobj, dir, distance, resObj) {
 		mobj.Stop()
 		*isCollision = true
 		*isMove = false
@@ -569,27 +571,27 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	}
 }
 
-func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dir object.Direction, distance float64, rx, ry *int32) bool {
+func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dir object.Direction, dx, dy float64, rx, ry *int32) bool {
 	x, y := obj.Pos()
 	var move bool = true
 	switch dir {
 	case object.DirLeft:
-		if float64(x)-distance <= float64(s.mapConfig.X) {
+		if float64(x)+dx <= float64(s.mapConfig.X) {
 			move = false
 			x = s.mapConfig.X
 		}
 	case object.DirRight:
-		if float64(x)+distance >= float64(s.mapConfig.X+s.mapWidth-obj.Width()) {
+		if float64(x)+dx >= float64(s.mapConfig.X+s.mapWidth-obj.Width()) {
 			move = false
 			x = s.mapConfig.X + s.mapWidth - obj.Width()
 		}
 	case object.DirUp:
-		if float64(y)+distance >= float64(s.mapConfig.Y+s.mapHeight-obj.Length()) {
+		if float64(y)+dy >= float64(s.mapConfig.Y+s.mapHeight-obj.Length()) {
 			move = false
 			y = s.mapConfig.Y + s.mapHeight - obj.Length()
 		}
 	case object.DirDown:
-		if float64(y)-distance <= float64(s.mapConfig.Y) {
+		if float64(y)+dy <= float64(s.mapConfig.Y) {
 			move = false
 			y = s.mapConfig.Y
 		}

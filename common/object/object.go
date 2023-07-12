@@ -407,7 +407,6 @@ type MovableObject struct {
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
 	state          moveObjectState // 移动状态
-	updateDistance int32           // Update時更新的距離
 	mySuper        IMovableObject  // 父類
 	checkMoveEvent base.Event      // 檢查坐標事件
 	moveEvent      base.Event      // 移动事件
@@ -514,12 +513,18 @@ func (o *MovableObject) Move(dir Direction) {
 	}
 	if o.state == stopped {
 		o.dir = dir
-		if !o.checkMove(dir, 0) {
+		if !o.checkMove(dir, 0, 0) {
 			return
 		}
 		o.state = toMove
 		log.Debug("@@@ object %v stopped => to move", o.instId)
 	}
+}
+
+// 移動了距離
+func (o *MovableObject) MovedDistance(x, y int32) {
+	o.x += x
+	o.y += y
 }
 
 // 停止
@@ -562,46 +567,46 @@ func (o *MovableObject) Update(tick time.Duration) {
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		o.moveEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.dir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to move => moving", o.instId)
 		return
 	}
 
 	var x, y int32
-	o.updateDistance = int32(GetDefaultLinearDistance(o, tick))
 	if o.MovableObjStaticInfo().MoveFunc != nil {
 		if o.mySuper == nil {
 			o.mySuper = o.super.(IMovableObject)
 		}
 		x, y = o.MovableObjStaticInfo().MoveFunc(o.mySuper, tick)
 	} else {
-		x, y = DefaultMove(o, tick, float64(o.updateDistance))
+		x, y = DefaultMove(o, tick)
 	}
 
 	if o.state != stopped {
-		if o.checkMove(o.dir, float64(o.updateDistance)) {
-			o.SetPos(int32(x), int32(y))
+		ox, oy := o.Pos()
+		if o.checkMove(o.dir, float64(x-ox), float64(y-oy)) {
+			o.SetPos(x, y)
 		}
 	} else {
-		o.SetPos(int32(x), int32(y))
+		o.SetPos(x, y)
 	}
 
 	if o.state == isMoving {
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		o.updateEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		o.updateEvent.Call(Pos{X: x, Y: y}, o.dir, o.CurrentSpeed())
 	} else if o.state == toStop {
 		o.state = stopped
 		// args[0]: object.Pos
 		// args[1]: object.Direction
 		// args[2]: int32
-		o.stopEvent.Call(Pos{X: o.x, Y: o.y}, o.dir, o.CurrentSpeed())
+		o.stopEvent.Call(Pos{X: x, Y: y}, o.dir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
 }
 
-func (o *MovableObject) checkMove(dir Direction, distance float64) bool {
+func (o *MovableObject) checkMove(dir Direction, dx, dy float64) bool {
 	var (
 		isMove, isCollision bool
 		resObj              IObject
@@ -611,7 +616,7 @@ func (o *MovableObject) checkMove(dir Direction, distance float64) bool {
 		return true
 	}
 
-	o.checkMoveEvent.Call(o.instId, dir, distance, &isMove, &isCollision, &resObj)
+	o.checkMoveEvent.Call(o.instId, dir, dx, dy, &isMove, &isCollision, &resObj)
 	if isCollision {
 		comp := o.GetComp("Collider")
 		if comp != nil {

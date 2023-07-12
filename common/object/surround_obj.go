@@ -7,11 +7,11 @@ import (
 
 // 環繞運動物體
 type SurroundObj struct {
-	MovableObject                         // todo 暫時作爲靜態物體處理，object系統要等完善的時候再作爲可移動物體處理
-	centerObjInstId  uint32               // 環繞物體實例id
-	getCenterObjFunc func(uint32) IObject // 獲得環繞物體函數
-	turnAngle        int32                // 轉過角度
-	accumulateTime   time.Duration        // 纍計時間
+	MovableObject                               // todo 暫時作爲靜態物體處理，object系統要等完善的時候再作爲可移動物體處理
+	aroundCenterObjInstId  uint32               // 環繞物體實例id
+	getAroundCenterObjFunc func(uint32) IObject // 獲得環繞物體函數
+	turnAngle              int32                // 轉過角度
+	accumulateTime         time.Duration        // 纍計時間
 }
 
 func NewSurroundObj(instId uint32, staticInfo *SurroundObjStaticInfo) *SurroundObj {
@@ -26,31 +26,26 @@ func (b *SurroundObj) Init(instId uint32, staticInfo *ObjStaticInfo) {
 }
 
 func (b *SurroundObj) Uninit() {
-	b.centerObjInstId = 0
-	b.getCenterObjFunc = nil
+	b.aroundCenterObjInstId = 0
+	b.getAroundCenterObjFunc = nil
 	b.turnAngle = 0
 	b.accumulateTime = 0
 	b.MovableObject.Uninit()
 }
 
-func (b *SurroundObj) SetCenterObject(instId uint32, getFunc func(uint32) IObject) {
-	b.centerObjInstId = instId
-	b.getCenterObjFunc = getFunc
+func (b *SurroundObj) SetAroundCenterObject(instId uint32, getFunc func(uint32) IObject) {
+	b.aroundCenterObjInstId = instId
+	b.getAroundCenterObjFunc = getFunc
 	centerObj := b.getCenterObj()
 	if centerObj == nil {
 		return
 	}
 	ox, oy := centerObj.Pos()
-	b.SetPos(ox, oy+b.SurroundObjStaticInfo().AroundRadius)
+	b.SetPos(ox+b.SurroundObjStaticInfo().AroundRadius, oy)
 }
 
-func (b *SurroundObj) GetCenterPos() (int32, int32, bool) {
-	centerObj := b.getCenterObj()
-	if centerObj == nil {
-		return -1, -1, false
-	}
-	x, y := centerObj.Pos()
-	return x, y, true
+func (b *SurroundObj) GetAroundCenterObject() IObject {
+	return b.getCenterObj()
 }
 
 func (b *SurroundObj) SurroundObjStaticInfo() *SurroundObjStaticInfo {
@@ -58,11 +53,11 @@ func (b *SurroundObj) SurroundObjStaticInfo() *SurroundObjStaticInfo {
 }
 
 func (b *SurroundObj) getCenterObj() IObject {
-	if b.centerObjInstId <= 0 || b.getCenterObjFunc == nil {
+	if b.aroundCenterObjInstId <= 0 || b.getAroundCenterObjFunc == nil {
 		return nil
 	}
 
-	aroundObj := b.getCenterObjFunc(b.centerObjInstId)
+	aroundObj := b.getAroundCenterObjFunc(b.aroundCenterObjInstId)
 	// 找不到環繞物體時，説明環繞物體被銷毀
 	if aroundObj == nil || aroundObj.IsRecycle() {
 		b.ToRecycle()

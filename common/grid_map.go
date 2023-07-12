@@ -199,7 +199,25 @@ func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
 
 func (m *GridMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
 	// 獲得範圍内的靜止和運動的obj
-	lx, by, rx, ty := m.gridBoundsBy(rect.X(), rect.Y(), rect.X()+rect.W(), rect.Y()+rect.H())
+	// rect的範圍向外擴展半個Tile(默認一個grid就是一個Tile)
+	left := rect.X() - m.config.TileWidth/2
+	if left < m.config.X {
+		left = m.config.X
+	}
+	bottom := rect.Y() - m.config.TileHeight/2
+	if bottom < m.config.Y {
+		bottom = m.config.Y
+	}
+	right := rect.X() + rect.W() + m.config.TileWidth/2
+	if right > m.config.X+int32(len(m.config.Layers[0]))*m.config.TileWidth {
+		right = m.config.X + int32(len(m.config.Layers[0]))*m.config.TileWidth
+	}
+	top := rect.Y() + rect.H() + m.config.TileHeight/2
+	if top > m.config.Y+int32(len(m.config.Layers))*m.config.TileHeight {
+		top = m.config.Y + int32(len(m.config.Layers))*m.config.TileHeight
+	}
+
+	lx, by, rx, ty := m.gridBoundsBy(left, bottom, right, top)
 	if rx >= lx && ty >= by {
 		for y := by; y <= ty; y++ {
 			for x := lx; x <= rx; x++ {
@@ -290,7 +308,7 @@ func (m GridMap) posGridIndex(x, y int32) int32 {
 }
 
 // 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
-func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, distance float64, collisionObj *object.IObject) bool {
+func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, dx, dy float64, collisionObj *object.IObject) bool {
 	// 是否擁有碰撞組件
 	comp := obj.GetComp("Collider")
 	if comp == nil {
@@ -340,7 +358,7 @@ func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dir object
 					}
 				}
 				if obj2.InstId() != obj.InstId() {
-					if checkMovableObjCollisionObj(obj, comp, dir, distance, obj2) {
+					if checkMovableObjCollisionObj(obj, comp, dir, dx, dy, obj2) {
 						if collisionObj != nil {
 							*collisionObj = obj2
 						}
