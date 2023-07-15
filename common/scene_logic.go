@@ -80,7 +80,6 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 			tileObj.SetPos(m.TileWidth*int32(col), m.TileHeight*int32(len(m.Layers)-1-line))
 			s.staticObjAddedEvent.Call(tileObj)
 			// 加入網格分區地圖
-			//s.pmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 			s.gmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 		}
 	}
@@ -133,7 +132,6 @@ func (s *SceneLogic) UnloadMap() {
 	s.tankList.Clear()
 	s.bulletList.Clear()
 	s.surroundObjList.Clear()
-	//s.pmap.Unload()
 	s.gmap.Unload()
 	s.objFactory.Clear()
 	s.effectList.Clear()
@@ -231,7 +229,6 @@ func (s *SceneLogic) GetMapConfig() *game_map.Config {
 }
 
 func (s *SceneLogic) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
-	//return s.pmap.GetLayerObjsWithRange(rect)
 	return s.gmap.GetLayerObjsWithRange(rect)
 }
 
@@ -240,7 +237,6 @@ func (s *SceneLogic) GetObj(instId uint32) object.IObject {
 }
 
 func (s *SceneLogic) GetTankListWithRange(rect *math.Rect) []uint32 {
-	//return s.pmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
 	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
 }
 
@@ -295,15 +291,13 @@ func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
 func (s *SceneLogic) AddTank(tank *object.Tank) {
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	s.tankList.Add(tank.InstId(), tank)
-	//s.pmap.AddObj(tank)
 	s.gmap.AddObj(tank)
 }
 
-func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, dir object.Direction, currSpeed int32) *object.Tank {
+func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32 /*dir object.Direction, */, currSpeed int32) *object.Tank {
 	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
 	tank.SetPos(x, y)
 	tank.SetLevel(level)
-	//tank.SetDir(dir)
 	tank.SetCurrentSpeed(currSpeed)
 	// 注冊檢測移動事件處理
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
@@ -319,26 +313,24 @@ func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, di
 func (s *SceneLogic) RemoveTank(instId uint32) {
 	tank := s.tankList.Remove(instId)
 	tank.UnregisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
-	//s.pmap.RemoveObj(tank.InstId())
 	s.gmap.RemoveObj(tank.InstId())
 	s.tankRemovedEvent.Call(tank)
 	s.objFactory.RecycleTank(tank)
 }
 
-func (s *SceneLogic) TankMove(instId uint32, dir object.Direction) {
+func (s *SceneLogic) TankMove(instId uint32 /*dir object.Direction*/, orientation int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
 		return
 	}
-	tank.SetDir(dir)
-	tank.Move(dir)
+	tank.Move( /*dir*/ orientation)
 }
 
 func (s *SceneLogic) TankStopMove(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
-		log.Error("player %v tank not found", instId)
+		log.Error("tank %v not found", instId)
 		return
 	}
 	tank.Stop()
@@ -347,7 +339,7 @@ func (s *SceneLogic) TankStopMove(instId uint32) {
 func (s *SceneLogic) TankFire(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
-		log.Error("player %v tank not found", instId)
+		log.Error("tank %v not found", instId)
 		return
 	}
 	bulletConfig := common_data.BulletConfigData[tank.TankStaticInfo().BulletConfig.BulletId]
@@ -360,8 +352,7 @@ func (s *SceneLogic) TankFire(instId uint32) {
 			c := collider.(*object.ColliderComp)
 			c.SetCollisionHandle(s.onBulletCollision)
 		}
-		bullet.Move(tank.Dir())
-		//s.pmap.AddObj(bullet)
+		bullet.Move( /*tank.Dir()*/ tank.Orientation())
 		s.gmap.AddObj(bullet)
 	}
 }
@@ -369,7 +360,7 @@ func (s *SceneLogic) TankFire(instId uint32) {
 func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
-		log.Error("player %v tank not found", instId)
+		log.Error("tank %v not found", instId)
 		return
 	}
 	ball := s.objFactory.NewSurroundObj(common_data.SurroundObjConfigData[1])
@@ -377,7 +368,16 @@ func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
 	s.surroundObjList.Add(ball.InstId(), ball)
 	s.surroundObjAddedEvent.Call(ball)
 	s.gmap.AddObj(ball)
-	ball.Move(object.DirNone)
+	ball.Move( /*object.DirNone*/ 0)
+}
+
+func (s *SceneLogic) TankRotate(instId uint32, angle int32) {
+	tank, o := s.tankList.Get(instId)
+	if !o {
+		log.Error("tank %v not found", instId)
+		return
+	}
+	tank.Rotate(angle)
 }
 
 func (s *SceneLogic) TankChange(instId uint32, staticInfo *object.TankStaticInfo) bool {
@@ -402,9 +402,8 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	count := s.tankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.tankList.GetByIndex(i)
-		tank.Update(tick) // 相當於MonoBehevior.Update
-		//s.pmap.UpdateMovable(tank) // 相當於MonoBehevior.FixedUpdate
-		s.gmap.UpdateMovable(tank)
+		tank.Update(tick)          // 相當於MonoBehevior.Update
+		s.gmap.UpdateMovable(tank) // 相當於MonoBehevior.FixedUpdate
 		if tank.IsRecycle() {
 			s.tankRecycleList = append(s.tankRecycleList, tank)
 		}
@@ -414,7 +413,6 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	for i := int32(0); i < count; i++ {
 		_, bullet := s.bulletList.GetByIndex(i)
 		bullet.Update(tick)
-		//s.pmap.UpdateMovable(bullet)
 		s.gmap.UpdateMovable(bullet)
 		if bullet.IsRecycle() {
 			s.bulletRecycleList = append(s.bulletRecycleList, bullet)
@@ -444,7 +442,6 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	if len(s.staticObjRecycleList) > 0 {
 		for _, obj := range s.staticObjRecycleList {
 			s.staticObjList.Remove(obj.InstId())
-			//s.pmap.RemoveObj(obj.InstId())
 			s.gmap.RemoveObj(obj.InstId())
 			s.staticObjRemovedEvent.Call(obj)
 			s.objFactory.RecycleStaticObject(obj)
@@ -455,7 +452,6 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	if len(s.tankRecycleList) > 0 {
 		for _, tank := range s.tankRecycleList {
 			s.tankList.Remove(tank.InstId())
-			//s.pmap.RemoveObj(tank.InstId())
 			s.gmap.RemoveObj(tank.InstId())
 			s.tankRemovedEvent.Call(tank)
 			s.objFactory.RecycleTank(tank)
@@ -466,7 +462,6 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	if len(s.bulletRecycleList) > 0 {
 		for _, bullet := range s.bulletRecycleList {
 			s.bulletList.Remove(bullet.InstId())
-			//s.pmap.RemoveObj(bullet.InstId())
 			s.gmap.RemoveObj(bullet.InstId())
 			s.bulletRemovedEvent.Call(bullet)
 			s.objFactory.RecycleBullet(bullet)
@@ -538,12 +533,11 @@ func (s *SceneLogic) UnregisterTankEvent(instId uint32, eid base.EventId, handle
 
 func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	instId := args[0].(uint32)
-	dir := args[1].(object.Direction)
-	dx := args[2].(float64)
-	dy := args[3].(float64)
-	isMove := args[4].(*bool)
-	isCollision := args[5].(*bool)
-	resObj := args[6].(*object.IObject)
+	dx := args[1].(float64)
+	dy := args[2].(float64)
+	isMove := args[3].(*bool)
+	isCollision := args[4].(*bool)
+	resObj := args[5].(*object.IObject)
 
 	obj := s.objFactory.GetObj(instId)
 	if obj.Type() != object.ObjTypeMovable {
@@ -555,13 +549,13 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 		x, y int32
 		mobj = obj.(object.IMovableObject)
 	)
-	if !s.checkObjMoveRange(mobj, dir, dx, dy, &x, &y) {
+	if !s.checkObjMoveRange(mobj /*dir,*/, dx, dy, &x, &y) {
 		mobj.SetPos(x, y)
 		mobj.Stop()
 		*isMove = false
 		*isCollision = false
 		s.onMovableObjReachMapBorder(mobj)
-	} else if s.gmap.CheckMovableObjCollision(mobj, dir, dx, dy, resObj) { //s.pmap.CheckMovableObjCollision(mobj, dir, distance, resObj) {
+	} else if s.gmap.CheckMovableObjCollision(mobj /*dir,*/, dx, dy, resObj) {
 		mobj.Stop()
 		*isCollision = true
 		*isMove = false
@@ -571,30 +565,24 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	}
 }
 
-func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dir object.Direction, dx, dy float64, rx, ry *int32) bool {
+func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject /*dir object.Direction, */, dx, dy float64, rx, ry *int32) bool {
 	x, y := obj.Pos()
 	var move bool = true
-	switch dir {
-	case object.DirLeft:
-		if float64(x)+dx <= float64(s.mapConfig.X) {
-			move = false
-			x = s.mapConfig.X
-		}
-	case object.DirRight:
-		if float64(x)+dx >= float64(s.mapConfig.X+s.mapWidth-obj.Width()) {
-			move = false
-			x = s.mapConfig.X + s.mapWidth - obj.Width()
-		}
-	case object.DirUp:
-		if float64(y)+dy >= float64(s.mapConfig.Y+s.mapHeight-obj.Length()) {
-			move = false
-			y = s.mapConfig.Y + s.mapHeight - obj.Length()
-		}
-	case object.DirDown:
-		if float64(y)+dy <= float64(s.mapConfig.Y) {
-			move = false
-			y = s.mapConfig.Y
-		}
+	if float64(x)+dx <= float64(s.mapConfig.X) {
+		move = false
+		x = s.mapConfig.X
+	}
+	if float64(x)+dx >= float64(s.mapConfig.X+s.mapWidth-obj.Width()) {
+		move = false
+		x = s.mapConfig.X + s.mapWidth - obj.Width()
+	}
+	if float64(y)+dy >= float64(s.mapConfig.Y+s.mapHeight-obj.Length()) {
+		move = false
+		y = s.mapConfig.Y + s.mapHeight - obj.Length()
+	}
+	if float64(y)+dy <= float64(s.mapConfig.Y) {
+		move = false
+		y = s.mapConfig.Y
 	}
 	if !move {
 		if rx != nil {

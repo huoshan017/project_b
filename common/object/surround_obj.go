@@ -1,17 +1,19 @@
 package object
 
 import (
+	"project_b/common/base"
 	"project_b/common/time"
 	"unsafe"
 )
 
 // 環繞運動物體
 type SurroundObj struct {
-	MovableObject                               // todo 暫時作爲靜態物體處理，object系統要等完善的時候再作爲可移動物體處理
+	MovableObject
 	aroundCenterObjInstId  uint32               // 環繞物體實例id
 	getAroundCenterObjFunc func(uint32) IObject // 獲得環繞物體函數
 	turnAngle              int32                // 轉過角度
 	accumulateTime         time.Duration        // 纍計時間
+	lateUpdateEvent        base.Event           // 后更新事件
 }
 
 func NewSurroundObj(instId uint32, staticInfo *SurroundObjStaticInfo) *SurroundObj {
@@ -64,4 +66,22 @@ func (b *SurroundObj) getCenterObj() IObject {
 		return nil
 	}
 	return aroundObj
+}
+
+func (b *SurroundObj) Update(tick time.Duration) {
+	if b.getCenterObj() == nil {
+		return
+	}
+	b.MovableObject.Update(tick)
+	if b.state == isMoving {
+		b.lateUpdateEvent.Call(b.turnAngle, b.accumulateTime)
+	}
+}
+
+func (b *SurroundObj) RegisterLateUpdateEventHandle(handle func(args ...any)) {
+	b.lateUpdateEvent.Register(handle)
+}
+
+func (b *SurroundObj) UnregisterLateUpdateEventHandle(handle func(args ...any)) {
+	b.lateUpdateEvent.Unregister(handle)
 }

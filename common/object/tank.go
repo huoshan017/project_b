@@ -121,14 +121,13 @@ func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulle
 		cx, cy := t.Pos()
 		tl := t.Length()
 		bl := bullet.Length()
-		switch t.dir {
-		case DirLeft:
-			bullet.SetPos(cx-tl/2-bl/2-1, cy)
-		case DirRight:
+		if t.orientation == 0 {
 			bullet.SetPos(cx+tl/2+bl/2+1, cy)
-		case DirUp:
+		} else if t.orientation == 90 {
 			bullet.SetPos(cx, cy+tl/2+bl/2+1)
-		case DirDown:
+		} else if t.orientation == 180 {
+			bullet.SetPos(cx-tl/2-bl/2-1, cy)
+		} else if t.orientation == 270 {
 			bullet.SetPos(cx, cy-tl/2-bl/2-1)
 		}
 		bullet.SetCamp(t.currentCamp)

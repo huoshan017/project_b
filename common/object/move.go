@@ -1,7 +1,7 @@
 package object
 
 import (
-	"math"
+	"project_b/common/base"
 	"project_b/common/time"
 )
 
@@ -16,17 +16,15 @@ func DefaultMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 		fx, fy float64
 	)
 	distance := GetDefaultLinearDistance(mobj, tick)
-	switch mobj.Dir() {
-	case DirLeft:
-		fx = -distance
-	case DirRight:
+	orientation := mobj.Orientation()
+	if orientation == 0 {
 		fx = distance
-	case DirUp:
+	} else if orientation == 90 {
 		fy = distance
-	case DirDown:
+	} else if orientation == 180 {
+		fx = -distance
+	} else if orientation == 270 {
 		fy = -distance
-	default:
-		panic("invalid direction")
 	}
 	x, y := mobj.Pos()
 	return x + int32(fx), y + int32(fy)
@@ -43,7 +41,7 @@ func SurroundObjMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 
 type SurroundMoveInfo struct {
 	LastCenterX, LastCenterY int32
-	TurnAngle                int32
+	TurnAngle                int32 // 單位是分，1/60度
 	AccumulateTime           time.Duration
 }
 
@@ -75,27 +73,27 @@ func getSurroundObjMovedPos(sobj *SurroundObj, tick time.Duration, moveInfo *Sur
 	accumulateTime += tick
 
 	staticInfo := sobj.SurroundObjStaticInfo()
-	angle := int32(accumulateTime / (time.Duration(staticInfo.AngularVelocity) * time.Millisecond))
-	if angle >= 1 {
-		turnAngle += angle
-		if turnAngle >= 360 {
-			turnAngle -= 360
-		}
-		accumulateTime -= time.Duration(angle) * time.Duration(staticInfo.AngularVelocity) * time.Millisecond
-		if moveInfo != nil {
-			moveInfo.TurnAngle = turnAngle
-			moveInfo.AccumulateTime = accumulateTime
-		} else {
-			sobj.turnAngle = turnAngle
-			sobj.accumulateTime = accumulateTime
-		}
+	angle := int32(accumulateTime * time.Duration(staticInfo.AngularVelocity) / time.Second)
+	turnAngle += angle
+	degree, minute := turnAngle/60, turnAngle%60
+	if degree >= 360 {
+		degree -= 360
 	}
-	turnRadian := float64(turnAngle) * math.Pi / 180
-	s, c := math.Sincos(turnRadian)
+	accumulateTime -= time.Duration(angle) * time.Second / time.Duration(staticInfo.AngularVelocity)
+	an := base.NewAngleObj(int16(degree), int16(minute))
+	s := base.Sine(an)
+	c := base.Cosine(an)
 	if staticInfo.Clockwise {
-		x, y = float64(cx)+float64(staticInfo.AroundRadius)*c, float64(cy)-float64(staticInfo.AroundRadius)*s
+		x, y = float64(cx+staticInfo.AroundRadius*int32(c.Numerator)/int32(c.Denominator)), float64(cy-staticInfo.AroundRadius*int32(s.Numerator)/int32(s.Denominator))
 	} else {
-		x, y = float64(cx)+float64(staticInfo.AroundRadius)*c, float64(cy)+float64(staticInfo.AroundRadius)*s
+		x, y = float64(cx+staticInfo.AroundRadius*int32(c.Numerator)/int32(c.Denominator)), float64(cy+staticInfo.AroundRadius*int32(s.Numerator)/int32(s.Denominator))
+	}
+	if moveInfo != nil {
+		moveInfo.TurnAngle = degree*60 + minute
+		moveInfo.AccumulateTime = accumulateTime
+	} else {
+		sobj.turnAngle = degree*60 + minute
+		sobj.accumulateTime = accumulateTime
 	}
 	return x, y
 }

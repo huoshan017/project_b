@@ -202,7 +202,8 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 	m := msg.(*game_proto.MsgPlayerTankMoveReq)
 
 	// 检测移动数据的合法性，计算当前位置
-	t.gameLogic.PlayerTankMove(pd.pid, object.Direction(m.MoveInfo.Direction))
+	orientation := object.Dir2Orientation(object.Direction(m.MoveInfo.Direction))
+	t.gameLogic.PlayerTankMove(pd.pid /*object.Direction(m.MoveInfo.Direction)*/, orientation)
 
 	var ack game_proto.MsgPlayerTankMoveAck
 	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveAck_Id), &ack)
@@ -306,9 +307,9 @@ func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.Msg
 			ChangedTankInfo: &game_proto.PlayerTankInfo{
 				PlayerId: pd.pid,
 				TankInfo: &game_proto.TankInfo{
-					Id:        tank.Id(),
-					Level:     tank.Level(),
-					Direction: int32(tank.Dir()),
+					Id:    tank.Id(),
+					Level: tank.Level(),
+					//Direction: int32(tank.Dir()),
 					CurrSpeed: tank.CurrentSpeed(),
 					CurrPos:   &game_proto.Pos{X: x, Y: y},
 				},

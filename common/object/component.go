@@ -15,8 +15,8 @@ func (ab *AABB) Intersect(aabb *AABB) bool {
 }
 
 // 移動相交
-func (ab *AABB) MoveIntersect(moveDir Direction, aabb *AABB) bool {
-	switch moveDir {
+func (ab *AABB) MoveIntersect( /*moveDir Direction*/ dx, dy float64, aabb *AABB) bool {
+	/*switch moveDir {
 	case DirLeft:
 		return !(ab.Left-1 >= aabb.Right || ab.Right-1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
 	case DirRight:
@@ -27,12 +27,23 @@ func (ab *AABB) MoveIntersect(moveDir Direction, aabb *AABB) bool {
 		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top-1 <= aabb.Bottom || ab.Bottom-1 >= aabb.Top)
 	default:
 		return false
+	}*/
+	if dx > 0 {
+		return !(ab.Left+1 >= aabb.Right || ab.Right+1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
+	} else if dx < 0 {
+		return !(ab.Left-1 >= aabb.Right || ab.Right-1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
 	}
+	if dy > 0 {
+		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top+1 <= aabb.Bottom || ab.Bottom+1 >= aabb.Top)
+	} else if dy < 0 {
+		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top-1 <= aabb.Bottom || ab.Bottom-1 >= aabb.Top)
+	}
+	return false
 }
 
 // 移動
-func (ab *AABB) Move(dir Direction, dx, dy int32) {
-	switch dir {
+func (ab *AABB) Move( /*dir Direction, */ dx, dy int32) {
+	/*switch dir {
 	case DirLeft:
 		ab.Left += dx
 		ab.Right += dx
@@ -45,7 +56,11 @@ func (ab *AABB) Move(dir Direction, dx, dy int32) {
 	case DirDown:
 		ab.Top += dy
 		ab.Bottom += dy
-	}
+	}*/
+	ab.Left += dx
+	ab.Right += dx
+	ab.Top += dy
+	ab.Bottom += dy
 }
 
 // 碰撞組件

@@ -247,19 +247,19 @@ func NewPlayableSurroundObj(sobj object.ISurroundObject, animConfig *MovableObje
 	}
 	pobj.interpolate = true
 	pobj.lastTime = core.GetSyncSendTime()
-	cobj := sobj.GetAroundCenterObject()
-	pobj.lastMoveInfo.LastCenterX, pobj.lastMoveInfo.LastCenterY = cobj.Pos()
+	cx, cy := playableAroundCenterObj.Interpolation()
+	pobj.lastMoveInfo.LastCenterX, pobj.lastMoveInfo.LastCenterY = int32(cx), int32(cy)
 	return pobj
 }
 
 // 初始化
 func (ps *PlayableSurroundObj) Init() {
-	ps.sobj.RegisterUpdateEventHandle(ps.onEventUpdate)
+	ps.sobj.RegisterLateUpdateEventHandle(ps.onEventLateUpdate)
 }
 
 // 反初始化
 func (ps *PlayableSurroundObj) Uninit() {
-	ps.sobj.UnregisterUpdateEventHandle(ps.onEventUpdate)
+	ps.sobj.UnregisterLateUpdateEventHandle(ps.onEventLateUpdate)
 }
 
 // 插值
@@ -272,6 +272,7 @@ func (ps *PlayableSurroundObj) Interpolation() (x, y float64) {
 		return float64(nx), float64(ny)
 	}
 	duration := time.Since(ps.lastTime)
+	ps.lastTime = time.Now()
 	var interpolateX, interpolateY float64
 	if pobj, o := ps.playableAroundCenterObj.(IPlayableMovableObject); !o {
 		interpolateX, interpolateY = ps.playableAroundCenterObj.Interpolation()
@@ -284,10 +285,10 @@ func (ps *PlayableSurroundObj) Interpolation() (x, y float64) {
 }
 
 // 更新事件處理
-func (ps *PlayableSurroundObj) onEventUpdate(args ...any) {
+func (ps *PlayableSurroundObj) onEventLateUpdate(args ...any) {
 	ps.lastTime = core.GetSyncServTime()
-	//ps.lastMoveInfo.TurnAngle = 0
-	//ps.lastMoveInfo.AccumulateTime = 0
+	ps.lastMoveInfo.TurnAngle = args[0].(int32)
+	ps.lastMoveInfo.AccumulateTime = args[1].(time.Duration)
 }
 
 // 可播放效果

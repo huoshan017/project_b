@@ -63,12 +63,12 @@ func net_client_send_time_sync_req(h C.net_handle_t) C.int {
 }
 
 //export net_client_send_tank_move_req
-func net_client_send_tank_move_req(h C.net_handle_t, dir C.int) C.int {
+func net_client_send_tank_move_req(h C.net_handle_t /*dir*/, orientation C.int) C.int {
 	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
-	err := client.SendTankMoveReq(object.Direction(dir))
+	err := client.SendTankMoveReq( /*object.Direction(dir)*/ int32(orientation))
 	if err != nil {
 		return -2
 	}
@@ -76,12 +76,12 @@ func net_client_send_tank_move_req(h C.net_handle_t, dir C.int) C.int {
 }
 
 //export net_client_send_tank_update_pos_req
-func net_client_send_tank_update_pos_req(h C.net_handle_t, state C.int, x, y, dir, speed C.int) C.int {
+func net_client_send_tank_update_pos_req(h C.net_handle_t, state C.int, x, y /*dir*/, orientation, speed C.int) C.int {
 	client := ObjectGet(ObjectId(h)).(*client_core.NetClient)
 	if client == nil {
 		return -1
 	}
-	err := client.SendTankUpdatePosReq(game_proto.MovementState(state), object.Pos{X: int32(x), Y: int32(y)}, object.Direction(dir), int32(speed))
+	err := client.SendTankUpdatePosReq(game_proto.MovementState(state), object.Pos{X: int32(x), Y: int32(y)} /*object.Direction(dir)*/, int32(orientation), int32(speed))
 	if err != nil {
 		return -2
 	}

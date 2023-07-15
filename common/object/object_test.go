@@ -17,8 +17,8 @@ func TestObjectFactory(t *testing.T) {
 					id:      1,
 					w:       100,
 					l:       100,
-					dir:     DirUp,
-					speed:   10,
+					//dir:     DirUp,
+					speed: 10,
 				},
 			},
 		})

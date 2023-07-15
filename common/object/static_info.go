@@ -11,16 +11,16 @@ type ObjStaticInfo struct {
 	camp      CampType     // 陣營
 	x0, y0    int32        // 统一：矩形中心相对于位于局部坐标系的坐标
 	w, l      int32        // 宽度長度
-	dir       Direction
+	//dir       Direction
 	speed     int32
 	layer     int32 // 0-5
 	collision bool  // 是否碰撞
 }
 
 // 创建物体静态信息
-func NewObjStaticInfo(id int32, typ ObjectType, subType ObjSubType, camp CampType, x0, y0, w, l int32, speed int32, dir Direction, layer int32, collision bool) *ObjStaticInfo {
+func NewObjStaticInfo(id int32, typ ObjectType, subType ObjSubType, camp CampType, x0, y0, w, l int32, speed int32 /*dir Direction, */, layer int32, collision bool) *ObjStaticInfo {
 	return &ObjStaticInfo{
-		id: id, typ: typ, subType: subType, camp: camp, x0: x0, y0: y0, w: w, l: l, dir: dir, speed: speed, layer: layer, collision: collision,
+		id: id, typ: typ, subType: subType, camp: camp, x0: x0, y0: y0, w: w, l: l /*dir: dir,*/, speed: speed, layer: layer, collision: collision,
 	}
 }
 
@@ -40,9 +40,9 @@ func (info ObjStaticInfo) Length() int32 {
 	return info.l
 }
 
-func (info ObjStaticInfo) Dir() Direction {
+/*func (info ObjStaticInfo) Dir() Direction {
 	return info.dir
-}
+}*/
 
 func (info ObjStaticInfo) Speed() int32 {
 	return info.speed

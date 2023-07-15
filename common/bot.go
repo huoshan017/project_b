@@ -5,7 +5,6 @@ import (
 	"project_b/common/ds"
 	"project_b/common/log"
 	"project_b/common/math"
-	"project_b/common/object"
 	"project_b/common/time"
 	"project_b/common_data"
 )
@@ -83,37 +82,46 @@ func (b *Bot) Update(tick time.Duration) {
 		ex, ey := enemyTank.Pos()
 		dx := ex - bx
 		dy := ey - by
-		var dir object.Direction
+		//var dir object.Direction
+		var orientation int32
 		if dx < dy {
 			if dy < 0 {
-				dir = object.DirLeft // 敵人在左下，且X軸距離遠于Y軸
+				//dir = object.DirLeft // 敵人在左下，且X軸距離遠于Y軸
+				orientation = 180
 			} else {
 				if dx >= 0 {
-					dir = object.DirUp // 在右上，且Y軸距離遠于X軸
+					//dir = object.DirUp // 在右上，且Y軸距離遠于X軸
+					orientation = 90
 				} else {
 					if -dx < dy {
-						dir = object.DirUp // 在左上，且Y軸距離遠于X軸
+						//dir = object.DirUp // 在左上，且Y軸距離遠于X軸
+						orientation = 90
 					} else {
-						dir = object.DirLeft // 在左上，且X軸距離遠于X軸
+						//dir = object.DirLeft // 在左上，且X軸距離遠于X軸
+						orientation = 180
 					}
 				}
 			}
 		} else {
 			if dy > 0 {
-				dir = object.DirRight // 敵人在右上，且X軸距離遠于Y軸
+				//dir = object.DirRight // 敵人在右上，且X軸距離遠于Y軸
+				orientation = 0
 			} else {
 				if dx <= 0 {
-					dir = object.DirDown // 在左下，且Y軸距離遠于X軸
+					//dir = object.DirDown // 在左下，且Y軸距離遠于X軸
+					orientation = 270
 				} else {
 					if -dy > dx {
-						dir = object.DirDown // 在右下，且Y軸距離大於X軸
+						//dir = object.DirDown // 在右下，且Y軸距離大於X軸
+						orientation = 270
 					} else {
-						dir = object.DirRight // 在右下，且X軸距離大於Y軸
+						//dir = object.DirRight // 在右下，且X軸距離大於Y軸
+						orientation = 0
 					}
 				}
 			}
 		}
-		botTank.Move(dir)
+		botTank.Move( /*dir*/ orientation)
 	}
 	b.totalTick += tick
 }

@@ -434,7 +434,7 @@ func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir o
 					continue
 				}
 				if obj2.InstId() != obj.InstId() && obj2.StaticInfo().Layer() == obj.StaticInfo().Layer() {
-					if checkMovableObjCollisionObj(obj, comp, dir, dx, dy, obj2) {
+					if checkMovableObjCollisionObj(obj, comp /*dir, */, dx, dy, obj2) {
 						if collisionObj != nil {
 							*collisionObj = obj2
 						}
@@ -451,7 +451,7 @@ func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir o
 					log.Warn("Collision: grid(x:%v y:%v) not found static object %v", x, y, item.Key)
 					continue
 				}
-				if checkMovableObjCollisionObj(obj, comp, dir, dx, dy, obj2) {
+				if checkMovableObjCollisionObj(obj, comp /*dir, */, dx, dy, obj2) {
 					if collisionObj != nil {
 						*collisionObj = obj2
 					}

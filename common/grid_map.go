@@ -308,7 +308,7 @@ func (m GridMap) posGridIndex(x, y int32) int32 {
 }
 
 // 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
-func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, dx, dy float64, collisionObj *object.IObject) bool {
+func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject /*dir object.Direction, */, dx, dy float64, collisionObj *object.IObject) bool {
 	// 是否擁有碰撞組件
 	comp := obj.GetComp("Collider")
 	if comp == nil {
@@ -358,7 +358,7 @@ func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dir object
 					}
 				}
 				if obj2.InstId() != obj.InstId() {
-					if checkMovableObjCollisionObj(obj, comp, dir, dx, dy, obj2) {
+					if checkMovableObjCollisionObj(obj, comp /*dir,*/, dx, dy, obj2) {
 						if collisionObj != nil {
 							*collisionObj = obj2
 						}

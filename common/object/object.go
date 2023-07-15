@@ -1,7 +1,6 @@
 package object
 
 import (
-	"fmt"
 	"math"
 	"project_b/common/base"
 	"project_b/common/log"
@@ -395,15 +394,16 @@ type moveObjectState int32
 
 const (
 	stopped  = moveObjectState(0)
-	toMove   = moveObjectState(1)
-	isMoving = moveObjectState(2)
-	toStop   = moveObjectState(3)
+	rotating = moveObjectState(1)
+	toMove   = moveObjectState(2)
+	isMoving = moveObjectState(3)
+	toStop   = moveObjectState(4)
 )
 
 // 可移动的物体
 type MovableObject struct {
 	object
-	dir            Direction       // 方向
+	//dir            Direction       // 方向
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
 	state          moveObjectState // 移动状态
@@ -424,14 +424,14 @@ func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
 // 初始化
 func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
-	o.dir = staticInfo.dir
+	//o.dir = staticInfo.dir
 	o.speed = staticInfo.speed
 	o.setSuper(o)
 }
 
 // 反初始化
 func (o *MovableObject) Uninit() {
-	o.dir = DirNone
+	//o.dir = DirNone
 	o.speed = 0
 	o.lastX = 0
 	o.lastY = 0
@@ -459,19 +459,9 @@ func (o *MovableObject) RestoreStaticInfo() {
 	o.SetCurrentSpeed(o.staticInfo.Speed())
 }
 
-// 设置当前方向
-func (o *MovableObject) SetDir(dir Direction) {
-	o.dir = dir
-}
-
 // 设置当前速度
 func (o *MovableObject) SetCurrentSpeed(speed int32) {
 	o.speed = speed
-}
-
-// 当前方向
-func (o MovableObject) Dir() Direction {
-	return o.dir
 }
 
 // 等级
@@ -506,25 +496,27 @@ func (o *MovableObject) RotateTo(angle int32) {
 }
 
 // 移动
-func (o *MovableObject) Move(dir Direction) {
-	if dir < DirMin || dir > DirMax {
-		str := fmt.Sprintf("invalid object direction %v", dir)
-		panic(str)
-	}
+func (o *MovableObject) Move( /*dir Direction*/ orientation int32) {
 	if o.state == stopped {
-		o.dir = dir
-		if !o.checkMove(dir, 0, 0) {
+		var dx, dy float64
+		if orientation >= 0 && orientation <= 45 {
+			dx = 1
+		} else if orientation > 45 && orientation < 135 {
+			dy = 1
+		} else if orientation >= 135 && orientation < 225 {
+			dx = -1
+		} else if orientation >= 225 && orientation < 315 {
+			dy = -1
+		} else if orientation >= 315 {
+			dx = 1
+		}
+		o.orientation = orientation
+		if !o.checkMove( /*dir, */ dx, dy) {
 			return
 		}
 		o.state = toMove
 		log.Debug("@@@ object %v stopped => to move", o.instId)
 	}
-}
-
-// 移動了距離
-func (o *MovableObject) MovedDistance(x, y int32) {
-	o.x += x
-	o.y += y
 }
 
 // 停止
@@ -564,10 +556,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	if o.state == toMove {
 		o.state = isMoving
-		// args[0]: object.Pos
-		// args[1]: object.Direction
-		// args[2]: int32
-		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.dir, o.CurrentSpeed())
+		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.orientation /*o.dir */, o.CurrentSpeed())
 		log.Debug("@@@ object %v to move => moving", o.instId)
 		return
 	}
@@ -584,7 +573,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	if o.state != stopped {
 		ox, oy := o.Pos()
-		if o.checkMove(o.dir, float64(x-ox), float64(y-oy)) {
+		if o.checkMove( /*o.dir, */ float64(x-ox), float64(y-oy)) {
 			o.SetPos(x, y)
 		}
 	} else {
@@ -592,48 +581,26 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 
 	if o.state == isMoving {
-		// args[0]: object.Pos
-		// args[1]: object.Direction
-		// args[2]: int32
-		o.updateEvent.Call(Pos{X: x, Y: y}, o.dir, o.CurrentSpeed())
+		o.updateEvent.Call(Pos{X: x, Y: y}, o.orientation, o.CurrentSpeed())
 	} else if o.state == toStop {
 		o.state = stopped
-		// args[0]: object.Pos
-		// args[1]: object.Direction
-		// args[2]: int32
-		o.stopEvent.Call(Pos{X: x, Y: y}, o.dir, o.CurrentSpeed())
+		o.stopEvent.Call(Pos{X: x, Y: y}, o.orientation, o.CurrentSpeed())
 		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
 }
 
-func (o *MovableObject) checkMove(dir Direction, dx, dy float64) bool {
+func (o *MovableObject) checkMove( /*dir Direction, */ dx, dy float64) bool {
 	var (
-		isMove, isCollision bool
+		isMove, isCollision bool = true, false
 		resObj              IObject
 	)
 
-	if dir == DirNone {
-		return true
-	}
-
-	o.checkMoveEvent.Call(o.instId, dir, dx, dy, &isMove, &isCollision, &resObj)
+	o.checkMoveEvent.Call(o.instId /*dir, */, dx, dy, &isMove, &isCollision, &resObj)
 	if isCollision {
 		comp := o.GetComp("Collider")
 		if comp != nil {
 			collisionComp := comp.(*ColliderComp)
 			collisionComp.CallCollisionEventHandle(o.super, resObj)
-		}
-	}
-	if isMove {
-		switch dir {
-		case DirLeft:
-			o.orientation = 180
-		case DirRight:
-			o.orientation = 0
-		case DirUp:
-			o.orientation = 90
-		case DirDown:
-			o.orientation = 270
 		}
 	}
 	return isMove

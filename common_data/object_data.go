@@ -20,32 +20,32 @@ var (
 	StaticObjectConfigData = map[object.StaticObjType]*object.ObjStaticInfo{
 		// 砖
 		object.StaticObjBrick: object.NewObjStaticInfo(
-			int32(object.StaticObjBrick), object.ObjTypeStatic, object.ObjSubTypeBrick, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjBrick), object.ObjTypeStatic, object.ObjSubTypeBrick, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 1, true),
 		// 铁
 		object.StaticObjIron: object.NewObjStaticInfo(
-			int32(object.StaticObjIron), object.ObjTypeStatic, object.ObjSubTypeIron, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjIron), object.ObjTypeStatic, object.ObjSubTypeIron, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 1, true),
 		// 樹
 		object.StaticObjTree: object.NewObjStaticInfo(
-			int32(object.StaticObjTree), object.ObjTypeStatic, object.ObjSubTypeTree, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 2, false),
+			int32(object.StaticObjTree), object.ObjTypeStatic, object.ObjSubTypeTree, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 2, false),
 		// 水
 		object.StaticObjWater: object.NewObjStaticInfo(
-			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 0, true),
+			int32(object.StaticObjWater), object.ObjTypeStatic, object.ObjSubTypeWater, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 0, true),
 		// 冰
 		object.StaticObjIce: object.NewObjStaticInfo(
-			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 0, false),
+			int32(object.StaticObjIce), object.ObjTypeStatic, object.ObjSubTypeIce, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 0, false),
 		// 基地
 		object.StaticObjHome: object.NewObjStaticInfo(
-			int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjHome), object.ObjTypeStatic, object.ObjSubTypeHome, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 1, true),
 		// 廢墟
 		object.StaticObjRuins: object.NewObjStaticInfo(
-			int32(object.StaticObjRuins), object.ObjTypeStatic, object.ObjSubTypeRuins, object.CampTypeNone, 0, 0, 320, 320, 0, object.DirNone, 1, true),
+			int32(object.StaticObjRuins), object.ObjTypeStatic, object.ObjSubTypeRuins, object.CampTypeNone, 0, 0, 320, 320, 0 /*object.DirNone, */, 1, true),
 	}
 
 	// 炮彈靜態配置
 	BulletConfigData = map[int32]*object.BulletStaticInfo{
 		1: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1200, object.DirUp, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeBullet, object.CampTypeNone, 0, 0, 80, 80, 1200 /*object.DirUp,*/, 1, true),
 			},
 			Range:       1000,
 			Damage:      100,
@@ -69,7 +69,7 @@ var (
 	TankConfigData = map[int32]*object.TankStaticInfo{
 		1: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600 /*object.DirUp, */, 1, true),
 			},
 			Orientation:  DefaultObjectOrientationAngle,
 			Level:        1,
@@ -77,7 +77,7 @@ var (
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600 /*object.DirUp, */, 1, true),
 			},
 			Orientation:  DefaultObjectOrientationAngle,
 			Level:        1,
@@ -85,7 +85,7 @@ var (
 		},
 		1000: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600, object.DirUp, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 600 /*object.DirUp, */, 1, true),
 			},
 			Orientation:  DefaultObjectOrientationAngle,
 			Level:        1,
@@ -93,7 +93,7 @@ var (
 		},
 		1001: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 900, object.DirUp, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 900 /*object.DirUp, */, 1, true),
 			},
 			Orientation:  DefaultObjectOrientationAngle,
 			Level:        1,
@@ -101,7 +101,7 @@ var (
 		},
 		1002: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 650, object.DirUp, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubTypeTank, object.CampTypeNone, 0, 0, 280, 280, 650 /*object.DirUp,*/, 1, true),
 			},
 			Orientation:  DefaultObjectOrientationAngle,
 			Level:        1,
@@ -148,11 +148,11 @@ var (
 		1: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(
-					1, object.ObjTypeMovable, object.ObjSubTypeSurroundObj, object.CampTypeNone, 0, 0, 80, 80, 0, object.DirNone, 1, true),
+					1, object.ObjTypeMovable, object.ObjSubTypeSurroundObj, object.CampTypeNone, 0, 0, 80, 80, 0 /*object.DirNone, */, 1, true),
 				MoveFunc: object.SurroundObjMove,
 			},
 			AroundRadius:    600,
-			AngularVelocity: 20, // 10毫秒1度
+			AngularVelocity: 100 * 60, // 單位: 分(1/60度)每秒
 			Clockwise:       false,
 		},
 	}

@@ -99,3 +99,17 @@ const (
 	CampTypeThree = 3    // 陣營3
 	CampTypeFour  = 4    // 陣營4
 )
+
+func Dir2Orientation(dir Direction) int32 {
+	switch dir {
+	case DirLeft:
+		return 180
+	case DirRight:
+		return 0
+	case DirUp:
+		return 90
+	case DirDown:
+		return 270
+	}
+	return 0
+}

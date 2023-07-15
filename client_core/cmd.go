@@ -17,6 +17,7 @@ const (
 	CMD_RESTORE_TANK       CmdCode = 4   // 恢复坦克
 	CMD_FIRE               CmdCode = 5   // 開炮
 	CMD_RELEASE_SMALL_BALL CmdCode = 6   // 釋放小球 測試用
+	CMD_ROTATE             CmdCode = 7   // 旋轉
 	CMD_RESTART            CmdCode = 100 // 重新开始
 )
 
@@ -46,6 +47,7 @@ func CreateCmdHandleManager(net *NetClient, logic *GameLogic) *CmdHandleManager 
 		{CMD_RESTORE_TANK, m.handleRestoreTank},
 		{CMD_FIRE, m.handleFire},
 		{CMD_RELEASE_SMALL_BALL, m.handleReleaseSurroundObj},
+		{CMD_ROTATE, m.handleRotateTank},
 	}
 	m.handles = handles
 	return m
@@ -73,7 +75,8 @@ func (m *CmdHandleManager) Handle(cmd CmdCode, args ...any) {
 // 移动命令
 func (m *CmdHandleManager) handleMove(args ...any) {
 	dir := args[0].(object.Direction)
-	m.logic.MyPlayerTankMove(dir)
+	orientation := object.Dir2Orientation(dir)
+	m.logic.MyPlayerTankMove( /*dir*/ orientation)
 	// todo 在GameLogic中触发移动事件
 	//m.game.eventMgr.InvokeEvent(EventIdTankMove)
 }
@@ -108,4 +111,9 @@ func (m *CmdHandleManager) handleFire(args ...any) {
 
 func (m *CmdHandleManager) handleReleaseSurroundObj(args ...any) {
 	m.logic.MyPlayerTankReleaseSurroundObj()
+}
+
+func (m *CmdHandleManager) handleRotateTank(args ...any) {
+	angle := args[0].(int)
+	m.logic.MyPlayerTankRotate(int32(angle))
 }

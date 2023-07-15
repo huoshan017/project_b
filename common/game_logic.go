@@ -199,12 +199,13 @@ func (g *GameLogic) NewPlayerEnterWithPos(pid uint64, x, y int32) *object.Tank {
 }
 
 // 玩家進入
-func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32, dir object.Direction, currentSpeed int32) uint32 {
-	tank := g.scene.NewTankWithStaticInfo(id, level, x, y, dir, currentSpeed)
+func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32 /*dir object.Direction, */, orientation int32, currentSpeed int32) uint32 {
+	tank := g.scene.NewTankWithStaticInfo(id, level, x, y /*dir, */, currentSpeed)
 	if tank == nil {
 		log.Error("player %v enter with static info to create tank failed", pid)
 		return 0
 	}
+	tank.RotateTo(orientation)
 	g.player2Tank.Add(pid, tank.InstId())
 	g.tank2Player.Add(tank.InstId(), pid)
 	return tank.InstId()
@@ -234,12 +235,12 @@ func (g *GameLogic) PlayerLeave(pid uint64) {
 }
 
 // 玩家坦克移动
-func (g *GameLogic) PlayerTankMove(uid uint64, moveDir object.Direction) {
+func (g *GameLogic) PlayerTankMove(uid uint64 /*moveDir object.Direction*/, orientation int32) {
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
 	}
-	g.scene.TankMove(tankId, moveDir)
+	g.scene.TankMove(tankId /*moveDir*/, orientation)
 }
 
 // 玩家坦克停止
@@ -287,8 +288,17 @@ func (g *GameLogic) PlayerTankReleaseSurroundObj(uid uint64) {
 	g.scene.TankReleaseSurroundObj(tankId)
 }
 
+// 坦克旋轉
+func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.TankRotate(tankId, angle)
+}
+
 // 检测玩家
-func (g *GameLogic) CheckPlayerTankStartMove(uid uint64, startPos object.Pos, dir object.Direction, speed int32) bool {
+/*func (g *GameLogic) CheckPlayerTankStartMove(uid uint64, startPos object.Pos, dir object.Direction, speed int32) bool {
 	tank := g.GetPlayerTank(uid)
 	if tank == nil {
 		log.Error("Cant get tank from uid %v", uid)
@@ -305,7 +315,7 @@ func (g *GameLogic) CheckPlayerTankStartMove(uid uint64, startPos object.Pos, di
 	}
 	g.PlayerTankMove(uid, dir)
 	return true
-}
+}*/
 
 // 創建bot列表
 func (g *GameLogic) createBots(config *game_map.Config) {
@@ -316,7 +326,7 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 			continue
 		}
 		// todo 等級從1開始
-		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1, b.Pos.X, b.Pos.Y, staticInfo.Dir(), staticInfo.Speed())
+		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1, b.Pos.X, b.Pos.Y /*staticInfo.Dir(),*/, staticInfo.Speed())
 		tank.SetCamp(b.Camp)
 		tank.SetLevel(b.Level)
 		bot := g.botMgr.NewBot(g.scene, tank.InstId())

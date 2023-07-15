@@ -16,7 +16,7 @@ func TankObj2ProtoInfo(obj *object.Tank, protoInfo *game_proto.TankInfo) {
 	}
 	protoInfo.CurrPos.X = x
 	protoInfo.CurrPos.Y = y
-	protoInfo.Direction = int32(obj.Dir())
+	//protoInfo.Direction = int32(obj.Dir())
 	protoInfo.CurrSpeed = obj.CurrentSpeed()
 }
 
@@ -25,6 +25,6 @@ func TankProtoInfo2Obj(protoInfo *game_proto.TankInfo, obj *object.Tank) {
 	obj.Init(protoInfo.InstId, &td.ObjStaticInfo)
 	obj.SetLevel(protoInfo.Level)
 	obj.SetPos(protoInfo.CurrPos.X, protoInfo.CurrPos.Y)
-	obj.SetDir(object.Direction(protoInfo.Direction))
+	//obj.SetDir(object.Direction(protoInfo.Direction))
 	obj.SetCurrentSpeed(protoInfo.CurrSpeed)
 }

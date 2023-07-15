@@ -14,7 +14,7 @@ int net_client_send_time_sync_req(net_handle_t h);
 
 int net_client_send_tank_move_req(net_handle_t h, int dir);
 
-int net_client_send_tank_update_pos_req(net_handle_t h, int move_state, int x, int y, int dir, int speed);
+int net_client_send_tank_update_pos_req(net_handle_t h, int move_state, int x, int y, int orientation/*dir*/, int speed);
 
 int net_client_send_tank_stop_move_req(net_handle_t h);
 

@@ -294,7 +294,8 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) e
 		return nil
 	}
 
-	h.logic.PlayerTankMove(sync.PlayerId, object.Direction(sync.MoveInfo.Direction))
+	orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
+	h.logic.PlayerTankMove(sync.PlayerId /*object.Direction(sync.MoveInfo.Direction)*/, orientation)
 
 	Log().Debug("Player %v move sync", sync.PlayerId)
 
@@ -355,7 +356,8 @@ func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg a
 
 	switch sync.State {
 	case game_proto.MovementState_StartMove:
-		h.logic.PlayerTankMove(sync.PlayerId, object.Direction(sync.MoveInfo.Direction))
+		orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
+		h.logic.PlayerTankMove(sync.PlayerId /*object.Direction(sync.MoveInfo.Direction)*/, orientation)
 	case game_proto.MovementState_Moving:
 
 	case game_proto.MovementState_ToStop:
