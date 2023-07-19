@@ -15,19 +15,7 @@ func (ab *AABB) Intersect(aabb *AABB) bool {
 }
 
 // 移動相交
-func (ab *AABB) MoveIntersect( /*moveDir Direction*/ dx, dy float64, aabb *AABB) bool {
-	/*switch moveDir {
-	case DirLeft:
-		return !(ab.Left-1 >= aabb.Right || ab.Right-1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
-	case DirRight:
-		return !(ab.Left+1 >= aabb.Right || ab.Right+1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
-	case DirUp:
-		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top+1 <= aabb.Bottom || ab.Bottom+1 >= aabb.Top)
-	case DirDown:
-		return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top-1 <= aabb.Bottom || ab.Bottom-1 >= aabb.Top)
-	default:
-		return false
-	}*/
+func (ab *AABB) MoveIntersect( /*moveDir Direction*/ dx, dy int32, aabb *AABB) bool {
 	if dx > 0 {
 		return !(ab.Left+1 >= aabb.Right || ab.Right+1 <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
 	} else if dx < 0 {
@@ -43,20 +31,6 @@ func (ab *AABB) MoveIntersect( /*moveDir Direction*/ dx, dy float64, aabb *AABB)
 
 // 移動
 func (ab *AABB) Move( /*dir Direction, */ dx, dy int32) {
-	/*switch dir {
-	case DirLeft:
-		ab.Left += dx
-		ab.Right += dx
-	case DirRight:
-		ab.Left += dx
-		ab.Right += dx
-	case DirUp:
-		ab.Top += dy
-		ab.Bottom += dy
-	case DirDown:
-		ab.Top += dy
-		ab.Bottom += dy
-	}*/
 	ab.Left += dx
 	ab.Right += dx
 	ab.Top += dy
@@ -75,8 +49,6 @@ func (c ColliderComp) Name() string {
 
 // 獲得AABB
 func (c ColliderComp) GetAABB(obj IObject) AABB {
-	//left, bottom := obj.LeftBottom()
-	//right, top := obj.RightTop()
 	return AABB{
 		Left:   obj.OriginalLeft(),
 		Bottom: obj.OriginalBottom(),
@@ -95,4 +67,13 @@ func (c *ColliderComp) CallCollisionEventHandle(args ...any) {
 	if c.collisionHandle != nil {
 		c.collisionHandle(args...)
 	}
+}
+
+// 追蹤組件
+type TrackComp struct {
+}
+
+// 組件名稱
+func (c TrackComp) Name() string {
+	return "Track"
 }

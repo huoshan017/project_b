@@ -40,8 +40,8 @@ func (l *GameLogic) MyPlayerTankStopMove() {
 	l.PlayerTankStopMove(l.myId)
 }
 
-func (l *GameLogic) MyPlayerTankFire() {
-	l.PlayerTankFire(l.myId)
+func (l *GameLogic) MyPlayerTankFire(shellId int32) {
+	l.PlayerTankFire(l.myId, shellId)
 }
 
 func (l *GameLogic) MyPlayerTankReleaseSurroundObj() {

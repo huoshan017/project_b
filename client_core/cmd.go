@@ -77,16 +77,12 @@ func (m *CmdHandleManager) handleMove(args ...any) {
 	dir := args[0].(object.Direction)
 	orientation := object.Dir2Orientation(dir)
 	m.logic.MyPlayerTankMove( /*dir*/ orientation)
-	// todo 在GameLogic中触发移动事件
-	//m.game.eventMgr.InvokeEvent(EventIdTankMove)
 }
 
 // 停止移动命令
 func (m *CmdHandleManager) handleStopMove(args ...any) {
 	log.Debug("handleStopMove")
 	m.logic.MyPlayerTankStopMove()
-	// todo 在GameLogic中触发停止事件
-	//m.game.eventMgr.InvokeEvent(EventIdTankStopMove)
 }
 
 // 改变坦克命令
@@ -106,7 +102,8 @@ func (m *CmdHandleManager) handleRestoreTank(args ...any) {
 }
 
 func (m *CmdHandleManager) handleFire(args ...any) {
-	m.logic.MyPlayerTankFire()
+	shellId := args[0].(int)
+	m.logic.MyPlayerTankFire(int32(shellId))
 }
 
 func (m *CmdHandleManager) handleReleaseSurroundObj(args ...any) {

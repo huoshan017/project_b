@@ -32,10 +32,10 @@ func (v *Vehicle) Uninit() {
 // 坦克
 type Tank struct {
 	Vehicle
-	level           int32
-	changeEvent     base.Event
-	fireTime        time.CustomTime
-	bulletFireCount int8
+	level                      int32
+	changeEvent                base.Event
+	fireTime, fireIntervalTime time.CustomTime
+	shellFireCount             int8
 }
 
 // 创建坦克
@@ -96,42 +96,42 @@ func (t *Tank) UnregisterChangeEventHandle(handle func(args ...any)) {
 }
 
 // 檢測是否可以開炮
-func (t *Tank) CheckAndFire(newBulletFunc func(*BulletStaticInfo) *Bullet, bulletInfo *BulletStaticInfo) *Bullet {
+func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell, shellInfo *ShellStaticInfo) *Shell {
 	var (
-		bullet     *Bullet
+		shell      *Shell
 		staticInfo = t.TankStaticInfo()
 	)
 	// 先檢測炮彈冷卻時間
-	if t.fireTime.IsZero() || time.Since(t.fireTime) >= time.Duration(staticInfo.BulletConfig.Cooldown)*time.Millisecond {
-		bullet = newBulletFunc(bulletInfo)
+	if t.fireTime.IsZero() || time.Since(t.fireTime) >= time.Duration(staticInfo.ShellConfig.Cooldown)*time.Millisecond {
+		shell = newShellFunc(shellInfo)
 		t.fireTime = time.Now()
-		t.bulletFireCount = 1
+		t.shellFireCount = 1
 	}
 	// 再檢測一次發射中的炮彈間隔
-	/*if t.bulletConfig.AmountFireOneTime > 1 && t.bulletFireCount < t.bulletConfig.AmountFireOneTime {
-		if t.fireIntervalTime.IsZero() || time.Since(t.fireIntervalTime) >= time.Duration(t.bulletConfig.IntervalInFire)*time.Millisecond {
-			if bullet == nil {
-				bullet = newBulletFunc(bulletInfo)
+	if t.TankStaticInfo().ShellConfig.AmountFireOneTime > 1 && t.shellFireCount < t.TankStaticInfo().ShellConfig.AmountFireOneTime {
+		if t.fireIntervalTime.IsZero() || time.Since(t.fireIntervalTime) >= time.Duration(t.TankStaticInfo().ShellConfig.IntervalInFire)*time.Millisecond {
+			if shell == nil {
+				shell = newShellFunc(shellInfo)
 			}
 			t.fireIntervalTime = time.Now()
-			t.bulletFireCount += 1
+			t.shellFireCount += 1
 		}
-	}*/
-	if bullet != nil {
+	}
+	if shell != nil {
 		cx, cy := t.Pos()
 		tl := t.Length()
-		bl := bullet.Length()
-		if t.orientation == 0 {
-			bullet.SetPos(cx+tl/2+bl/2+1, cy)
-		} else if t.orientation == 90 {
-			bullet.SetPos(cx, cy+tl/2+bl/2+1)
-		} else if t.orientation == 180 {
-			bullet.SetPos(cx-tl/2-bl/2-1, cy)
-		} else if t.orientation == 270 {
-			bullet.SetPos(cx, cy-tl/2-bl/2-1)
+		bl := shell.Length()
+		if t.orientation.IsRight() {
+			shell.SetPos(cx+tl/2+bl/2+1, cy)
+		} else if t.orientation.IsUp() {
+			shell.SetPos(cx, cy+tl/2+bl/2+1)
+		} else if t.orientation.IsLeft() {
+			shell.SetPos(cx-tl/2-bl/2-1, cy)
+		} else if t.orientation.IsDown() {
+			shell.SetPos(cx, cy-tl/2-bl/2-1)
 		}
-		bullet.SetCamp(t.currentCamp)
-		bullet.SetCurrentSpeed(bulletInfo.speed)
+		shell.SetCamp(t.currentCamp)
+		shell.SetCurrentSpeed(shell.speed)
 	}
-	return bullet
+	return shell
 }

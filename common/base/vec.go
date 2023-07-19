@@ -6,6 +6,18 @@ type Vec2 struct {
 	x, y int32
 }
 
+func NewVec2(x, y int32) Vec2 {
+	return Vec2{x: x, y: y}
+}
+
+func (v Vec2) X() int32 {
+	return v.x
+}
+
+func (v Vec2) Y() int32 {
+	return v.y
+}
+
 func (v Vec2) Add(v2 Vec2) Vec2 {
 	return Vec2{v.x + v2.x, v.y + v2.y}
 }
@@ -45,4 +57,8 @@ func (v Vec2) Rotate(angle int32) Vec2 {
 
 func (v Vec2) Scale(sx, sy int32) Vec2 {
 	return Vec2{v.x * sx, v.y * sy}
+}
+
+func (v Vec2) ToAngle() Angle {
+	return ArcTangent(v.y, v.x)
 }

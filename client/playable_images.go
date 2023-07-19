@@ -25,6 +25,7 @@ var (
 	splash_img    *ebiten.Image
 	tile_img      *ebiten.Image
 	smallball_img *ebiten.Image
+	shell_img     *ebiten.Image
 )
 
 func initImages() {
@@ -45,6 +46,7 @@ func initImages() {
 		&splash_img,
 		&tile_img,
 		&smallball_img,
+		&shell_img,
 	}
 
 	imgPathList := []string{
@@ -64,6 +66,7 @@ func initImages() {
 		"png/splash.png",
 		"png/tile.png",
 		"png/small_ball.png",
+		"png/shell.png",
 	}
 
 	var err error

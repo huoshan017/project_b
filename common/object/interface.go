@@ -1,6 +1,9 @@
 package object
 
-import "project_b/common/time"
+import (
+	"project_b/common/base"
+	"project_b/common/time"
+)
 
 type IRecycle interface {
 	ToRecycle()
@@ -16,7 +19,7 @@ type IObject interface {
 	InstId() uint32                                     // 实例id
 	Id() int32                                          // 注意：这是配置id
 	Type() ObjectType                                   // 类型
-	Subtype() ObjSubType                                // 子类型
+	Subtype() ObjSubtype                                // 子类型
 	OwnerType() ObjOwnerType                            // 所有者类型
 	StaticInfo() *ObjStaticInfo                         // 靜態信息
 	Center() (x, y int32)                               // 中心點坐標，本地坐標係
@@ -28,7 +31,7 @@ type IObject interface {
 	LeftTop() (int32, int32)                            // 左上坐標，相對於本地坐標系
 	RightTop() (int32, int32)                           // 右上坐标，相對於本地坐標系
 	RightBottom() (int32, int32)                        // 右下坐標，相對於本地坐標系
-	Orientation() int32                                 // 朝向(x軸正向逆時針旋轉角度)，相對於世界坐標系，垂直於寬(Width)，平行於長(Height)
+	Orientation() base.Angle                            // 朝向(x軸正向逆時針旋轉角度)，相對於世界坐標系，垂直於寬(Width)，平行於長(Height)
 	OriginalLeft() int32                                // 原始左坐標
 	OriginalRight() int32                               // 原始右坐標
 	OriginalTop() int32                                 // 原始上坐標
@@ -56,14 +59,14 @@ type IMovableObject interface {
 	MovableObjStaticInfo() *MovableObjStaticInfo
 	Level() int32 // 等级
 	//Dir() Direction           // 方向
-	Speed() int32                          // 速度
-	CurrentSpeed() int32                   // 当前速度
-	Rotate(angle int32)                    // 旋轉，逆時針為正方向 [0, 360)
-	RotateTo(angle int32)                  // 逆時針旋轉到 [0, 360)
-	Move( /*Direction*/ orientation int32) // 移动
-	Stop()                                 // 停止
-	IsMoving() bool                        // 是否在移动
-	LastPos() (x, y int32)                 // 上次Update時位置
+	Speed() int32              // 速度
+	CurrentSpeed() int32       // 当前速度
+	Rotate(angle base.Angle)   // 旋轉，逆時針為正方向 [0, 360)
+	RotateTo(angle base.Angle) // 逆時針旋轉到 [0, 360)
+	Move(dir base.Angle)       // 移动
+	Stop()                     // 停止
+	IsMoving() bool            // 是否在移动
+	LastPos() (x, y int32)     // 上次Update時位置
 
 	// ----------------------------------
 	// 事件接口

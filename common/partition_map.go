@@ -378,7 +378,7 @@ func (m *PartitionMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap
 	return m.resultLayerObjs
 }
 
-func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype object.ObjSubType) []uint32 {
+func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype object.ObjSubtype) []uint32 {
 	if len(m.resultMovableObjList) > 0 {
 		m.resultMovableObjList = m.resultMovableObjList[:0]
 	}
@@ -394,7 +394,7 @@ func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, sub
 					if !o {
 						continue
 					}
-					if subtype != object.ObjSubTypeNone && obj.Subtype() == subtype {
+					if subtype != object.ObjSubtypeNone && obj.Subtype() == subtype {
 						m.resultMovableObjList = append(m.resultMovableObjList, obj.InstId())
 					}
 				}
@@ -405,11 +405,11 @@ func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, sub
 }
 
 func (m *PartitionMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
-	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeNone)
+	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeNone)
 }
 
 // checkMovableObjCollision 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
-func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, dx, dy float64, collisionObj *object.IObject) bool {
+func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, dx, dy int32, collisionObj *object.IObject) bool {
 	// 是否擁有碰撞組件
 	comp := obj.GetComp("Collider")
 	if comp == nil {

@@ -75,15 +75,14 @@ func (b *Bot) Update(tick time.Duration) {
 			break
 		}
 		if botTank.IsMoving() {
-			b.scene.TankFire(botTank.InstId())
+			b.scene.TankFire(botTank.InstId(), 1)
 			break
 		}
 		bx, by := botTank.Pos()
 		ex, ey := enemyTank.Pos()
 		dx := ex - bx
 		dy := ey - by
-		//var dir object.Direction
-		var orientation int32
+		var orientation int16
 		if dx < dy {
 			if dy < 0 {
 				//dir = object.DirLeft // 敵人在左下，且X軸距離遠于Y軸
@@ -121,7 +120,8 @@ func (b *Bot) Update(tick time.Duration) {
 				}
 			}
 		}
-		botTank.Move( /*dir*/ orientation)
+		angle := base.NewAngleObj(orientation, 0)
+		botTank.Move(angle)
 	}
 	b.totalTick += tick
 }

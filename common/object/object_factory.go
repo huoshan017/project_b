@@ -81,7 +81,7 @@ func (f *ObjectFactory) RecycleStaticObject(obj IStaticObject) bool {
 }
 
 func (f *ObjectFactory) NewTank(info *TankStaticInfo) *Tank {
-	if info.typ != ObjTypeMovable && info.subType != ObjSubTypeTank {
+	if info.typ != ObjTypeMovable && info.subType != ObjSubtypeTank {
 		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeTank")
 		return nil
 	}
@@ -107,35 +107,35 @@ func (f *ObjectFactory) RecycleTank(tank *Tank) bool {
 	return res
 }
 
-func (f *ObjectFactory) NewBullet(info *BulletStaticInfo) *Bullet {
-	if info.typ != ObjTypeMovable && info.subType != ObjSubTypeBullet {
-		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeBullet")
+func (f *ObjectFactory) NewShell(info *ShellStaticInfo) *Shell {
+	if info.typ != ObjTypeMovable && info.subType != ObjSubtypeShell {
+		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeShell")
 		return nil
 	}
 	id := f.getNewObjId()
-	l := len(f.freeMovableObjs[MovableObjBullet])
-	var obj *Bullet
+	l := len(f.freeMovableObjs[MovableObjShell])
+	var obj *Shell
 	if l == 0 {
-		obj = NewBullet(id, info)
+		obj = NewShell(id, info)
 	} else {
-		obj = f.freeMovableObjs[MovableObjBullet][l-1].(*Bullet)
+		obj = f.freeMovableObjs[MovableObjShell][l-1].(*Shell)
 		obj.Init(id, &info.ObjStaticInfo)
-		f.freeMovableObjs[MovableObjBullet] = f.freeMovableObjs[MovableObjBullet][:l-1]
+		f.freeMovableObjs[MovableObjShell] = f.freeMovableObjs[MovableObjShell][:l-1]
 	}
 	f.objMap[id] = obj
 	return obj
 }
 
-func (f *ObjectFactory) RecycleBullet(bullet *Bullet) bool {
-	res := f.recycleMovableObject(bullet)
+func (f *ObjectFactory) RecycleShell(shell *Shell) bool {
+	res := f.recycleMovableObject(shell)
 	if res {
-		bullet.Uninit()
+		shell.Uninit()
 	}
 	return res
 }
 
 func (f *ObjectFactory) NewSurroundObj(info *SurroundObjStaticInfo) *SurroundObj {
-	if info.typ != ObjTypeMovable && info.subType != ObjSubTypeSurroundObj {
+	if info.typ != ObjTypeMovable && info.subType != ObjSubtypeSurroundObj {
 		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeSurroundObj")
 		return nil
 	}

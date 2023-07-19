@@ -5,9 +5,9 @@ import (
 )
 
 // checkMovableObjCollisionObj 檢查可移動物體和物體是否碰撞
-func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent /*dir object.Direction, */, dx, dy float64, obj object.IObject) bool {
+func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent /*dir object.Direction, */, dx, dy int32, obj object.IObject) bool {
 	if !(mobj.StaticInfo().Layer() == obj.StaticInfo().Layer() ||
-		(obj.Type() == object.ObjTypeStatic && (obj.Subtype() == object.ObjSubTypeWater || obj.Subtype() == object.ObjSubTypeIce))) {
+		(obj.Type() == object.ObjTypeStatic && (obj.Subtype() == object.ObjSubtypeWater || obj.Subtype() == object.ObjSubtypeIce))) {
 		return false
 	}
 
@@ -52,42 +52,42 @@ func onMovableObjCollisionObj(mobj object.IMovableObject, obj object.IObject) bo
 		mobjSubtype = mobj.Subtype()
 		collision   bool
 	)
-	if mobjSubtype == object.ObjSubTypeBullet {
+	if mobjSubtype == object.ObjSubtypeShell {
 		switch obj.Type() {
 		case object.ObjTypeStatic:
 			switch obj.Subtype() {
-			case object.ObjSubTypeBrick, object.ObjSubTypeIron, object.ObjSubTypeHome:
+			case object.ObjSubtypeBrick, object.ObjSubtypeIron, object.ObjSubtypeHome:
 				collision = true
 			default:
 			}
 		case object.ObjTypeMovable:
 			switch obj.Subtype() {
-			case object.ObjSubTypeTank:
+			case object.ObjSubtypeTank:
 				if mobj.Camp() != obj.Camp() {
 					collision = true
 				}
-			case object.ObjSubTypeBullet:
+			case object.ObjSubtypeShell:
 				if mobj.Camp() != obj.Camp() {
 					collision = true
 				}
 			default:
 			}
 		}
-	} else if mobjSubtype == object.ObjSubTypeTank {
+	} else if mobjSubtype == object.ObjSubtypeTank {
 		switch obj.Type() {
 		case object.ObjTypeStatic:
 			switch obj.Subtype() {
-			case object.ObjSubTypeBrick, object.ObjSubTypeIron, object.ObjSubTypeWater, object.ObjSubTypeIce, object.ObjSubTypeHome:
+			case object.ObjSubtypeBrick, object.ObjSubtypeIron, object.ObjSubtypeWater, object.ObjSubtypeIce, object.ObjSubtypeHome:
 				collision = true
 			default:
 			}
 		case object.ObjTypeMovable:
 			switch obj.Subtype() {
-			case object.ObjSubTypeBullet:
+			case object.ObjSubtypeShell:
 				if mobj.Camp() != obj.Camp() {
 					collision = true
 				}
-			case object.ObjSubTypeTank:
+			case object.ObjSubtypeTank:
 				collision = true
 			default:
 			}

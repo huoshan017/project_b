@@ -31,26 +31,26 @@ type MovableObjType int
 const (
 	MovableObjNone        = MovableObjType(0) // 无
 	MovableObjTank        = MovableObjType(1) // 坦克
-	MovableObjBullet      = MovableObjType(2) // 子弹
+	MovableObjShell       = MovableObjType(2) // 炮弹
 	MovableObjSurroundObj = MovableObjType(3) // 環繞物體，測試用
 	MovableObjEnumMax     = 4
 )
 
 // 物体子类型
-type ObjSubType int
+type ObjSubtype int
 
 const (
-	ObjSubTypeNone        = iota
-	ObjSubTypeBrick       = ObjSubType(StaticObjBrick)
-	ObjSubTypeIron        = ObjSubType(StaticObjIron)
-	ObjSubTypeTree        = ObjSubType(StaticObjTree)
-	ObjSubTypeIce         = ObjSubType(StaticObjIce)
-	ObjSubTypeWater       = ObjSubType(StaticObjWater)
-	ObjSubTypeHome        = ObjSubType(StaticObjHome)
-	ObjSubTypeRuins       = ObjSubType(StaticObjRuins)
-	ObjSubTypeTank        = ObjSubType(MovableObjTank)
-	ObjSubTypeBullet      = ObjSubType(MovableObjBullet)
-	ObjSubTypeSurroundObj = ObjSubType(MovableObjSurroundObj)
+	ObjSubtypeNone        = iota
+	ObjSubtypeBrick       = ObjSubtype(StaticObjBrick)
+	ObjSubtypeIron        = ObjSubtype(StaticObjIron)
+	ObjSubtypeTree        = ObjSubtype(StaticObjTree)
+	ObjSubtypeIce         = ObjSubtype(StaticObjIce)
+	ObjSubtypeWater       = ObjSubtype(StaticObjWater)
+	ObjSubtypeHome        = ObjSubtype(StaticObjHome)
+	ObjSubtypeRuins       = ObjSubtype(StaticObjRuins)
+	ObjSubtypeTank        = ObjSubtype(MovableObjTank)
+	ObjSubtypeShell       = ObjSubtype(MovableObjShell)
+	ObjSubtypeSurroundObj = ObjSubtype(MovableObjSurroundObj)
 )
 
 // 对象所有者类型

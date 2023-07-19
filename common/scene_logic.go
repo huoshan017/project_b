@@ -21,26 +21,25 @@ type PlayerTankKV struct {
 // 场景圖，沒有玩家(Player)概念的游戲邏輯
 // 必须在单个goroutine中执行
 type SceneLogic struct {
-	mapConfig           *game_map.Config // 地圖配置
-	mapWidth, mapHeight int32            // 地圖寬高
-	//pmap                                       *PartitionMap                                  // 分區地圖
+	mapConfig                                      *game_map.Config                               // 地圖配置
+	mapWidth, mapHeight                            int32                                          // 地圖寬高
 	gmap                                           *GridMap                                       // 網格地圖
 	eventMgr                                       base.IEventManager                             // 事件管理器
 	staticObjList                                  *ds.MapListUnion[uint32, *object.StaticObject] // 靜態對象列表，用map和list的聯合體是爲了遍歷時的有序性
 	tankList                                       *ds.MapListUnion[uint32, *object.Tank]         // 坦克列表，不區分玩家和BOT
-	bulletList                                     *ds.MapListUnion[uint32, *object.Bullet]       // 炮彈列表，不區分坦克的炮彈
+	shellList                                      *ds.MapListUnion[uint32, *object.Shell]        // 炮彈列表，不區分坦克的炮彈
 	surroundObjList                                *ds.MapListUnion[uint32, *object.SurroundObj]  // 環繞物體列表
 	objFactory                                     *object.ObjectFactory                          // 對象池
 	effectList                                     *ds.MapListUnion[uint32, *object.Effect]       // 效果列表
 	effectPool                                     *object.EffectPool                             // 效果池
 	staticObjAddedEvent, staticObjRemovedEvent     base.Event                                     // 靜態對象添加刪除事件
 	tankAddedEvent, tankRemovedEvent               base.Event                                     // 坦克添加刪除事件
-	bulletAddedEvent, bulletRemovedEvent           base.Event                                     // 子彈添加刪除事件
+	shellAddedEvent, shellRemovedEvent             base.Event                                     // 子彈添加刪除事件
 	surroundObjAddedEvent, surroundObjRemovedEvent base.Event                                     // 環繞物體添加刪除事件
 	effectAddedEvent, effectRemovedEvent           base.Event                                     // 效果添加刪除事件
 	staticObjRecycleList                           []*object.StaticObject                         // 靜態對象回收列表
 	tankRecycleList                                []*object.Tank                                 // 坦克對象回收列表
-	bulletRecycleList                              []*object.Bullet                               // 炮彈對象回收列表
+	shellRecycleList                               []*object.Shell                                // 炮彈對象回收列表
 	surroundObjRecycleList                         []*object.SurroundObj                          // 環繞物體對象回收列表
 	effectRecycleList                              []*object.Effect                               // 效果回收列表
 	effectSearchedList                             []uint32                                       // 效果搜索結果列表
@@ -51,13 +50,12 @@ func NewSceneLogic(eventMgr base.IEventManager) *SceneLogic {
 		eventMgr:        eventMgr,
 		staticObjList:   ds.NewMapListUnion[uint32, *object.StaticObject](),
 		tankList:        ds.NewMapListUnion[uint32, *object.Tank](),
-		bulletList:      ds.NewMapListUnion[uint32, *object.Bullet](),
+		shellList:       ds.NewMapListUnion[uint32, *object.Shell](),
 		surroundObjList: ds.NewMapListUnion[uint32, *object.SurroundObj](),
 		objFactory:      object.NewObjectFactory(true),
 		effectList:      ds.NewMapListUnion[uint32, *object.Effect](),
 		effectPool:      object.NewEffectPool(),
-		//pmap:          NewPartitionMap(0),
-		gmap: NewGridMap(1),
+		gmap:            NewGridMap(1),
 	}
 }
 
@@ -67,7 +65,6 @@ func (s *SceneLogic) GetMapId() int32 {
 
 func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	// 载入地图
-	//s.pmap.Load(m)
 	s.gmap.Load(m)
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
@@ -107,11 +104,11 @@ func (s *SceneLogic) UnloadMap() {
 			s.objFactory.RecycleTank(v)
 		}
 	}
-	for i := int32(0); i < s.bulletList.Count(); i++ {
-		_, v := s.bulletList.GetByIndex(i)
+	for i := int32(0); i < s.shellList.Count(); i++ {
+		_, v := s.shellList.GetByIndex(i)
 		if v != nil {
-			s.bulletRemovedEvent.Call(v)
-			s.objFactory.RecycleBullet(v)
+			s.shellRemovedEvent.Call(v)
+			s.objFactory.RecycleShell(v)
 		}
 	}
 	for i := int32(0); i < s.surroundObjList.Count(); i++ {
@@ -130,7 +127,7 @@ func (s *SceneLogic) UnloadMap() {
 	}
 	s.staticObjList.Clear()
 	s.tankList.Clear()
-	s.bulletList.Clear()
+	s.shellList.Clear()
 	s.surroundObjList.Clear()
 	s.gmap.Unload()
 	s.objFactory.Clear()
@@ -138,7 +135,7 @@ func (s *SceneLogic) UnloadMap() {
 	s.effectPool.Clear()
 	s.surroundObjRecycleList = s.surroundObjRecycleList[:0]
 	s.tankRecycleList = s.tankRecycleList[:0]
-	s.bulletRecycleList = s.bulletRecycleList[:0]
+	s.shellRecycleList = s.shellRecycleList[:0]
 	s.staticObjRecycleList = s.staticObjRecycleList[:0]
 	s.effectRecycleList = s.effectRecycleList[:0]
 	s.effectSearchedList = s.effectSearchedList[:0]
@@ -176,20 +173,20 @@ func (s *SceneLogic) UnregisterTankRemovedHandle(handle func(...any)) {
 	s.tankRemovedEvent.Unregister(handle)
 }
 
-func (s *SceneLogic) RegisterBulletAddedHandle(handle func(...any)) {
-	s.bulletAddedEvent.Register(handle)
+func (s *SceneLogic) RegisterShellAddedHandle(handle func(...any)) {
+	s.shellAddedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterBulletAddedHandle(handle func(...any)) {
-	s.bulletAddedEvent.Unregister(handle)
+func (s *SceneLogic) UnregisterShellAddedHandle(handle func(...any)) {
+	s.shellAddedEvent.Unregister(handle)
 }
 
-func (s *SceneLogic) RegisterBulletRemovedHandle(handle func(...any)) {
-	s.bulletRemovedEvent.Register(handle)
+func (s *SceneLogic) RegisterShellRemovedHandle(handle func(...any)) {
+	s.shellRemovedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterBulletRemovedHandle(handle func(...any)) {
-	s.bulletRemovedEvent.Unregister(handle)
+func (s *SceneLogic) UnregisterShellRemovedHandle(handle func(...any)) {
+	s.shellRemovedEvent.Unregister(handle)
 }
 
 func (s *SceneLogic) RegisterSurroundObjAddedHandle(handle func(...any)) {
@@ -237,7 +234,7 @@ func (s *SceneLogic) GetObj(instId uint32) object.IObject {
 }
 
 func (s *SceneLogic) GetTankListWithRange(rect *math.Rect) []uint32 {
-	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubTypeTank)
+	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeTank)
 }
 
 func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
@@ -318,13 +315,14 @@ func (s *SceneLogic) RemoveTank(instId uint32) {
 	s.objFactory.RecycleTank(tank)
 }
 
-func (s *SceneLogic) TankMove(instId uint32 /*dir object.Direction*/, orientation int32) {
+func (s *SceneLogic) TankMove(instId uint32, orientation int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
 		return
 	}
-	tank.Move( /*dir*/ orientation)
+	angle := base.NewAngleObj(int16(orientation), 0)
+	tank.Move( /*dir*/ angle)
 }
 
 func (s *SceneLogic) TankStopMove(instId uint32) {
@@ -336,24 +334,28 @@ func (s *SceneLogic) TankStopMove(instId uint32) {
 	tank.Stop()
 }
 
-func (s *SceneLogic) TankFire(instId uint32) {
+func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
 		return
 	}
-	bulletConfig := common_data.BulletConfigData[tank.TankStaticInfo().BulletConfig.BulletId]
-	bullet := tank.CheckAndFire(s.objFactory.NewBullet, bulletConfig)
-	if bullet != nil {
-		s.bulletList.Add(bullet.InstId(), bullet)
-		bullet.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
-		collider := bullet.GetComp("Collider")
+	shellConfig := common_data.ShellConfigData[ /*tank.TankStaticInfo().ShellConfig.ShellId*/ shellId]
+	shell := tank.CheckAndFire(s.objFactory.NewShell, shellConfig)
+	if shell != nil {
+		s.shellList.Add(shell.InstId(), shell)
+		shell.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
+		collider := shell.GetComp("Collider")
 		if collider != nil {
 			c := collider.(*object.ColliderComp)
-			c.SetCollisionHandle(s.onBulletCollision)
+			c.SetCollisionHandle(s.onShellCollision)
 		}
-		bullet.Move( /*tank.Dir()*/ tank.Orientation())
-		s.gmap.AddObj(bullet)
+		if shellConfig.TrackTarget {
+			shell.SetSearchTargetFunc(s.searchShellTarget)
+			shell.SetFetchTargetFunc(s.GetObj)
+		}
+		shell.Move(tank.Orientation())
+		s.gmap.AddObj(shell)
 	}
 }
 
@@ -368,15 +370,17 @@ func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
 	s.surroundObjList.Add(ball.InstId(), ball)
 	s.surroundObjAddedEvent.Call(ball)
 	s.gmap.AddObj(ball)
-	ball.Move( /*object.DirNone*/ 0)
+	ball.Move(base.NewAngleObj(0, 0))
 }
 
-func (s *SceneLogic) TankRotate(instId uint32, angle int32) {
+func (s *SceneLogic) TankRotate(instId uint32, degree int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
 		return
 	}
+	angle := base.Angle{}
+	angle.Reset(int16(degree), 0)
 	tank.Rotate(angle)
 }
 
@@ -409,13 +413,13 @@ func (s *SceneLogic) Update(tick time.Duration) {
 		}
 	}
 
-	count = s.bulletList.Count()
+	count = s.shellList.Count()
 	for i := int32(0); i < count; i++ {
-		_, bullet := s.bulletList.GetByIndex(i)
-		bullet.Update(tick)
-		s.gmap.UpdateMovable(bullet)
-		if bullet.IsRecycle() {
-			s.bulletRecycleList = append(s.bulletRecycleList, bullet)
+		_, shell := s.shellList.GetByIndex(i)
+		shell.Update(tick)
+		s.gmap.UpdateMovable(shell)
+		if shell.IsRecycle() {
+			s.shellRecycleList = append(s.shellRecycleList, shell)
 		}
 	}
 
@@ -459,14 +463,14 @@ func (s *SceneLogic) Update(tick time.Duration) {
 		s.tankRecycleList = s.tankRecycleList[:0]
 	}
 
-	if len(s.bulletRecycleList) > 0 {
-		for _, bullet := range s.bulletRecycleList {
-			s.bulletList.Remove(bullet.InstId())
-			s.gmap.RemoveObj(bullet.InstId())
-			s.bulletRemovedEvent.Call(bullet)
-			s.objFactory.RecycleBullet(bullet)
+	if len(s.shellRecycleList) > 0 {
+		for _, shell := range s.shellRecycleList {
+			s.shellList.Remove(shell.InstId())
+			s.gmap.RemoveObj(shell.InstId())
+			s.shellRemovedEvent.Call(shell)
+			s.objFactory.RecycleShell(shell)
 		}
-		s.bulletRecycleList = s.bulletRecycleList[:0]
+		s.shellRecycleList = s.shellRecycleList[:0]
 	}
 
 	if len(s.surroundObjRecycleList) > 0 {
@@ -533,8 +537,8 @@ func (s *SceneLogic) UnregisterTankEvent(instId uint32, eid base.EventId, handle
 
 func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	instId := args[0].(uint32)
-	dx := args[1].(float64)
-	dy := args[2].(float64)
+	dx := args[1].(int32)
+	dy := args[2].(int32)
 	isMove := args[3].(*bool)
 	isCollision := args[4].(*bool)
 	resObj := args[5].(*object.IObject)
@@ -565,22 +569,22 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	}
 }
 
-func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject /*dir object.Direction, */, dx, dy float64, rx, ry *int32) bool {
+func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject /*dir object.Direction, */, dx, dy int32, rx, ry *int32) bool {
 	x, y := obj.Pos()
 	var move bool = true
-	if float64(x)+dx <= float64(s.mapConfig.X) {
+	if x+dx <= s.mapConfig.X {
 		move = false
 		x = s.mapConfig.X
 	}
-	if float64(x)+dx >= float64(s.mapConfig.X+s.mapWidth-obj.Width()) {
+	if x+dx >= s.mapConfig.X+s.mapWidth-obj.Width() {
 		move = false
 		x = s.mapConfig.X + s.mapWidth - obj.Width()
 	}
-	if float64(y)+dy >= float64(s.mapConfig.Y+s.mapHeight-obj.Length()) {
+	if y+dy >= s.mapConfig.Y+s.mapHeight-obj.Length() {
 		move = false
 		y = s.mapConfig.Y + s.mapHeight - obj.Length()
 	}
-	if float64(y)+dy <= float64(s.mapConfig.Y) {
+	if y+dy <= s.mapConfig.Y {
 		move = false
 		y = s.mapConfig.Y
 	}
@@ -596,14 +600,14 @@ func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject /*dir object.Di
 }
 
 func (s *SceneLogic) onMovableObjReachMapBorder(mobj object.IMovableObject) {
-	if mobj.Subtype() == object.ObjSubTypeBullet {
+	if mobj.Subtype() == object.ObjSubtypeShell {
 		mobj.ToRecycle()
 	}
 }
 
-func (s *SceneLogic) onBulletCollision(args ...any) {
-	// todo 處理子彈碰撞
-	bullet := args[0].(*object.Bullet)
+func (s *SceneLogic) onShellCollision(args ...any) {
+	// todo 處理炮彈碰撞
+	bullet := args[0].(*object.Shell)
 	obj := args[1].(object.IObject)
 	var (
 		effectParams = [2]struct {
@@ -620,14 +624,14 @@ func (s *SceneLogic) onBulletCollision(args ...any) {
 	} else if obj.Type() == object.ObjTypeMovable {
 		bullet.ToRecycle()
 		obj.ToRecycle()
-		if obj.Subtype() == object.ObjSubTypeBullet {
+		if obj.Subtype() == object.ObjSubtypeShell {
 			effectParams[0].effectId = 1
 			effectParams[0].effectFunc = bulletExplodeEffect
 			effectParams[0].cx, effectParams[0].cy = bullet.Pos()
 			effectParams[1].effectId = 1
 			effectParams[1].effectFunc = bulletExplodeEffect
 			effectParams[1].cx, effectParams[1].cy = obj.Pos()
-		} else if obj.Subtype() == object.ObjSubTypeTank {
+		} else if obj.Subtype() == object.ObjSubtypeTank {
 			effectParams[0].effectFunc = bigBulletExplodeEffect
 			effectParams[0].effectId = 2
 			effectParams[0].cx, effectParams[0].cy = obj.Pos()
@@ -642,4 +646,24 @@ func (s *SceneLogic) onBulletCollision(args ...any) {
 		effect.SetPos(effectParams[i].cx, effectParams[i].cy)
 		s.effectList.Add(effect.InstId(), effect)
 	}
+}
+
+func (s *SceneLogic) searchShellTarget(shell *object.Shell) object.IObject {
+	staticInfo := shell.ShellStaticInfo()
+	cx, cy := shell.Pos()
+	rect := math.NewRect(cx-staticInfo.SearchTargetRadius, cy-staticInfo.SearchTargetRadius, cx+staticInfo.SearchTargetRadius, cy+staticInfo.SearchTargetRadius)
+	objList := s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeTank)
+	if len(objList) > 0 {
+		log.Debug("searched shell target list: %v", objList)
+	}
+	var tank *object.Tank
+	var o bool
+	for i := 0; i < len(objList); i++ {
+		tank, o = s.tankList.Get(objList[i])
+		if o && tank.Camp() != shell.Camp() {
+			break
+		}
+		tank = nil
+	}
+	return tank
 }

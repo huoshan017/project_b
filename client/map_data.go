@@ -6,8 +6,7 @@ import (
 )
 
 const (
-	defaultTileSideLength          = 320  // 缺省瓦片逻辑长度, 是图片变长 x 10
-	defaultCamera2ViewportDistance = 1000 // 默認相機到眎口的距離
+	defaultNearPlane = 1000 // 默認相機到眎口的距離
 )
 
 type mapInfo struct {

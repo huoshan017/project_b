@@ -205,7 +205,8 @@ func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32,
 		log.Error("player %v enter with static info to create tank failed", pid)
 		return 0
 	}
-	tank.RotateTo(orientation)
+	angle := base.NewAngleObj(int16(orientation), 0)
+	tank.RotateTo(angle)
 	g.player2Tank.Add(pid, tank.InstId())
 	g.tank2Player.Add(tank.InstId(), pid)
 	return tank.InstId()
@@ -271,12 +272,12 @@ func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
 }
 
 // 玩家坦克開炮
-func (g *GameLogic) PlayerTankFire(uid uint64) {
+func (g *GameLogic) PlayerTankFire(uid uint64, shellId int32) {
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
 	}
-	g.scene.TankFire(tankId)
+	g.scene.TankFire(tankId, shellId)
 }
 
 // 坦克釋放環繞物體

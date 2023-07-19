@@ -4,6 +4,7 @@ import (
 	"math"
 	"project_b/client/base"
 	"project_b/common"
+	cbase "project_b/common/base"
 	pmath "project_b/common/math"
 	"project_b/common/object"
 
@@ -43,14 +44,13 @@ func CreatePlayableScene(viewport *base.Viewport) *PlayableScene {
  */
 func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
 	mapInfo := mapInfoArray[scene.GetMapId()]
-	s.camera = base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultCamera2ViewportDistance)
+	s.camera = base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultNearPlane)
 	s.CameraMoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
 	s.CameraSetHeight(mapInfo.cameraHeight)
 	s.scene = scene
-
 	s.scene.RegisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
 	s.scene.RegisterTankRemovedHandle(s.onTankRemovedHandle)
-	s.scene.RegisterBulletRemovedHandle(s.onBulletRemovedHandle)
+	s.scene.RegisterShellRemovedHandle(s.onShellRemovedHandle)
 	s.scene.RegisterSurroundObjRemovedHandle(s.onSurroundObjRemovedHandle)
 	s.scene.RegisterEffectRemovedHandle(s.onEffectRemovedHandle)
 }
@@ -61,7 +61,7 @@ func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
 func (s *PlayableScene) UnloadScene() {
 	s.scene.UnregisterEffectRemovedHandle(s.onEffectRemovedHandle)
 	s.scene.UnregisterSurroundObjRemovedHandle(s.onSurroundObjRemovedHandle)
-	s.scene.UnregisterBulletRemovedHandle(s.onBulletRemovedHandle)
+	s.scene.UnregisterShellRemovedHandle(s.onShellRemovedHandle)
 	s.scene.UnregisterTankRemovedHandle(s.onTankRemovedHandle)
 	s.scene.UnregisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
 	clear(s.playableObjs)
@@ -173,10 +173,10 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 		s.playableEffects[effect.InstId()] = tc
 	}
 
-	s._draw(tc, effect.Width(), effect.Height(), 0, dstImage)
+	s._draw(tc, effect.Width(), effect.Height(), cbase.NewAngleObj(0, 0), dstImage)
 }
 
-func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation int32, dstImage *ebiten.Image) {
+func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation cbase.Angle, dstImage *ebiten.Image) {
 	// 移動插值
 	dx, dy := tc.playable.Interpolation()
 	left := int32(dx) - width/2
@@ -197,9 +197,10 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation i
 	scaley := float64(dh) / float64(length)
 	tc.op.GeoM.Scale(scalex, scaley)
 	// 旋轉
-	if orientation > 0 {
+	minutes := orientation.ToMinutes()
+	if minutes > 0 {
 		tc.op.GeoM.Translate(-float64(dw)/2, -float64(dh)/2)
-		tc.op.GeoM.Rotate(-float64(orientation) * math.Pi / 180.0)
+		tc.op.GeoM.Rotate(-float64(minutes) * math.Pi / (60 * 180.0))
 		tc.op.GeoM.Translate(float64(dw)/2, float64(dh)/2)
 	}
 	tc.op.GeoM.Translate(float64(lx), float64(ly))
@@ -235,9 +236,9 @@ func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.I
 			return nil, nil
 		}
 		switch obj.Subtype() {
-		case object.ObjSubTypeTank:
+		case object.ObjSubtypeTank:
 			playableObj = NewPlayableTank(mobj.(object.ITank), config)
-		case object.ObjSubTypeSurroundObj:
+		case object.ObjSubtypeSurroundObj:
 			surroundObj := mobj.(object.ISurroundObject)
 			aroundCenterObj := surroundObj.GetAroundCenterObject()
 			// 環繞物體需要先創建被環繞物體
@@ -265,8 +266,8 @@ func (s *PlayableScene) onTankRemovedHandle(args ...any) {
 	}
 }
 
-func (s *PlayableScene) onBulletRemovedHandle(args ...any) {
-	bullet := args[0].(*object.Bullet)
+func (s *PlayableScene) onShellRemovedHandle(args ...any) {
+	bullet := args[0].(*object.Shell)
 	pobj := s.playableObjs[bullet.InstId()]
 	if pobj != nil {
 		pobj.playable.Uninit()

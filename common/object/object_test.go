@@ -13,7 +13,7 @@ func TestObjectFactory(t *testing.T) {
 			MovableObjStaticInfo: MovableObjStaticInfo{
 				ObjStaticInfo: ObjStaticInfo{
 					typ:     ObjTypeMovable,
-					subType: ObjSubTypeTank,
+					subType: ObjSubtypeTank,
 					id:      1,
 					w:       100,
 					l:       100,
@@ -25,11 +25,11 @@ func TestObjectFactory(t *testing.T) {
 		of.RecycleTank(tank)
 	}
 	for i := 0; i < 1000; i++ {
-		bullet := of.NewBullet(&BulletStaticInfo{
+		bullet := of.NewShell(&ShellStaticInfo{
 			MovableObjStaticInfo: MovableObjStaticInfo{
-				ObjStaticInfo: ObjStaticInfo{typ: ObjTypeMovable, subType: ObjSubTypeBullet},
+				ObjStaticInfo: ObjStaticInfo{typ: ObjTypeMovable, subType: ObjSubtypeShell},
 			},
 		})
-		of.RecycleBullet(bullet)
+		of.RecycleShell(bullet)
 	}
 }
