@@ -14,9 +14,9 @@ func GetDefaultLinearDistance(obj IMovableObject, duration time.Duration) int32 
 // 默認移動，就是直綫移動
 func DefaultMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	distance := GetDefaultLinearDistance(mobj, tick)
-	orientation := mobj.Orientation()
-	sn, sd := base.Sine(orientation)
-	cn, cd := base.Cosine(orientation)
+	dir := mobj.MoveDir()
+	sn, sd := base.Sine(dir)
+	cn, cd := base.Cosine(dir)
 	dx := distance * cn / cd
 	dy := distance * sn / sd
 	x, y := mobj.Pos()
@@ -106,6 +106,7 @@ func TrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	} else {
 		target = shell.fetchTargetFunc(shell.trackTargetId)
 		if target == nil {
+			shell.trackTargetId = 0
 			return DefaultMove(mobj, tick)
 		}
 	}
@@ -115,7 +116,7 @@ func TrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	b := base.NewVec2(tx, ty)
 	dir := b.Sub(a)
 	angle := dir.ToAngle()
-	mobj.RotateTo(angle)
+	mobj.Move(angle)
 	log.Debug("track target %v to rotate dir %v, angle %v", target.InstId(), dir, angle)
 	return DefaultMove(mobj, tick)
 }

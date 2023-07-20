@@ -121,13 +121,13 @@ func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell, shellInf
 		cx, cy := t.Pos()
 		tl := t.Length()
 		bl := shell.Length()
-		if t.orientation.IsRight() {
+		if t.rotation.IsRight() {
 			shell.SetPos(cx+tl/2+bl/2+1, cy)
-		} else if t.orientation.IsUp() {
+		} else if t.rotation.IsUp() {
 			shell.SetPos(cx, cy+tl/2+bl/2+1)
-		} else if t.orientation.IsLeft() {
+		} else if t.rotation.IsLeft() {
 			shell.SetPos(cx-tl/2-bl/2-1, cy)
-		} else if t.orientation.IsDown() {
+		} else if t.rotation.IsDown() {
 			shell.SetPos(cx, cy-tl/2-bl/2-1)
 		}
 		shell.SetCamp(t.currentCamp)

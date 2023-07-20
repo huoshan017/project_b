@@ -156,7 +156,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 		s.playableObjs[obj.InstId()] = tc
 	}
 
-	s._draw(tc, obj.Width(), obj.Length(), obj.Orientation(), dstImage)
+	s._draw(tc, obj.Width(), obj.Length(), obj.Rotation(), dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image) {
@@ -176,7 +176,7 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 	s._draw(tc, effect.Width(), effect.Height(), cbase.NewAngleObj(0, 0), dstImage)
 }
 
-func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation cbase.Angle, dstImage *ebiten.Image) {
+func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, rotation cbase.Angle, dstImage *ebiten.Image) {
 	// 移動插值
 	dx, dy := tc.playable.Interpolation()
 	left := int32(dx) - width/2
@@ -197,8 +197,8 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation c
 	scaley := float64(dh) / float64(length)
 	tc.op.GeoM.Scale(scalex, scaley)
 	// 旋轉
-	minutes := orientation.ToMinutes()
-	if minutes > 0 {
+	minutes := rotation.ToMinutes()
+	if minutes != 0 {
 		tc.op.GeoM.Translate(-float64(dw)/2, -float64(dh)/2)
 		tc.op.GeoM.Rotate(-float64(minutes) * math.Pi / (60 * 180.0))
 		tc.op.GeoM.Translate(float64(dw)/2, float64(dh)/2)
@@ -207,7 +207,6 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, orientation c
 	tc.playable.Draw(dstImage, &tc.op)
 }
 
-// 獲得可播放對象
 func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.Image) (IPlayable, *base.SpriteAnimConfig) {
 	var (
 		playableObj IPlayable

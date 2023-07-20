@@ -31,7 +31,7 @@ type IObject interface {
 	LeftTop() (int32, int32)                            // 左上坐標，相對於本地坐標系
 	RightTop() (int32, int32)                           // 右上坐标，相對於本地坐標系
 	RightBottom() (int32, int32)                        // 右下坐標，相對於本地坐標系
-	Orientation() base.Angle                            // 朝向(x軸正向逆時針旋轉角度)，相對於世界坐標系，垂直於寬(Width)，平行於長(Height)
+	Rotation() base.Angle                               // 旋轉(x軸正向逆時針旋轉角度)，相對於世界坐標系，垂直於寬(Width)，平行於長(Height)
 	OriginalLeft() int32                                // 原始左坐標
 	OriginalRight() int32                               // 原始右坐標
 	OriginalTop() int32                                 // 原始上坐標
@@ -57,9 +57,9 @@ type IStaticObject interface {
 type IMovableObject interface {
 	IObject
 	MovableObjStaticInfo() *MovableObjStaticInfo
-	Level() int32 // 等级
-	//Dir() Direction           // 方向
+	Level() int32              // 等级
 	Speed() int32              // 速度
+	MoveDir() base.Angle       // 移動方向
 	CurrentSpeed() int32       // 当前速度
 	Rotate(angle base.Angle)   // 旋轉，逆時針為正方向 [0, 360)
 	RotateTo(angle base.Angle) // 逆時針旋轉到 [0, 360)

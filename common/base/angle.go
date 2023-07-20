@@ -22,12 +22,33 @@ func (a *Angle) Set(minutes int16) {
 	a.degree, a.minute = minutes/60, minutes%60
 }
 
+func (a *Angle) Clear() {
+	a.degree = 0
+	a.minute = 0
+}
+
 func (a *Angle) Add(angle Angle) {
-	a.degree += angle.degree
-	a.minute += angle.minute
-	if a.degree >= 360 {
-		a.degree -= 360
+	minutes := 60*(a.degree+angle.degree) + a.minute + angle.minute
+	if minutes < 0 {
+		minutes = -minutes
+		a.degree, a.minute = minutes/60, minutes%60
+		if a.degree >= 360 {
+			a.degree %= 360
+		}
+		a.degree = -a.degree
+		a.minute = -a.minute
+	} else {
+		a.degree, a.minute = minutes/60, minutes%60
+		if a.degree >= 360 {
+			a.degree %= 360
+		}
 	}
+}
+
+func (a *Angle) Sub(angle Angle) {
+	angle.degree = -angle.degree
+	angle.minute = -angle.minute
+	a.Add(angle)
 }
 
 func (a Angle) DistanceToVec2(distance int32) Vec2 {

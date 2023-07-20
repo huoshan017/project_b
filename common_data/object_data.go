@@ -53,7 +53,7 @@ var (
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubtypeShell, object.CampTypeNone, 0, 0, 80, 160, -90, 1500, 1, true),
+				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubtypeShell, object.CampTypeNone, 0, 0, 80, 160, 270, 1500, 1, true),
 				MoveFunc:      object.TrackMove,
 			},
 			Range:              100000,

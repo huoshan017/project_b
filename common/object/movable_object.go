@@ -21,6 +21,7 @@ const (
 // 可移动的物体
 type MovableObject struct {
 	object
+	moveDir        base.Angle      // 移動的方向角度
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
 	lastTick       time.Duration   // 上次tick花費時間
@@ -94,6 +95,11 @@ func (o MovableObject) Speed() int32 {
 	return o.staticInfo.speed
 }
 
+// 運動方向
+func (o MovableObject) MoveDir() base.Angle {
+	return o.moveDir
+}
+
 // 当前速度
 func (o MovableObject) CurrentSpeed() int32 {
 	return o.speed
@@ -101,21 +107,22 @@ func (o MovableObject) CurrentSpeed() int32 {
 
 // 逆時針旋轉
 func (o *MovableObject) Rotate(angle base.Angle) {
-	o.orientation.Add(angle)
+	o.rotation.Add(angle)
 }
 
 // 逆時針旋轉到
 func (o *MovableObject) RotateTo(angle base.Angle) {
-	o.orientation = angle
+	o.rotation = angle
 }
 
 // 移动
-func (o *MovableObject) Move( /*dir Direction*/ dir base.Angle) {
+func (o *MovableObject) Move(dir base.Angle) {
+	o.moveDir = dir
+	o.rotation = dir // todo 物體的轉向最好是逐漸與運動方向一致
 	if o.state == stopped {
 		d := GetDefaultLinearDistance(o, o.lastTick)
-		o.orientation = dir
 		v := dir.DistanceToVec2(d)
-		if !o.checkMove( /*dir, */ v.X(), v.Y()) {
+		if !o.checkMove(v.X(), v.Y()) {
 			return
 		}
 		o.state = toMove
@@ -161,7 +168,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	if o.state == toMove {
 		o.state = isMoving
-		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.orientation /*o.dir */, o.CurrentSpeed())
+		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.moveDir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to move => moving", o.instId)
 		return
 	}
@@ -178,7 +185,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	if o.state != stopped {
 		ox, oy := o.Pos()
-		if o.checkMove( /*o.dir, */ x-ox, y-oy) {
+		if o.checkMove(x-ox, y-oy) {
 			o.SetPos(x, y)
 		}
 	} else {
@@ -186,21 +193,21 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 
 	if o.state == isMoving {
-		o.updateEvent.Call(Pos{X: x, Y: y}, o.orientation, o.CurrentSpeed())
+		o.updateEvent.Call(Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
 	} else if o.state == toStop {
 		o.state = stopped
-		o.stopEvent.Call(Pos{X: x, Y: y}, o.orientation, o.CurrentSpeed())
+		o.stopEvent.Call(Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to stop => stopped", o.instId)
 	}
 }
 
-func (o *MovableObject) checkMove( /*dir Direction, */ dx, dy int32) bool {
+func (o *MovableObject) checkMove(dx, dy int32) bool {
 	var (
 		isMove, isCollision bool = true, false
 		resObj              IObject
 	)
 
-	o.checkMoveEvent.Call(o.instId /*dir, */, dx, dy, &isMove, &isCollision, &resObj)
+	o.checkMoveEvent.Call(o.instId, dx, dy, &isMove, &isCollision, &resObj)
 	if isCollision {
 		comp := o.GetComp("Collider")
 		if comp != nil {

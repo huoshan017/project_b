@@ -35,7 +35,7 @@ type object struct {
 	currentCamp       CampType       // 當前陣營
 	staticInfo        *ObjStaticInfo // 静态常量数据
 	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
-	orientation       base.Angle     // 旋轉角度，以X軸正方向為0度，逆時針方向為旋轉正方向
+	rotation          base.Angle     // 旋轉角度，以X軸正方向為0度，逆時針方向為旋轉正方向
 	components        []IComponent   // 組件
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
@@ -73,7 +73,7 @@ func (o *object) Uninit() {
 	o.currentCamp = CampTypeNone
 	o.staticInfo = nil
 	o.x, o.y = 0, 0
-	o.orientation = base.Angle{}
+	o.rotation.Clear()
 	o.components = o.components[:0]
 	o.changedStaticInfo = nil
 	o.super = nil
@@ -201,8 +201,9 @@ func (o *object) x_y(x1, y1 int32) (int32, int32) {
 		x0, y0 = o.staticInfo.x0, o.staticInfo.y0
 	}
 
-	sn, sd := base.Sine(o.orientation)
-	cn, cd := base.Cosine(o.orientation)
+	rotation := o.Rotation()
+	sn, sd := base.Sine(rotation)
+	cn, cd := base.Cosine(rotation)
 	// 公式
 	// x = (x1-x0)*cos(a) - (y1-y0)*sin(a) + x0
 	// y = (x1-x0)*sin(a) + (y1-y0)*cos(a) + y0
@@ -264,9 +265,10 @@ func (o object) RightTop() (int32, int32) {
 }
 
 // 朝向角度
-func (o object) Orientation() base.Angle {
-	d, m := o.orientation.Get()
-	return base.NewAngleObj(d+int16(o.staticInfo.orientation), m)
+func (o object) Rotation() base.Angle {
+	sr := o.staticInfo.rotation
+	o.rotation.Add(base.NewAngleObj(int16(sr), 0))
+	return o.rotation
 }
 
 // 原始左坐標

@@ -1283,7 +1283,7 @@ var tanval = [][6]int32{
 	{tan_87_00, tan_87_10, tan_87_20, tan_87_30, tan_87_40, tan_87_50},
 	{tan_88_00, tan_88_10, tan_88_20, tan_88_30, tan_88_40, tan_88_50},
 	{tan_89_00, tan_89_10, tan_89_20, tan_89_30, tan_89_40, tan_89_50},
-	{tan_90_00, -1, -1, -1, -1},
+	{tan_90_00, tan_90_00, tan_90_00, tan_90_00, tan_90_00, tan_90_00}, // 90
 }
 
 // 正弦
@@ -1433,57 +1433,45 @@ func ArcTangent(y, x int32) Angle {
 		}
 	}
 
-	l, r := int16(0), int16(len(tanval))-1
-	m := r >> 1
-	var n int16
-	if y/x > 0 {
-		for l < m {
-			if y/x < tanval[m][0]/denominator {
-				m = (l + m) >> 1
-				r = m - 1
-				n = 0
-			} else if y/x > tanval[m][5]/denominator {
-				m = (m + r) >> 1
-				l = m + 1
-				n = 5
-			} else {
-				goto bl
-			}
-		}
-		return Angle{m, n * 10}
-	} else {
-		for l < m {
-			if -y/x < tanval[m][0]/denominator {
-				m = (l + m) >> 1
-				r = m - 1
-				n = 0
-			} else if -y/x > tanval[m][5]/denominator {
-				m = (m + r) >> 1
-				l = m + 1
-				n = 5
-			} else {
-				goto bl
-			}
-		}
-		return Angle{-m, -n * 10}
+	var (
+		l, r     = int16(0), int16(len(tanval)) - 1
+		m        = r >> 1
+		n        int16
+		negative bool
+	)
+	if y/x < 0 {
+		y = -y
+		negative = true
 	}
+	for l <= r {
+		if y/x < tanval[m][0]/denominator {
+			r = m - 1
+			m = (l + r) >> 1
+			n = 0
+		} else if y/x > tanval[m][5]/denominator {
+			l = m + 1
+			m = (l + r) >> 1
+			n = 5
+		} else {
+			goto bl
+		}
+	}
+	if negative {
+		m = -m
+		n = -n
+	}
+	return Angle{m, n * 10}
 
 bl:
-	if y/x > 0 {
-		for i := int16(0); i < int16(len(tanval[m])); i++ {
-			if y/x <= tanval[m][i]/denominator {
-				n = i
-				break
-			}
+	for i := int16(0); i < int16(len(tanval[m])); i++ {
+		if y/x <= tanval[m][i]/denominator {
+			n = i
+			break
 		}
-		return Angle{m, n * 10}
-	} else {
-		for i := int16(0); i < int16(len(tanval[m])); i++ {
-			if -y/x <= tanval[m][i]/denominator {
-				n = i
-				break
-			}
-		}
-		return Angle{-m, -n * 10}
 	}
+	if negative {
+		m = -m
+		n = -n
+	}
+	return Angle{m, n * 10}
 }

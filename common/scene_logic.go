@@ -340,7 +340,7 @@ func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
 		log.Error("tank %v not found", instId)
 		return
 	}
-	shellConfig := common_data.ShellConfigData[ /*tank.TankStaticInfo().ShellConfig.ShellId*/ shellId]
+	shellConfig := common_data.ShellConfigData[shellId]
 	shell := tank.CheckAndFire(s.objFactory.NewShell, shellConfig)
 	if shell != nil {
 		s.shellList.Add(shell.InstId(), shell)
@@ -351,10 +351,11 @@ func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
 			c.SetCollisionHandle(s.onShellCollision)
 		}
 		if shellConfig.TrackTarget {
-			shell.SetSearchTargetFunc(s.searchShellTarget)
+			//shell.SetSearchTargetFunc(s.searchShellTarget)
+			shell.SetSearchTargetFunc(s.testSearchShellTarget)
 			shell.SetFetchTargetFunc(s.GetObj)
 		}
-		shell.Move(tank.Orientation())
+		shell.Move(tank.MoveDir())
 		s.gmap.AddObj(shell)
 	}
 }
@@ -661,9 +662,18 @@ func (s *SceneLogic) searchShellTarget(shell *object.Shell) object.IObject {
 	for i := 0; i < len(objList); i++ {
 		tank, o = s.tankList.Get(objList[i])
 		if o && tank.Camp() != shell.Camp() {
-			break
+			return tank
 		}
-		tank = nil
 	}
-	return tank
+	return nil
+}
+
+func (s *SceneLogic) testSearchShellTarget(shell *object.Shell) object.IObject {
+	for i := int32(0); i < s.tankList.Count(); i++ {
+		_, tank := s.tankList.GetByIndex(i)
+		if tank.Camp() != shell.Camp() {
+			return tank
+		}
+	}
+	return nil
 }
