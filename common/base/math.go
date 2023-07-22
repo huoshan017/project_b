@@ -1294,7 +1294,7 @@ func Sine(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for sin value", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 {
+	if angle.degree < 0 || angle.minute < 0 {
 		n, d := Sine(angle.Negative())
 		return -n, d
 	}
@@ -1324,7 +1324,7 @@ func Cosine(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 {
+	if angle.degree < 0 || angle.minute < 0 {
 		angle.degree = -angle.degree
 		angle.minute = -angle.minute
 	}
@@ -1388,7 +1388,7 @@ func Cotangent(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for cotangent angle", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 {
+	if angle.degree < 0 || angle.minute < 0 {
 		angle = angle.Negative()
 		n, d := Cotangent(angle)
 		return -n, d
@@ -1439,16 +1439,22 @@ func ArcTangent(y, x int32) Angle {
 		n        int16
 		negative bool
 	)
-	if y/x < 0 {
+	if x < 0 && y < 0 {
+		x = -x
+		y = -y
+	} else if x < 0 {
+		x = -x
+		negative = true
+	} else if y < 0 {
 		y = -y
 		negative = true
 	}
 	for l <= r {
-		if y/x < tanval[m][0]/denominator {
+		if y*denominator < x*tanval[m][0] {
 			r = m - 1
 			m = (l + r) >> 1
 			n = 0
-		} else if y/x > tanval[m][5]/denominator {
+		} else if y*denominator > x*tanval[m][5] {
 			l = m + 1
 			m = (l + r) >> 1
 			n = 5
@@ -1464,7 +1470,7 @@ func ArcTangent(y, x int32) Angle {
 
 bl:
 	for i := int16(0); i < int16(len(tanval[m])); i++ {
-		if y/x <= tanval[m][i]/denominator {
+		if y*denominator <= x*tanval[m][i] {
 			n = i
 			break
 		}

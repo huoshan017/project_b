@@ -30,6 +30,9 @@ func (b *Shell) Init(instId uint32, staticInfo *ObjStaticInfo) {
 
 // 反初始化
 func (b *Shell) Uninit() {
+	b.trackTargetId = 0
+	b.searchTargetFunc = nil
+	b.fetchTargetFunc = nil
 	b.MovableObject.Uninit()
 }
 

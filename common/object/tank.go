@@ -118,20 +118,23 @@ func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell, shellInf
 		}
 	}
 	if shell != nil {
-		cx, cy := t.Pos()
-		tl := t.Length()
-		bl := shell.Length()
-		if t.rotation.IsRight() {
-			shell.SetPos(cx+tl/2+bl/2+1, cy)
-		} else if t.rotation.IsUp() {
-			shell.SetPos(cx, cy+tl/2+bl/2+1)
-		} else if t.rotation.IsLeft() {
-			shell.SetPos(cx-tl/2-bl/2-1, cy)
-		} else if t.rotation.IsDown() {
-			shell.SetPos(cx, cy-tl/2-bl/2-1)
-		}
+		x, y := t.shellLaunchPos()
+		shell.SetPos(x, y)
 		shell.SetCamp(t.currentCamp)
 		shell.SetCurrentSpeed(shell.speed)
 	}
 	return shell
+}
+
+// 炮彈發射口
+func (t *Tank) shellLaunchPos() (int32, int32) {
+	vp := t.TankStaticInfo().ShellLaunchPos
+	x, y := t.Pos()
+	x1, y1 := x+vp.X(), y+vp.Y()
+	rotation := t.Rotation()
+	cn, cd := base.Cosine(rotation)
+	sn, sd := base.Sine(rotation)
+	xa := (x1-x)*cn/cd - (y1-y)*sn/sd + x
+	ya := (x1-x)*sn/sd + (y1-y)*cn/cd + y
+	return xa, ya
 }

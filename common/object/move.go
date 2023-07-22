@@ -116,6 +116,7 @@ func TrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	b := base.NewVec2(tx, ty)
 	dir := b.Sub(a)
 	angle := dir.ToAngle()
+	mobj.RotateTo(angle)
 	mobj.Move(angle)
 	log.Debug("track target %v to rotate dir %v, angle %v", target.InstId(), dir, angle)
 	return DefaultMove(mobj, tick)

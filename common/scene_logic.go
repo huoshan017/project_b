@@ -322,7 +322,8 @@ func (s *SceneLogic) TankMove(instId uint32, orientation int32) {
 		return
 	}
 	angle := base.NewAngleObj(int16(orientation), 0)
-	tank.Move( /*dir*/ angle)
+	tank.RotateTo(angle)
+	tank.Move(angle)
 }
 
 func (s *SceneLogic) TankStopMove(instId uint32) {
@@ -351,11 +352,11 @@ func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
 			c.SetCollisionHandle(s.onShellCollision)
 		}
 		if shellConfig.TrackTarget {
-			//shell.SetSearchTargetFunc(s.searchShellTarget)
-			shell.SetSearchTargetFunc(s.testSearchShellTarget)
+			shell.SetSearchTargetFunc(s.searchShellTarget)
 			shell.SetFetchTargetFunc(s.GetObj)
 		}
-		shell.Move(tank.MoveDir())
+		shell.RotateTo(tank.Rotation())
+		shell.Move(tank.Rotation())
 		s.gmap.AddObj(shell)
 	}
 }
@@ -573,21 +574,25 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject /*dir object.Direction, */, dx, dy int32, rx, ry *int32) bool {
 	x, y := obj.Pos()
 	var move bool = true
-	if x+dx <= s.mapConfig.X {
-		move = false
-		x = s.mapConfig.X
+	if dx != 0 {
+		if x+dx <= s.mapConfig.X {
+			move = false
+			x = s.mapConfig.X
+		}
+		if x+dx >= s.mapConfig.X+s.mapWidth-obj.Width() {
+			move = false
+			x = s.mapConfig.X + s.mapWidth - obj.Width()
+		}
 	}
-	if x+dx >= s.mapConfig.X+s.mapWidth-obj.Width() {
-		move = false
-		x = s.mapConfig.X + s.mapWidth - obj.Width()
-	}
-	if y+dy >= s.mapConfig.Y+s.mapHeight-obj.Length() {
-		move = false
-		y = s.mapConfig.Y + s.mapHeight - obj.Length()
-	}
-	if y+dy <= s.mapConfig.Y {
-		move = false
-		y = s.mapConfig.Y
+	if dy != 0 {
+		if y+dy >= s.mapConfig.Y+s.mapHeight-obj.Length() {
+			move = false
+			y = s.mapConfig.Y + s.mapHeight - obj.Length()
+		}
+		if y+dy <= s.mapConfig.Y {
+			move = false
+			y = s.mapConfig.Y
+		}
 	}
 	if !move {
 		if rx != nil {
@@ -657,23 +662,28 @@ func (s *SceneLogic) searchShellTarget(shell *object.Shell) object.IObject {
 	if len(objList) > 0 {
 		log.Debug("searched shell target list: %v", objList)
 	}
-	var tank *object.Tank
-	var o bool
+	var (
+		tank *object.Tank
+		o    bool
+		sd   int64 = -1
+		n    int   = -1
+	)
 	for i := 0; i < len(objList); i++ {
 		tank, o = s.tankList.Get(objList[i])
 		if o && tank.Camp() != shell.Camp() {
-			return tank
+			t := object.SquareOfDistance(tank, shell)
+			if sd < 0 || sd > t {
+				sd = t
+				n = i
+			}
 		}
 	}
-	return nil
-}
-
-func (s *SceneLogic) testSearchShellTarget(shell *object.Shell) object.IObject {
-	for i := int32(0); i < s.tankList.Count(); i++ {
-		_, tank := s.tankList.GetByIndex(i)
-		if tank.Camp() != shell.Camp() {
-			return tank
+	if n >= 0 {
+		tank, o = s.tankList.Get(objList[n])
+		if !o {
+			return nil
 		}
+		return tank
 	}
 	return nil
 }

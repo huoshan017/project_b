@@ -390,3 +390,10 @@ func (o *StaticObject) Uninit() {
 func (o *StaticObject) Update(tick time.Duration) {
 
 }
+
+// 距離的平方
+func SquareOfDistance(obj1, obj2 IObject) int64 {
+	x1, y1 := obj1.Pos()
+	x2, y2 := obj2.Pos()
+	return (int64(x1 - x2)) ^ 2 + int64((y1 - y2)) ^ 2
+}

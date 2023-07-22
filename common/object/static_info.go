@@ -1,6 +1,9 @@
 package object
 
-import "project_b/common/time"
+import (
+	"project_b/common/base"
+	"project_b/common/time"
+)
 
 // 基礎物体静态信息
 type ObjStaticInfo struct {
@@ -86,9 +89,10 @@ type TankShellConfig struct {
 // 坦克靜態配置
 type TankStaticInfo struct {
 	MovableObjStaticInfo
-	Orientation int32 // 朝向
-	Level       int32 // 等級
-	ShellConfig TankShellConfig
+	Orientation    int32     // 朝向
+	Level          int32     // 等級
+	ShellLaunchPos base.Vec2 // 炮彈發射點 坦克局部坐標系中相對於坦克中心位置的坐標
+	ShellConfig    TankShellConfig
 }
 
 // 效果靜態信息

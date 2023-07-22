@@ -85,42 +85,35 @@ func (b *Bot) Update(tick time.Duration) {
 		var orientation int16
 		if dx < dy {
 			if dy < 0 {
-				//dir = object.DirLeft // 敵人在左下，且X軸距離遠于Y軸
-				orientation = 180
+				orientation = 180 // 敵人在左下，且X軸距離遠于Y軸
 			} else {
 				if dx >= 0 {
-					//dir = object.DirUp // 在右上，且Y軸距離遠于X軸
-					orientation = 90
+					orientation = 90 // 在右上，且Y軸距離遠于X軸
 				} else {
 					if -dx < dy {
-						//dir = object.DirUp // 在左上，且Y軸距離遠于X軸
-						orientation = 90
+						orientation = 90 // 在左上，且Y軸距離遠于X軸
 					} else {
-						//dir = object.DirLeft // 在左上，且X軸距離遠于X軸
-						orientation = 180
+						orientation = 180 // 在左上，且X軸距離遠于X軸
 					}
 				}
 			}
 		} else {
 			if dy > 0 {
-				//dir = object.DirRight // 敵人在右上，且X軸距離遠于Y軸
-				orientation = 0
+				orientation = 0 // 敵人在右上，且X軸距離遠于Y軸
 			} else {
 				if dx <= 0 {
-					//dir = object.DirDown // 在左下，且Y軸距離遠于X軸
-					orientation = 270
+					orientation = 270 // 在左下，且Y軸距離遠于X軸
 				} else {
 					if -dy > dx {
-						//dir = object.DirDown // 在右下，且Y軸距離大於X軸
-						orientation = 270
+						orientation = 270 // 在右下，且Y軸距離大於X軸
 					} else {
-						//dir = object.DirRight // 在右下，且X軸距離大於Y軸
-						orientation = 0
+						orientation = 0 // 在右下，且X軸距離大於Y軸
 					}
 				}
 			}
 		}
 		angle := base.NewAngleObj(orientation, 0)
+		botTank.RotateTo(angle)
 		botTank.Move(angle)
 	}
 	b.totalTick += tick
