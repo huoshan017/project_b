@@ -251,7 +251,7 @@ func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.I
 			playableObj = NewPlayableMoveObject(mobj, config)
 		}
 		playableObj.Init()
-		animConfig = config.AnimConfig //[mobj.Dir()]
+		animConfig = config.AnimConfig
 	}
 	return playableObj, animConfig
 }

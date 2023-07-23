@@ -1405,6 +1405,7 @@ func Cotangent(angle Angle) (int32, int32) {
 	return tanval[angle.degree][angle.minute/10], denominator
 }
 
+// 反正弦
 func ArcSine(sn, sd int32) Angle {
 	if sd == 0 {
 		panic(fmt.Sprintf("base: invalid denominator %v for ArcSine", sd))

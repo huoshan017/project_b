@@ -94,8 +94,8 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	if mobj.Subtype() != ObjSubtypeShell {
 		return DefaultMove(mobj, tick)
 	}
-	shell := mobj.(*Shell)
 
+	shell := mobj.(*Shell)
 	if shell.ShellStaticInfo().SteeringAngularVelocity <= 0 {
 		return DefaultMove(mobj, tick)
 	}
@@ -115,6 +115,7 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 			return DefaultMove(mobj, tick)
 		}
 	}
+
 	mx, my := mobj.Pos()
 	tx, ty := target.Pos()
 	a := base.NewVec2(mx, my)
@@ -144,19 +145,23 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	theta := base.ArcCosine(dot, shellDir.Length()*targetDir.Length())
 
 	var angle base.Angle
-	// tick時間内的轉向角度超過了需要的角度差
-	if deltaAngle.GreaterEqual(theta) {
-		angle = base.AngleAdd(shellRotation, theta)
-		shell.RotateTo(angle)
-		shell.Move(angle)
-		return DefaultMove(shell, tick)
-	}
-	if cross > 0 {
-		// 逆時針轉
+	if cross > 0 { // 逆時針轉
+		// tick時間内的轉向角度超過了需要的角度差
+		if deltaAngle.GreaterEqual(theta) {
+			angle = base.AngleAdd(shellRotation, theta)
+			shell.RotateTo(angle)
+			shell.Move(angle)
+			return DefaultMove(shell, tick)
+		}
 		angle = base.AngleAdd(shellRotation, deltaAngle)
 		log.Debug("< 逆時針")
-	} else {
-		// 順時針轉
+	} else { // 順時針轉
+		if deltaAngle.Negative().LessEqual(theta.Negative()) {
+			angle = base.AngleSub(shellRotation, theta)
+			shell.RotateTo(angle)
+			shell.Move(angle)
+			return DefaultMove(shell, tick)
+		}
 		angle = base.AngleSub(shellRotation, deltaAngle)
 		log.Debug("> 順時針")
 	}
