@@ -264,11 +264,21 @@ func (o object) RightTop() (int32, int32) {
 	return o.x_y(x1, y1)
 }
 
-// 朝向角度
+// 局部旋轉
+func (o object) LocalRotation() base.Angle {
+	return base.NewAngleObj(int16(o.staticInfo.rotation), 0)
+}
+
+// 世界旋轉
+func (o object) WorldRotation() base.Angle {
+	return o.rotation
+}
+
+// 旋轉
 func (o object) Rotation() base.Angle {
 	sr := o.staticInfo.rotation
-	o.rotation.Add(base.NewAngleObj(int16(sr), 0))
-	return o.rotation
+	rotation := base.AngleAdd(o.rotation, base.NewAngleObj(int16(sr), 0))
+	return rotation
 }
 
 // 原始左坐標

@@ -35,7 +35,7 @@ func (v Vec2) Div(a int32) Vec2 {
 }
 
 func (v Vec2) Length() int32 {
-	return int32(math.Sqrt(float64(v.x*v.x + v.y*v.y)))
+	return int32(Sqrt(uint32(v.x*v.x + v.y*v.y)))
 }
 
 func (v Vec2) Dot(v2 Vec2) int32 {

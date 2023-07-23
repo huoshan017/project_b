@@ -72,11 +72,12 @@ type SurroundObjStaticInfo struct {
 // 炮彈靜態配置
 type ShellStaticInfo struct {
 	MovableObjStaticInfo
-	Range              int32 // 射程
-	Damage             int32 // 傷害
-	BlastRadius        int32 // 爆炸半徑
-	TrackTarget        bool  // 是否追蹤目標
-	SearchTargetRadius int32 // 搜索目標半徑
+	Range                   int32 // 射程
+	Damage                  int32 // 傷害
+	BlastRadius             int32 // 爆炸半徑
+	TrackTarget             bool  // 是否追蹤目標
+	SearchTargetRadius      int32 // 搜索目標半徑
+	SteeringAngularVelocity int32 // 轉向角速度(分(1/60度)/秒)
 }
 
 type TankShellConfig struct {

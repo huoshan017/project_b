@@ -112,6 +112,7 @@ func (o *MovableObject) Rotate(angle base.Angle) {
 
 // 逆時針旋轉到
 func (o *MovableObject) RotateTo(angle base.Angle) {
+	angle.Sub(base.NewAngleObj(int16(o.staticInfo.rotation), 0))
 	o.rotation = angle
 }
 

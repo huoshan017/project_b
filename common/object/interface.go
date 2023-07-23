@@ -31,7 +31,9 @@ type IObject interface {
 	LeftTop() (int32, int32)                            // 左上坐標，相對於本地坐標系
 	RightTop() (int32, int32)                           // 右上坐标，相對於本地坐標系
 	RightBottom() (int32, int32)                        // 右下坐標，相對於本地坐標系
-	Rotation() base.Angle                               // 旋轉(x軸正向逆時針旋轉角度)，相對於世界坐標系，垂直於寬(Width)，平行於長(Height)
+	WorldRotation() base.Angle                          // todo 是局部坐標系在世界坐標系中的旋轉
+	LocalRotation() base.Angle                          // 局部坐標系中的旋轉
+	Rotation() base.Angle                               // 最終的旋轉(x軸正向逆時針旋轉角度)，局部旋轉與世界旋轉纍加，垂直於寬(Width)，平行於長(Height)
 	OriginalLeft() int32                                // 原始左坐標
 	OriginalRight() int32                               // 原始右坐標
 	OriginalTop() int32                                 // 原始上坐標

@@ -1,13 +1,15 @@
 package object
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 // 炮彈
 type Shell struct {
 	MovableObject
-	trackTargetId    uint32
-	searchTargetFunc func(*Shell) IObject
-	fetchTargetFunc  func(uint32) IObject
+	trackTargetId    uint32               // 跟蹤目標id
+	searchTargetFunc func(*Shell) IObject // 搜索目標函數
+	fetchTargetFunc  func(uint32) IObject // 獲得目標函數
 }
 
 // 创建炮彈

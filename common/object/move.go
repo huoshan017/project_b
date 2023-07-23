@@ -90,11 +90,16 @@ func getSurroundObjMovedPos(sobj *SurroundObj, tick time.Duration, moveInfo *Sur
 }
 
 // 跟蹤移動
-func TrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
+func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	if mobj.Subtype() != ObjSubtypeShell {
 		return DefaultMove(mobj, tick)
 	}
 	shell := mobj.(*Shell)
+
+	if shell.ShellStaticInfo().SteeringAngularVelocity <= 0 {
+		return DefaultMove(mobj, tick)
+	}
+
 	var target IObject
 	if shell.trackTargetId == 0 {
 		target = shell.searchTargetFunc(shell)
@@ -114,10 +119,52 @@ func TrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	tx, ty := target.Pos()
 	a := base.NewVec2(mx, my)
 	b := base.NewVec2(tx, ty)
-	dir := b.Sub(a)
-	angle := dir.ToAngle()
-	mobj.RotateTo(angle)
-	mobj.Move(angle)
-	log.Debug("track target %v to rotate dir %v, angle %v", target.InstId(), dir, angle)
-	return DefaultMove(mobj, tick)
+	// 目標方向向量
+	targetDir := b.Sub(a)
+	// todo 求炮彈的方向向量
+	shellRotation := shell.Rotation()
+	shellDir := shellRotation.ToVec2()
+	// 求叉積確定逆時針還是順時針轉
+	cross := shellDir.Cross(targetDir)
+	if cross == 0 {
+		return DefaultMove(shell, tick)
+	}
+	log.Debug("@@@@@@@@ target dir %v, shell rotation %v, shell current dir %v", targetDir, shellRotation, shellDir)
+	// tick時間轉向角度
+	deltaMinutes := int16(time.Duration(shell.ShellStaticInfo().SteeringAngularVelocity) * tick / time.Second)
+	if deltaMinutes == 0 {
+		return DefaultMove(shell, tick)
+	}
+	deltaAngle := base.NewAngleObj(int16(deltaMinutes/60), int16(deltaMinutes%60))
+	deltaAngle.Normalize()
+	log.Debug(">>>>>>>> normalized deltaAngle %v", deltaAngle)
+	// 利用點積求夾角
+	dot := shellDir.Dot(targetDir)
+	// cos(Theta) := dot / (a.Length() * b.Length())
+	theta := base.ArcCosine(dot, shellDir.Length()*targetDir.Length())
+
+	var angle base.Angle
+	// tick時間内的轉向角度超過了需要的角度差
+	if deltaAngle.GreaterEqual(theta) {
+		angle = base.AngleAdd(shellRotation, theta)
+		shell.RotateTo(angle)
+		shell.Move(angle)
+		return DefaultMove(shell, tick)
+	}
+	if cross > 0 {
+		// 逆時針轉
+		angle = base.AngleAdd(shellRotation, deltaAngle)
+		log.Debug("< 逆時針")
+	} else {
+		// 順時針轉
+		angle = base.AngleSub(shellRotation, deltaAngle)
+		log.Debug("> 順時針")
+	}
+
+	log.Debug("!!!!!!!! rotate to angle %v, previous angle %v", angle, shellRotation)
+	log.Debug("track target %v to rotate angle %v", target.InstId(), angle)
+
+	shell.Move(angle)
+	shell.RotateTo(angle)
+	return DefaultMove(shell, tick)
 }

@@ -54,14 +54,15 @@ var (
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
-				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubtypeShell, object.CampTypeNone, 0, 0, 80, 160, 270, 1500, 1, true),
-				MoveFunc:      object.TrackMove,
+				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubtypeShell, object.CampTypeNone, 0, 0, 80, 160, 90, 1500, 1, true),
+				MoveFunc:      object.ShellTrackMove,
 			},
-			Range:              100000,
-			Damage:             2000,
-			BlastRadius:        1000,
-			TrackTarget:        true,
-			SearchTargetRadius: 4000,
+			Range:                   100000,
+			Damage:                  2000,
+			BlastRadius:             1000,
+			TrackTarget:             true,
+			SearchTargetRadius:      4000,
+			SteeringAngularVelocity: 60 * 50, // 分
 		},
 	}
 

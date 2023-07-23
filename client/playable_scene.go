@@ -156,7 +156,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 		s.playableObjs[obj.InstId()] = tc
 	}
 
-	s._draw(tc, obj.Width(), obj.Length(), obj.Rotation(), dstImage)
+	s._draw(tc, obj.Width(), obj.Length(), obj.WorldRotation(), dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image) {
@@ -196,7 +196,7 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, rotation cbas
 	scalex := float64(dw) / float64(width)
 	scaley := float64(dh) / float64(length)
 	tc.op.GeoM.Scale(scalex, scaley)
-	// 旋轉
+	// todo 這個旋轉指的是基於圖片的旋轉，是順時針旋轉的變化量，不同於以x軸正方向為零度，逆時針旋轉為正向的邏輯旋轉
 	minutes := rotation.ToMinutes()
 	if minutes != 0 {
 		tc.op.GeoM.Translate(-float64(dw)/2, -float64(dh)/2)

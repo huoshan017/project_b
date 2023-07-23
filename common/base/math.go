@@ -1294,13 +1294,7 @@ func Sine(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for sin value", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 || angle.minute < 0 {
-		n, d := Sine(angle.Negative())
-		return -n, d
-	}
-	if angle.degree >= 360 {
-		angle.degree %= 360
-	}
+	angle.Normalize()
 	if angle.degree >= 90 && angle.degree < 180 {
 		angle.degree -= 90
 		return Cosine(angle)
@@ -1324,13 +1318,7 @@ func Cosine(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 || angle.minute < 0 {
-		angle.degree = -angle.degree
-		angle.minute = -angle.minute
-	}
-	if angle.degree >= 360 {
-		angle.degree %= 360
-	}
+	angle.Normalize()
 	if angle.degree >= 90 && angle.degree < 180 {
 		angle.degree -= 90
 		n, d := Sine(angle)
@@ -1358,24 +1346,24 @@ func Tangent(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for tangent angle", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 {
-		angle.degree = -angle.degree
-		angle.minute = -angle.minute
-		n, d := Tangent(angle)
-		return -n, d
-	}
-	if angle.degree >= 360 {
-		angle.degree %= 360
-	}
-	if angle.degree >= 90 && angle.degree < 180 {
+
+	var negative bool
+	angle.Normalize()
+	if angle.degree >= 90 && angle.degree < 180 { // 第二象限 x<=0  y>=0
 		angle.degree -= 90
 		n, d := Cotangent(angle)
+		return n, -d //
+	} else if angle.degree >= 180 && angle.degree < 270 { // 第三象限  x<=0 y<=0
+		angle.degree -= 180
+		negative = true
+	} else if angle.degree >= 270 && angle.degree < 360 { // 第四象限  x>=0 y<=0
+		tp := TwoPiAngle()
+		tp.Sub(angle)
+		n, d := Tangent(tp)
 		return -n, d
-	} else if angle.degree >= 180 && angle.degree < 270 {
-		angle.degree -= 180
-	} else if angle.degree >= 270 && angle.degree < 360 {
-		angle.degree -= 180
-		return Tangent(angle)
+	}
+	if negative {
+		return -tanval[angle.degree][angle.minute/10], -denominator
 	}
 	return tanval[angle.degree][angle.minute/10], denominator
 }
@@ -1388,23 +1376,21 @@ func Cotangent(angle Angle) (int32, int32) {
 	if int32(angle.degree)*int32(angle.minute) < 0 {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for cotangent angle", angle.degree, angle.minute))
 	}
-	if angle.degree < 0 || angle.minute < 0 {
-		angle = angle.Negative()
-		n, d := Cotangent(angle)
-		return -n, d
-	}
-	if angle.degree >= 360 {
-		angle.degree %= 360
-	}
+
+	var negative bool
+	angle.Normalize()
 	if angle.degree >= 90 && angle.degree < 180 {
 		angle.degree -= 90
 		n, d := Tangent(angle)
 		return -n, d
 	} else if angle.degree >= 180 && angle.degree < 270 {
 		angle.degree -= 180
+		negative = true
 	} else if angle.degree >= 270 && angle.degree < 360 {
-		angle.degree -= 180
-		return Cotangent(angle)
+		tp := TwoPiAngle()
+		tp.Sub(angle)
+		n, d := Cotangent(tp)
+		return n, -d
 	}
 
 	if angle.degree == 90 && angle.minute == 0 {
@@ -1413,7 +1399,73 @@ func Cotangent(angle Angle) (int32, int32) {
 
 	dm := 90*60 - angle.degree*60 - angle.minute
 	angle.degree, angle.minute = dm/60, dm%60
+	if negative {
+		return -tanval[angle.degree][angle.minute], -denominator
+	}
 	return tanval[angle.degree][angle.minute/10], denominator
+}
+
+func ArcSine(sn, sd int32) Angle {
+	if sd == 0 {
+		panic(fmt.Sprintf("base: invalid denominator %v for ArcSine", sd))
+	}
+	if sn == 0 {
+		return Angle{0, 0}
+	}
+	var (
+		l, r     = int16(0), int16(len(sinval)) - 1
+		m        = r >> 1
+		n        int16
+		negative bool
+	)
+	if sn < 0 && sd < 0 {
+		sn = -sn
+		sd = -sd
+	} else if sn < 0 {
+		sn = -sn
+		negative = true
+	} else if sd < 0 {
+		sd = -sd
+		negative = true
+	}
+	for l <= r {
+		if sn*denominator < sd*sinval[m][0] {
+			r = m - 1
+			m = (l + r) >> 1
+			n = 0
+		} else if sn*denominator > sd*sinval[m][5] {
+			l = m + 1
+			m = (l + r) >> 1
+			n = 5
+		} else {
+			goto bl
+		}
+	}
+	if negative {
+		m = -m
+		n = -n
+	}
+	return Angle{m, n * 10}
+
+bl:
+	for i := int16(0); i < int16(len(sinval[m])); i++ {
+		if sn*denominator <= sd*sinval[m][i] {
+			n = i
+			break
+		}
+	}
+	if negative {
+		m = -m
+		n = -n
+	}
+	return Angle{m, n * 10}
+}
+
+// 反餘弦
+func ArcCosine(cn, cd int32) Angle {
+	angle := ArcSine(cn, cd)
+	minutes := 90*60 - (angle.degree*60 + angle.minute)
+	return Angle{degree: minutes / 60, minute: minutes % 60}
 }
 
 // 反正切
@@ -1480,4 +1532,42 @@ bl:
 		n = -n
 	}
 	return Angle{m, n * 10}
+}
+
+// 反餘切
+func ArcCotangent(y, x int32) Angle {
+	angle := ArcTangent(y, x)
+	minutes := 90*60 - (angle.degree*60 + angle.minute)
+	return Angle{degree: minutes / 60, minute: minutes % 60}
+}
+
+// 平方根計算
+func Sqrt(num uint32) uint32 {
+	if num <= 1 {
+		return num
+	}
+	s := 1
+	num1 := num - 1
+	if num1 > 65535 {
+		s += 8
+		num1 >>= 16
+	}
+	if num1 > 255 {
+		s += 4
+		num1 >>= 8
+	}
+	if num1 > 15 {
+		s += 2
+		num1 >>= 4
+	}
+	if num1 > 3 {
+		s += 1
+	}
+	x0 := uint32(1 << s)
+	x1 := (x0 + (num >> s)) >> 1
+	for x1 < x0 {
+		x0 = x1
+		x1 = (x0 + (num / x0)) >> 1
+	}
+	return x0
 }
