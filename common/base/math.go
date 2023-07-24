@@ -1120,7 +1120,7 @@ var (
 	tan_78_00 int32 = 47046
 	tan_78_10 int32 = 47729
 	tan_78_20 int32 = 48430
-	tan_78_30 int32 = 48152
+	tan_78_30 int32 = 49152
 	tan_78_40 int32 = 49894
 	tan_78_50 int32 = 50658
 	tan_79_00 int32 = 51446
@@ -1350,6 +1350,9 @@ func Tangent(angle Angle) (int32, int32) {
 	var negative bool
 	angle.Normalize()
 	if angle.degree >= 90 && angle.degree < 180 { // 第二象限 x<=0  y>=0
+		if angle.degree == 90 && angle.minute == 0 {
+			return tan_90_00, denominator
+		}
 		angle.degree -= 90
 		n, d := Cotangent(angle)
 		return n, -d //
@@ -1363,7 +1366,7 @@ func Tangent(angle Angle) (int32, int32) {
 		return -n, d
 	}
 	if negative {
-		return -tanval[angle.degree][angle.minute/10], -denominator
+		return -tanval[angle.degree][angle.minute/10], denominator
 	}
 	return tanval[angle.degree][angle.minute/10], denominator
 }
@@ -1380,6 +1383,9 @@ func Cotangent(angle Angle) (int32, int32) {
 	var negative bool
 	angle.Normalize()
 	if angle.degree >= 90 && angle.degree < 180 {
+		if angle.degree == 90 && angle.minute == 0 {
+			return 0, denominator
+		}
 		angle.degree -= 90
 		n, d := Tangent(angle)
 		return -n, d
@@ -1393,19 +1399,15 @@ func Cotangent(angle Angle) (int32, int32) {
 		return n, -d
 	}
 
-	if angle.degree == 90 && angle.minute == 0 {
-		return 0, denominator
-	}
-
 	dm := 90*60 - angle.degree*60 - angle.minute
 	angle.degree, angle.minute = dm/60, dm%60
 	if negative {
-		return -tanval[angle.degree][angle.minute], -denominator
+		return -tanval[angle.degree][angle.minute], denominator
 	}
 	return tanval[angle.degree][angle.minute/10], denominator
 }
 
-// 反正弦
+// 反正弦 [-90, 90]
 func ArcSine(sn, sd int32) Angle {
 	if sd == 0 {
 		panic(fmt.Sprintf("base: invalid denominator %v for ArcSine", sd))
@@ -1449,9 +1451,16 @@ func ArcSine(sn, sd int32) Angle {
 	return Angle{m, n * 10}
 
 bl:
-	for i := int16(0); i < int16(len(sinval[m])); i++ {
-		if sn*denominator <= sd*sinval[m][i] {
-			n = i
+	for i := int16(1); i < int16(len(sinval[m])); i++ {
+		a := sn * denominator
+		u := sd * sinval[m][i-1]
+		v := sd * sinval[m][i]
+		if a >= u && a <= v {
+			if a-u <= v-a {
+				n = i - 1
+			} else {
+				n = i
+			}
 			break
 		}
 	}
@@ -1462,28 +1471,24 @@ bl:
 	return Angle{m, n * 10}
 }
 
-// 反餘弦
+// 反餘弦 [0, 180]
 func ArcCosine(cn, cd int32) Angle {
 	angle := ArcSine(cn, cd)
 	minutes := 90*60 - (angle.degree*60 + angle.minute)
 	return Angle{degree: minutes / 60, minute: minutes % 60}
 }
 
-// 反正切
+// 反正切 [-90, 90]
 func ArcTangent(y, x int32) Angle {
 	if x == 0 {
 		if y < 0 {
-			return Angle{270, 0}
+			return Angle{-90, 0}
 		} else if y > 0 {
 			return Angle{90, 0}
 		}
 	}
 	if y == 0 {
-		if x < 0 {
-			return Angle{180, 0}
-		} else if x > 0 {
-			return Angle{0, 0}
-		}
+		return Angle{0, 0}
 	}
 
 	var (
@@ -1503,11 +1508,11 @@ func ArcTangent(y, x int32) Angle {
 		negative = true
 	}
 	for l <= r {
-		if y*denominator < x*tanval[m][0] {
+		if int64(y)*int64(denominator) < int64(x)*int64(tanval[m][0]) {
 			r = m - 1
 			m = (l + r) >> 1
 			n = 0
-		} else if y*denominator > x*tanval[m][5] {
+		} else if int64(y)*int64(denominator) > int64(x)*int64(tanval[m][5]) {
 			l = m + 1
 			m = (l + r) >> 1
 			n = 5
@@ -1522,9 +1527,16 @@ func ArcTangent(y, x int32) Angle {
 	return Angle{m, n * 10}
 
 bl:
-	for i := int16(0); i < int16(len(tanval[m])); i++ {
-		if y*denominator <= x*tanval[m][i] {
-			n = i
+	for i := int16(1); i < int16(len(tanval[m])); i++ {
+		a := int64(y) * int64(denominator)
+		u := int64(x) * int64(tanval[m][i-1])
+		v := int64(x) * int64(tanval[m][i])
+		if a >= u && a <= v {
+			if a-u <= v-a {
+				n = i - 1
+			} else {
+				n = i
+			}
 			break
 		}
 	}
@@ -1535,7 +1547,7 @@ bl:
 	return Angle{m, n * 10}
 }
 
-// 反餘切
+// 反餘切 [0, 180]
 func ArcCotangent(y, x int32) Angle {
 	angle := ArcTangent(y, x)
 	minutes := 90*60 - (angle.degree*60 + angle.minute)

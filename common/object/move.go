@@ -136,40 +136,42 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	if deltaMinutes == 0 {
 		return DefaultMove(shell, tick)
 	}
-	deltaAngle := base.NewAngleObj(int16(deltaMinutes/60), int16(deltaMinutes%60))
-	deltaAngle.Normalize()
-	log.Debug(">>>>>>>> normalized deltaAngle %v", deltaAngle)
 	// 利用點積求夾角
 	dot := shellDir.Dot(targetDir)
 	// cos(Theta) := dot / (a.Length() * b.Length())
 	theta := base.ArcCosine(dot, shellDir.Length()*targetDir.Length())
+	thetaMinutes := theta.ToMinutes()
 
 	var angle base.Angle
 	if cross > 0 { // 逆時針轉
 		// tick時間内的轉向角度超過了需要的角度差
-		if deltaAngle.GreaterEqual(theta) {
+		if deltaMinutes >= thetaMinutes {
 			angle = base.AngleAdd(shellRotation, theta)
 			shell.RotateTo(angle)
 			shell.Move(angle)
 			return DefaultMove(shell, tick)
 		}
+		var deltaAngle base.Angle
+		deltaAngle.Set(deltaMinutes)
 		angle = base.AngleAdd(shellRotation, deltaAngle)
-		log.Debug("< 逆時針")
 	} else { // 順時針轉
-		if deltaAngle.Negative().LessEqual(theta.Negative()) {
+		if deltaMinutes >= thetaMinutes {
 			angle = base.AngleSub(shellRotation, theta)
 			shell.RotateTo(angle)
 			shell.Move(angle)
 			return DefaultMove(shell, tick)
 		}
+		var deltaAngle base.Angle
+		deltaAngle.Set(deltaMinutes)
 		angle = base.AngleSub(shellRotation, deltaAngle)
-		log.Debug("> 順時針")
 	}
-
-	log.Debug("!!!!!!!! rotate to angle %v, previous angle %v", angle, shellRotation)
-	log.Debug("track target %v to rotate angle %v", target.InstId(), angle)
 
 	shell.Move(angle)
 	shell.RotateTo(angle)
+	if cross > 0 {
+		log.Debug("< 逆時針 !!!!!!!! rotate to angle %v, previous angle %v, track target %v\n", angle, shellRotation, target.InstId())
+	} else {
+		log.Debug("> 順時針 !!!!!!!! rotate to angle %v, previous angle %v, track target %v\n", angle, shellRotation, target.InstId())
+	}
 	return DefaultMove(shell, tick)
 }

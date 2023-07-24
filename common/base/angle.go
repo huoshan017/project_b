@@ -6,12 +6,14 @@ type Angle struct {
 }
 
 func NewAngleObj(degree, minute int16) Angle {
+	minutes := int32(degree*60 + minute)
+	degree, minute = minutes2DegreeAndMinute(minutes)
 	return Angle{degree: degree, minute: minute}
 }
 
 func (a *Angle) Reset(degree, minute int16) {
-	a.degree = degree
-	a.minute = minute
+	minutes := int32(degree*60 + minute)
+	a.degree, a.minute = minutes2DegreeAndMinute(minutes)
 }
 
 func (a Angle) Get() (degree, minute int16) {
@@ -19,7 +21,7 @@ func (a Angle) Get() (degree, minute int16) {
 }
 
 func (a *Angle) Set(minutes int16) {
-	a.degree, a.minute = minutes/60, minutes%60
+	a.degree, a.minute = minutes2DegreeAndMinute(int32(minutes))
 }
 
 func (a *Angle) Clear() {
@@ -28,8 +30,8 @@ func (a *Angle) Clear() {
 }
 
 func (a *Angle) Add(angle Angle) {
-	minutes := 60*(a.degree+angle.degree) + a.minute + angle.minute
-	if minutes < 0 {
+	minutes := int32(60*(a.degree+angle.degree) + a.minute + angle.minute)
+	/*if minutes < 0 {
 		minutes = -minutes
 		a.degree, a.minute = minutes/60, minutes%60
 		if a.degree >= 360 {
@@ -42,7 +44,27 @@ func (a *Angle) Add(angle Angle) {
 		if a.degree >= 360 {
 			a.degree %= 360
 		}
-	}
+	}*/
+	a.degree, a.minute = minutes2DegreeAndMinute(minutes)
+}
+
+func (a *Angle) AddMinutes(minutes int16) {
+	newMinutes := int32(60*a.degree + a.minute + minutes)
+	/*if minutes < 0 {
+		minutes = -minutes
+		a.degree, a.minute = minutes/60, minutes%60
+		if a.degree >= 360 {
+			a.degree %= 360
+		}
+		a.degree = -a.degree
+		a.minute = -a.minute
+	} else {
+		a.degree, a.minute = minutes/60, minutes%60
+		if a.degree >= 360 {
+			a.degree %= 360
+		}
+	}*/
+	a.degree, a.minute = minutes2DegreeAndMinute(newMinutes)
 }
 
 func (a *Angle) Sub(angle Angle) {
@@ -68,6 +90,14 @@ func (a *Angle) Normalize() {
 		a.degree = minutes / 60
 		a.minute = minutes % 60
 	}
+}
+
+func minutes2DegreeAndMinute(minutes int32) (int16, int16) {
+	if minutes >= 0 {
+		return int16(minutes / 60), int16(minutes % 60)
+	}
+	minutes = -minutes
+	return -int16(minutes / 60), -int16(minutes % 60)
 }
 
 func (a Angle) DistanceToVec2(distance int32) Vec2 {
