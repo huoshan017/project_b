@@ -86,46 +86,8 @@ func (a Angle) Negative() Angle {
 	return Angle{degree: -a.degree, minute: -a.minute}
 }
 
-func (a Angle) ToVec2() Vec2 {
-	a.Normalize()
-	if a.minute == 0 {
-		if a.degree == 0 {
-			return Vec2{1, 0}
-		} else if a.degree == 90 {
-			return Vec2{0, 1}
-		} else if a.degree == 180 {
-			return Vec2{-1, 0}
-		} else if a.degree == 270 {
-			return Vec2{0, -1}
-		}
-	}
-	n, d := Tangent(a)
-	if (n >= 32768 && n < 65535) || (n > -65535 && n <= -32768) {
-		n /= 100
-		d /= 100
-	} else if (n >= 65535 && n < 65535*2) || (n > -65535*2 && n <= -65535) {
-		n /= 200
-		d /= 200
-	} else if (n >= 65535*2 && n < 65535*4) || (n > -65535*4 && n <= -65535*2) {
-		n /= 400
-		d /= 400
-	} else if (n >= 65535*4 && n < 65535*8) || (n > -65535*8 && n <= -65535*4) {
-		n /= 1000
-		d /= 1000
-	} else if (n >= 65535*8 && n < 65535*16) || (n > -65535*16 && n <= -65535*8) {
-		n /= 1000
-		d /= 1000
-	} else if (n >= 65535*16 && n < 65535*32) || (n > -65535*32 && n <= -65535*16) {
-		n /= 2000
-		d /= 2000
-	} else if (n >= 65535*32 && n < 65535*64) || (n > -65535*64 && n <= -65535*32) {
-		n /= 5000
-		d /= 5000
-	} else if n >= 65535*64 || n < -65535*64 {
-		n /= 10000
-		d /= 10000
-	}
-	return Vec2{d, n}
+func (a Angle) IsNegative() bool {
+	return (a.degree*a.minute >= 0 && (a.degree < 0 || a.minute < 0))
 }
 
 func (a *Angle) ToLeft() {
@@ -164,8 +126,16 @@ func (a Angle) IsDown() bool {
 	return a.degree == 270 && a.minute == 0
 }
 
+func (a Angle) Greater(b Angle) bool {
+	return AngleGreater(a, b)
+}
+
 func (a Angle) GreaterEqual(b Angle) bool {
 	return AngleGreater(a, b) || a == b
+}
+
+func (a Angle) Less(b Angle) bool {
+	return AngleLess(a, b)
 }
 
 func (a Angle) LessEqual(b Angle) bool {
@@ -191,14 +161,10 @@ func AngleSub(a, b Angle) Angle {
 }
 
 func AngleGreater(a, b Angle) bool {
-	a.Normalize()
-	b.Normalize()
 	return a.ToMinutes() > b.ToMinutes()
 }
 
 func AngleLess(a, b Angle) bool {
-	a.Normalize()
-	b.Normalize()
 	return a.ToMinutes() < b.ToMinutes()
 }
 

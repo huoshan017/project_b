@@ -90,10 +90,10 @@ type TankShellConfig struct {
 // 坦克靜態配置
 type TankStaticInfo struct {
 	MovableObjStaticInfo
-	Orientation    int32     // 朝向
-	Level          int32     // 等級
-	ShellLaunchPos base.Vec2 // 炮彈發射點 坦克局部坐標系中相對於坦克中心位置的坐標
-	ShellConfig    TankShellConfig
+	Level                   int32     // 等級
+	SteeringAngularVelocity int32     // 轉向角速度(分(1/60度)/秒)
+	ShellLaunchPos          base.Vec2 // 炮彈發射點 坦克局部坐標系中相對於坦克中心位置的坐標
+	ShellConfig             TankShellConfig
 }
 
 // 效果靜態信息

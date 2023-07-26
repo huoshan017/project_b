@@ -322,7 +322,7 @@ func (s *SceneLogic) TankMove(instId uint32, orientation int32) {
 		return
 	}
 	angle := base.NewAngle(int16(orientation), 0)
-	tank.RotateTo(angle)
+	//tank.RotateTo(angle)
 	tank.Move(angle)
 }
 

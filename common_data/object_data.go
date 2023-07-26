@@ -84,41 +84,46 @@ var (
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 600, 1, true),
 			},
-			Level:          1,
-			ShellLaunchPos: base.NewVec2(160, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
+			Level:                   1,
+			SteeringAngularVelocity: 220 * 60,
+			ShellLaunchPos:          base.NewVec2(160, 0),
+			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(2, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 600, 1, true),
 			},
-			Level:          1,
-			ShellLaunchPos: base.NewVec2(160, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
+			Level:                   1,
+			SteeringAngularVelocity: 220 * 60,
+			ShellLaunchPos:          base.NewVec2(160, 0),
+			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
 		},
 		1000: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 600, 1, true),
 			},
-			Level:          1,
-			ShellLaunchPos: base.NewVec2(160, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 1500},
+			Level:                   1,
+			SteeringAngularVelocity: 240 * 60,
+			ShellLaunchPos:          base.NewVec2(160, 0),
+			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 1500},
 		},
 		1001: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(1001, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 900, 1, true),
 			},
-			Level:          1,
-			ShellLaunchPos: base.NewVec2(165, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
+			Level:                   1,
+			SteeringAngularVelocity: 250 * 60,
+			ShellLaunchPos:          base.NewVec2(165, 0),
+			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 		1002: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(1002, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 650, 1, true),
 			},
-			Level:          1,
-			ShellLaunchPos: base.NewVec2(165, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
+			Level:                   1,
+			SteeringAngularVelocity: 200 * 60,
+			ShellLaunchPos:          base.NewVec2(165, 0),
+			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 	}
 

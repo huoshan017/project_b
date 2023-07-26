@@ -127,7 +127,6 @@ func (o *MovableObject) Forward() base.Vec2 {
 // 移动
 func (o *MovableObject) Move(dir base.Angle) {
 	o.moveDir = dir
-	//o.rotation = dir // todo 物體的轉向最好是逐漸與運動方向一致
 	if o.state == stopped {
 		d := GetDefaultLinearDistance(o, o.lastTick)
 		v := dir.DistanceToVec2(d)

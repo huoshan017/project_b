@@ -278,6 +278,7 @@ func (o object) WorldRotation() base.Angle {
 func (o object) Rotation() base.Angle {
 	sr := o.staticInfo.rotation
 	rotation := base.AngleAdd(o.rotation, base.NewAngle(int16(sr), 0))
+	rotation.Normalize()
 	return rotation
 }
 
