@@ -1,7 +1,5 @@
 package base
 
-import "math"
-
 type Vec2 struct {
 	x, y int32
 }
@@ -48,11 +46,6 @@ func (v Vec2) Cross(v2 Vec2) int32 {
 
 func (v Vec2) Translate(x, y int32) Vec2 {
 	return Vec2{x: v.x + x, y: v.y + y}
-}
-
-func (v Vec2) Rotate(angle int32) Vec2 {
-	s, c := math.Sincos(math.Pi * float64(angle) / 180)
-	return Vec2{x: int32(float64(v.x)*c - float64(v.y)*s), y: int32(float64(v.x)*s + float64(v.y)*c)}
 }
 
 func (v Vec2) Scale(sx, sy int32) Vec2 {

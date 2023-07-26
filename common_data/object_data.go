@@ -62,7 +62,7 @@ var (
 			BlastRadius:             1000,
 			TrackTarget:             true,
 			SearchTargetRadius:      4000,
-			SteeringAngularVelocity: 60 * 50, // 分
+			SteeringAngularVelocity: 60 * 70, // 分
 		},
 	}
 
@@ -86,7 +86,7 @@ var (
 			},
 			Level:          1,
 			ShellLaunchPos: base.NewVec2(160, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
+			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
@@ -94,15 +94,15 @@ var (
 			},
 			Level:          1,
 			ShellLaunchPos: base.NewVec2(160, 0),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 5000},
+			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
 		},
 		1000: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
 				ObjStaticInfo: *object.NewObjStaticInfo(1000, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 600, 1, true),
 			},
 			Level:          1,
-			ShellLaunchPos: base.NewVec2(160, 50),
-			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 3500},
+			ShellLaunchPos: base.NewVec2(160, 0),
+			ShellConfig:    object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 1500},
 		},
 		1001: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{

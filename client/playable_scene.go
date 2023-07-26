@@ -173,7 +173,7 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 		s.playableEffects[effect.InstId()] = tc
 	}
 
-	s._draw(tc, effect.Width(), effect.Height(), cbase.NewAngleObj(0, 0), dstImage)
+	s._draw(tc, effect.Width(), effect.Height(), cbase.NewAngle(0, 0), dstImage)
 }
 
 func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, rotation cbase.Angle, dstImage *ebiten.Image) {

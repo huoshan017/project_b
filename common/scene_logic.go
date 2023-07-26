@@ -321,7 +321,7 @@ func (s *SceneLogic) TankMove(instId uint32, orientation int32) {
 		log.Error("tank %v not found", instId)
 		return
 	}
-	angle := base.NewAngleObj(int16(orientation), 0)
+	angle := base.NewAngle(int16(orientation), 0)
 	tank.RotateTo(angle)
 	tank.Move(angle)
 }
@@ -372,7 +372,7 @@ func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
 	s.surroundObjList.Add(ball.InstId(), ball)
 	s.surroundObjAddedEvent.Call(ball)
 	s.gmap.AddObj(ball)
-	ball.Move(base.NewAngleObj(0, 0))
+	ball.Move(base.NewAngle(0, 0))
 }
 
 func (s *SceneLogic) TankRotate(instId uint32, degree int32) {

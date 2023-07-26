@@ -266,7 +266,7 @@ func (o object) RightTop() (int32, int32) {
 
 // 局部旋轉
 func (o object) LocalRotation() base.Angle {
-	return base.NewAngleObj(int16(o.staticInfo.rotation), 0)
+	return base.NewAngle(int16(o.staticInfo.rotation), 0)
 }
 
 // 世界旋轉
@@ -277,7 +277,7 @@ func (o object) WorldRotation() base.Angle {
 // 旋轉
 func (o object) Rotation() base.Angle {
 	sr := o.staticInfo.rotation
-	rotation := base.AngleAdd(o.rotation, base.NewAngleObj(int16(sr), 0))
+	rotation := base.AngleAdd(o.rotation, base.NewAngle(int16(sr), 0))
 	return rotation
 }
 

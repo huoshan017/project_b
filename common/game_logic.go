@@ -205,7 +205,7 @@ func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32,
 		log.Error("player %v enter with static info to create tank failed", pid)
 		return 0
 	}
-	angle := base.NewAngleObj(int16(orientation), 0)
+	angle := base.NewAngle(int16(orientation), 0)
 	tank.RotateTo(angle)
 	g.player2Tank.Add(pid, tank.InstId())
 	g.tank2Player.Add(tank.InstId(), pid)

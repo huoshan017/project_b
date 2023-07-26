@@ -112,8 +112,16 @@ func (o *MovableObject) Rotate(angle base.Angle) {
 
 // 逆時針旋轉到
 func (o *MovableObject) RotateTo(angle base.Angle) {
-	angle.Sub(base.NewAngleObj(int16(o.staticInfo.rotation), 0))
+	angle.Sub(base.NewAngle(int16(o.staticInfo.rotation), 0))
 	o.rotation = angle
+}
+
+// 朝向向量
+func (o *MovableObject) Forward() base.Vec2 {
+	cx0, cy0 := o.Pos()
+	cx1, cy1 := cx0+o.Length()/2, cy0
+	cx2, cy2 := base.Rotate(cx1, cy1, cx0, cy0, o.Rotation())
+	return base.NewVec2(cx2-cx0, cy2-cy0)
 }
 
 // 移动

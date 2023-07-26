@@ -112,7 +112,7 @@ func (b *Bot) Update(tick time.Duration) {
 				}
 			}
 		}
-		angle := base.NewAngleObj(orientation, 0)
+		angle := base.NewAngle(orientation, 0)
 		botTank.RotateTo(angle)
 		botTank.Move(angle)
 	}

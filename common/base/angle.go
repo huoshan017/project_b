@@ -5,7 +5,7 @@ type Angle struct {
 	minute int16
 }
 
-func NewAngleObj(degree, minute int16) Angle {
+func NewAngle(degree, minute int16) Angle {
 	minutes := int32(degree*60 + minute)
 	degree, minute = minutes2DegreeAndMinute(minutes)
 	return Angle{degree: degree, minute: minute}
@@ -31,39 +31,11 @@ func (a *Angle) Clear() {
 
 func (a *Angle) Add(angle Angle) {
 	minutes := int32(60*(a.degree+angle.degree) + a.minute + angle.minute)
-	/*if minutes < 0 {
-		minutes = -minutes
-		a.degree, a.minute = minutes/60, minutes%60
-		if a.degree >= 360 {
-			a.degree %= 360
-		}
-		a.degree = -a.degree
-		a.minute = -a.minute
-	} else {
-		a.degree, a.minute = minutes/60, minutes%60
-		if a.degree >= 360 {
-			a.degree %= 360
-		}
-	}*/
 	a.degree, a.minute = minutes2DegreeAndMinute(minutes)
 }
 
 func (a *Angle) AddMinutes(minutes int16) {
 	newMinutes := int32(60*a.degree + a.minute + minutes)
-	/*if minutes < 0 {
-		minutes = -minutes
-		a.degree, a.minute = minutes/60, minutes%60
-		if a.degree >= 360 {
-			a.degree %= 360
-		}
-		a.degree = -a.degree
-		a.minute = -a.minute
-	} else {
-		a.degree, a.minute = minutes/60, minutes%60
-		if a.degree >= 360 {
-			a.degree %= 360
-		}
-	}*/
 	a.degree, a.minute = minutes2DegreeAndMinute(newMinutes)
 }
 
@@ -240,4 +212,10 @@ func PiAngle() Angle {
 
 func TwoPiAngle() Angle {
 	return Angle{degree: 360}
+}
+
+func Rotate(x, y int32, x0, y0 int32, angle Angle) (int32, int32) {
+	sn, sd := Sine(angle)
+	cn, cd := Cosine(angle)
+	return (x-x0)*cn/cd - (y-y0)*sn/sd + x0, (x-x0)*sn/sd + (y-y0)*cn/cd + y0
 }

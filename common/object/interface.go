@@ -65,6 +65,7 @@ type IMovableObject interface {
 	CurrentSpeed() int32       // 当前速度
 	Rotate(angle base.Angle)   // 旋轉，逆時針為正方向 [0, 360)
 	RotateTo(angle base.Angle) // 逆時針旋轉到 [0, 360)
+	Forward() base.Vec2        // 朝向向量
 	Move(dir base.Angle)       // 移动
 	Stop()                     // 停止
 	IsMoving() bool            // 是否在移动

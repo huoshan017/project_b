@@ -71,7 +71,7 @@ func getSurroundObjMovedPos(sobj *SurroundObj, tick time.Duration, moveInfo *Sur
 		degree -= 360
 	}
 	accumulateTime -= time.Duration(angle) * time.Second / time.Duration(staticInfo.AngularVelocity)
-	an := base.NewAngleObj(int16(degree), int16(minute))
+	an := base.NewAngle(int16(degree), int16(minute))
 	sn, sd := base.Sine(an)
 	cn, cd := base.Cosine(an)
 	if staticInfo.Clockwise {
@@ -122,15 +122,16 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	b := base.NewVec2(tx, ty)
 	// 目標方向向量
 	targetDir := b.Sub(a)
-	// todo 求炮彈的方向向量
-	shellRotation := shell.Rotation()
-	shellDir := shellRotation.ToVec2()
+	// 炮彈的方向向量
+	shellDir := shell.Forward()
 	// 求叉積確定逆時針還是順時針轉
 	cross := shellDir.Cross(targetDir)
 	if cross == 0 {
 		return DefaultMove(shell, tick)
 	}
-	log.Debug("@@@@@@@@ target dir %v, shell rotation %v, shell current dir %v", targetDir, shellRotation, shellDir)
+
+	log.Debug("@@@@@@@@ target dir %v, shell current dir %v", targetDir, shellDir)
+
 	// tick時間轉向角度
 	deltaMinutes := int16(time.Duration(shell.ShellStaticInfo().SteeringAngularVelocity) * tick / time.Second)
 	if deltaMinutes == 0 {
@@ -143,27 +144,24 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	thetaMinutes := theta.ToMinutes()
 
 	var angle base.Angle
+	shellRotation := shell.Rotation()
 	if cross > 0 { // 逆時針轉
 		// tick時間内的轉向角度超過了需要的角度差
 		if deltaMinutes >= thetaMinutes {
 			angle = base.AngleAdd(shellRotation, theta)
-			shell.RotateTo(angle)
-			shell.Move(angle)
-			return DefaultMove(shell, tick)
+		} else {
+			var deltaAngle base.Angle
+			deltaAngle.Set(deltaMinutes)
+			angle = base.AngleAdd(shellRotation, deltaAngle)
 		}
-		var deltaAngle base.Angle
-		deltaAngle.Set(deltaMinutes)
-		angle = base.AngleAdd(shellRotation, deltaAngle)
 	} else { // 順時針轉
 		if deltaMinutes >= thetaMinutes {
 			angle = base.AngleSub(shellRotation, theta)
-			shell.RotateTo(angle)
-			shell.Move(angle)
-			return DefaultMove(shell, tick)
+		} else {
+			var deltaAngle base.Angle
+			deltaAngle.Set(deltaMinutes)
+			angle = base.AngleSub(shellRotation, deltaAngle)
 		}
-		var deltaAngle base.Angle
-		deltaAngle.Set(deltaMinutes)
-		angle = base.AngleSub(shellRotation, deltaAngle)
 	}
 
 	shell.Move(angle)

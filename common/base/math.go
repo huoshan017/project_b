@@ -1347,26 +1347,27 @@ func Tangent(angle Angle) (int32, int32) {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for tangent angle", angle.degree, angle.minute))
 	}
 
-	var negative bool
 	angle.Normalize()
-	if angle.degree >= 90 && angle.degree < 180 { // 第二象限 x<=0  y>=0
-		if angle.degree == 90 && angle.minute == 0 {
+	if angle.minute == 0 {
+		if angle.degree == 90 {
+			return tan_90_00, denominator
+		} else if angle.degree == 180 {
+			return tan_0_00, denominator
+		} else if angle.degree == 270 {
 			return tan_90_00, denominator
 		}
+	}
+	if angle.degree >= 90 && angle.degree < 180 { // 第二象限 x<=0  y>=0
 		angle.degree -= 90
 		n, d := Cotangent(angle)
-		return n, -d //
+		return -n, d
 	} else if angle.degree >= 180 && angle.degree < 270 { // 第三象限  x<=0 y<=0
 		angle.degree -= 180
-		negative = true
 	} else if angle.degree >= 270 && angle.degree < 360 { // 第四象限  x>=0 y<=0
 		tp := TwoPiAngle()
 		tp.Sub(angle)
 		n, d := Tangent(tp)
 		return -n, d
-	}
-	if negative {
-		return -tanval[angle.degree][angle.minute/10], denominator
 	}
 	return tanval[angle.degree][angle.minute/10], denominator
 }
@@ -1380,30 +1381,31 @@ func Cotangent(angle Angle) (int32, int32) {
 		panic(fmt.Sprintf("base: invalid degree param %v and minute param %v for cotangent angle", angle.degree, angle.minute))
 	}
 
-	var negative bool
 	angle.Normalize()
-	if angle.degree >= 90 && angle.degree < 180 {
-		if angle.degree == 90 && angle.minute == 0 {
-			return 0, denominator
+	if angle.minute == 0 {
+		if angle.degree == 90 {
+			return tan_0_00, denominator
+		} else if angle.degree == 180 {
+			return -tan_90_00, denominator
+		} else if angle.degree == 270 {
+			return tan_0_00, denominator
 		}
+	}
+	if angle.degree >= 90 && angle.degree < 180 {
 		angle.degree -= 90
 		n, d := Tangent(angle)
 		return -n, d
-	} else if angle.degree >= 180 && angle.degree < 270 {
+	} else if angle.degree >= 180 && angle.degree < 270 { // tan(a-pi) = tan(a)
 		angle.degree -= 180
-		negative = true
 	} else if angle.degree >= 270 && angle.degree < 360 {
 		tp := TwoPiAngle()
 		tp.Sub(angle)
 		n, d := Cotangent(tp)
-		return n, -d
+		return -n, d
 	}
 
 	dm := 90*60 - angle.degree*60 - angle.minute
 	angle.degree, angle.minute = dm/60, dm%60
-	if negative {
-		return -tanval[angle.degree][angle.minute], denominator
-	}
 	return tanval[angle.degree][angle.minute/10], denominator
 }
 
