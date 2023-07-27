@@ -159,6 +159,12 @@ func (o *MovableObject) IsMoving() bool {
 	return o.state == toMove || o.state == isMoving || o.state == toStop
 }
 
+// 設置位置
+func (o *MovableObject) SetPos(x, y int32) {
+	o.lastX, o.lastY = o.Pos()
+	o.x, o.y = x, y
+}
+
 // 上次Update的位置
 func (o MovableObject) LastPos() (int32, int32) {
 	return o.lastX, o.lastY

@@ -50,6 +50,7 @@ type GridMap struct {
 	sobjs                   *ds.MapListUnion[uint32, object.IStaticObject]  // 对象map
 	mobjs                   *ds.MapListUnion[uint32, object.IMovableObject] // 移動對象map
 	grids                   []gridObjList                                   // 網格用於碰撞檢測，提高檢測性能
+	mobj2GridIndex          *ds.MapListUnion[uint32, int32]                 // 移動對象與網格索引的映射
 	resultLayerObjs         [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32]  // 缓存返回的结果给调用者，主要为了提高性能，减少GC
 	resultMovableObjList    []uint32                                        // 緩存搜索的可移動物體的結果
 }
@@ -59,6 +60,7 @@ func NewGridMap(gridTileSize int16) *GridMap {
 		minGridTileSize: gridTileSize,
 		sobjs:           ds.NewMapListUnion[uint32, object.IStaticObject](),
 		mobjs:           ds.NewMapListUnion[uint32, object.IMovableObject](),
+		mobj2GridIndex:  ds.NewMapListUnion[uint32, int32](),
 	}
 }
 
@@ -145,12 +147,16 @@ func (m *GridMap) AddObj(obj object.IObject) {
 
 	x, y := obj.Pos()
 	index := m.posGridIndex(x, y)
-	m.grids[index].addObj(instId)
-	log.Info("MapInstance: obj %v add to grid(index: %v)", instId, index)
-	if obj.Type() == object.ObjTypeMovable {
-		m.mobjs.Add(instId, obj.(object.IMovableObject))
+	if m.grids[index].addObj(instId) {
+		if obj.Type() == object.ObjTypeMovable {
+			m.mobjs.Add(instId, obj.(object.IMovableObject))
+			m.mobj2GridIndex.Add(instId, index)
+		} else {
+			m.sobjs.Add(instId, obj.(object.IStaticObject))
+		}
+		log.Info("GridMap: obj %v(type:%v, subtype:%v) add to grid(index: %v)", instId, obj.Type(), obj.Subtype(), index)
 	} else {
-		m.sobjs.Add(instId, obj.(object.IStaticObject))
+		log.Warn("GridMap: obj %v already exists in grid %v", index)
 	}
 }
 
@@ -170,10 +176,14 @@ func (m *GridMap) RemoveObj(instId uint32) {
 		m.sobjs.Remove(instId)
 	}
 
-	x, y := obj.Pos()
-	index := m.posGridIndex(x, y)
+	index, o := m.mobj2GridIndex.Get(instId)
+	if !o {
+		log.Warn("GridMap: obj %v cant get grid index to remove", instId)
+		return
+	}
 	m.grids[index].removeObj(instId)
-	log.Info("MapInstance: obj %v remove from grid(index: %v)", instId, index)
+	m.mobj2GridIndex.Remove(instId)
+	log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(index: %v)", instId, obj.Type(), obj.Subtype(), index)
 }
 
 func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
@@ -189,11 +199,16 @@ func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
 	}
 
 	index := m.posGridIndex(x, y)
-	lastIndex := m.posGridIndex(lastX, lastY)
-
+	lastIndex, o := m.mobj2GridIndex.Get(obj.InstId())
+	if !o {
+		log.Warn("GridMap: obj %v not found grid index to update", obj.InstId())
+		return
+	}
 	if index != lastIndex {
 		m.grids[lastIndex].removeObj(obj.InstId())
 		m.grids[index].addObj(obj.InstId())
+		m.mobj2GridIndex.Set(obj.InstId(), index)
+		log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(%v), add to grid(%v)", obj.InstId(), obj.Type(), obj.Subtype(), lastIndex, index)
 	}
 }
 
@@ -320,8 +335,12 @@ func (m GridMap) posGridIndex(x, y int32) int32 {
 	return m.gridLineCol2Index(by, lx)
 }
 
+func (m GridMap) gridIndex2LineColumn(index int32) (int32, int32) {
+	return index / int32(m.gridColNum), index % int32(m.gridColNum)
+}
+
 // 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
-func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject /*dir object.Direction, */, dx, dy int32, collisionObj *object.IObject) bool {
+func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dx, dy int32, collisionObj *object.IObject) bool {
 	// 是否擁有碰撞組件
 	comp := obj.GetComp("Collider")
 	if comp == nil {
@@ -366,12 +385,13 @@ func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject /*dir objec
 				if !o {
 					obj2, o = m.sobjs.Get(ids[n])
 					if !o {
-						log.Warn("Collision: grid(x:%v y:%v) not found object %v", x, y, ids[n])
+						gl, gc := m.gridIndex2LineColumn(index)
+						log.Warn("Collision: grid(x:%v y:%v, index:%v) exist object %v, but not found in obj map", gc, gl, index, ids[n])
 						continue
 					}
 				}
 				if obj2.InstId() != obj.InstId() {
-					if checkMovableObjCollisionObj(obj, comp /*dir,*/, dx, dy, obj2) {
+					if checkMovableObjCollisionObj(obj, comp, dx, dy, obj2) {
 						if collisionObj != nil {
 							*collisionObj = obj2
 						}
