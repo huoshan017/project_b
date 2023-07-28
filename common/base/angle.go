@@ -90,42 +90,6 @@ func (a Angle) IsNegative() bool {
 	return (a.degree*a.minute >= 0 && (a.degree < 0 || a.minute < 0))
 }
 
-func (a *Angle) ToLeft() {
-	a.degree = 180
-	a.minute = 0
-}
-
-func (a *Angle) ToRight() {
-	a.degree = 0
-	a.minute = 0
-}
-
-func (a *Angle) ToUp() {
-	a.degree = 90
-	a.minute = 0
-}
-
-func (a *Angle) ToDown() {
-	a.degree = 270
-	a.minute = 0
-}
-
-func (a Angle) IsLeft() bool {
-	return a.degree == 180 && a.minute == 0
-}
-
-func (a Angle) IsRight() bool {
-	return a.degree == 0 && a.minute == 0
-}
-
-func (a Angle) IsUp() bool {
-	return a.degree == 90 && a.minute == 0
-}
-
-func (a Angle) IsDown() bool {
-	return a.degree == 270 && a.minute == 0
-}
-
 func (a Angle) Greater(b Angle) bool {
 	return AngleGreater(a, b)
 }

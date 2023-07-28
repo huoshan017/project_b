@@ -4,7 +4,6 @@ import (
 	"math"
 	"project_b/client/base"
 	"project_b/common"
-	cbase "project_b/common/base"
 	pmath "project_b/common/math"
 	"project_b/common/object"
 
@@ -48,10 +47,7 @@ func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
 	s.CameraMoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
 	s.CameraSetHeight(mapInfo.cameraHeight)
 	s.scene = scene
-	s.scene.RegisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
-	s.scene.RegisterTankRemovedHandle(s.onTankRemovedHandle)
-	s.scene.RegisterShellRemovedHandle(s.onShellRemovedHandle)
-	s.scene.RegisterSurroundObjRemovedHandle(s.onSurroundObjRemovedHandle)
+	s.scene.RegisterObjectRemovedHandle(s.onObjRemovedHandle)
 	s.scene.RegisterEffectRemovedHandle(s.onEffectRemovedHandle)
 }
 
@@ -60,10 +56,7 @@ func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
  */
 func (s *PlayableScene) UnloadScene() {
 	s.scene.UnregisterEffectRemovedHandle(s.onEffectRemovedHandle)
-	s.scene.UnregisterSurroundObjRemovedHandle(s.onSurroundObjRemovedHandle)
-	s.scene.UnregisterShellRemovedHandle(s.onShellRemovedHandle)
-	s.scene.UnregisterTankRemovedHandle(s.onTankRemovedHandle)
-	s.scene.UnregisterStaticObjRemovedHandle(s.onStaticObjRemovedHandle)
+	s.scene.UnregisterObjectRemovedHandle(s.onObjRemovedHandle)
 	clear(s.playableObjs)
 	clear(s.playableEffects)
 	s.scene = nil
@@ -156,7 +149,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 		s.playableObjs[obj.InstId()] = tc
 	}
 
-	s._draw(tc, obj.Width(), obj.Length(), obj.WorldRotation(), dstImage)
+	s._draw(tc, obj.Width(), obj.Length(), dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image) {
@@ -173,16 +166,18 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 		s.playableEffects[effect.InstId()] = tc
 	}
 
-	s._draw(tc, effect.Width(), effect.Height(), cbase.NewAngle(0, 0), dstImage)
+	s._draw(tc, effect.Width(), effect.Height(), dstImage)
 }
 
-func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, rotation cbase.Angle, dstImage *ebiten.Image) {
-	// 移動插值
-	dx, dy := tc.playable.Interpolation()
-	left := int32(dx) - width/2
-	right := int32(dx) + width/2
-	top := int32(dy) + length/2
-	bottom := int32(dy) - length/2
+func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebiten.Image) {
+	// 插值
+	var transform Transform
+	tc.playable.Interpolation(&transform)
+	left := int32(transform.tx) - width/2
+	right := int32(transform.tx) + width/2
+	top := int32(transform.ty) + length/2
+	bottom := int32(transform.ty) - length/2
+
 	// 由於世界坐標Y軸與屏幕坐標Y軸方向相反，所以變換左上角和右下角的世界坐標到屏幕坐標
 	// 遵循縮放、旋轉、平移的變換順序
 	tc.op.GeoM.Reset()
@@ -196,8 +191,9 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, rotation cbas
 	scalex := float64(dw) / float64(width)
 	scaley := float64(dh) / float64(length)
 	tc.op.GeoM.Scale(scalex, scaley)
+
 	// todo 這個旋轉指的是基於圖片的旋轉，是順時針旋轉的變化量，不同於以x軸正方向為零度，逆時針旋轉為正向的邏輯旋轉
-	minutes := rotation.ToMinutes()
+	minutes := transform.rotation.ToMinutes()
 	if minutes != 0 {
 		tc.op.GeoM.Translate(-float64(dw)/2, -float64(dh)/2)
 		tc.op.GeoM.Rotate(-float64(minutes) * math.Pi / (60 * 180.0))
@@ -237,6 +233,8 @@ func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.I
 		switch obj.Subtype() {
 		case object.ObjSubtypeTank:
 			playableObj = NewPlayableTank(mobj.(object.ITank), config)
+		case object.ObjSubtypeShell:
+			playableObj = NewPlayableShell(mobj.(object.IShell), config)
 		case object.ObjSubtypeSurroundObj:
 			surroundObj := mobj.(object.ISurroundObject)
 			aroundCenterObj := surroundObj.GetAroundCenterObject()
@@ -256,40 +254,12 @@ func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.I
 	return playableObj, animConfig
 }
 
-func (s *PlayableScene) onTankRemovedHandle(args ...any) {
-	tank := args[0].(*object.Tank)
-	pobj := s.playableObjs[tank.InstId()]
-	if pobj != nil {
-		pobj.playable.Uninit()
-		delete(s.playableObjs, tank.InstId())
-	}
-}
-
-func (s *PlayableScene) onShellRemovedHandle(args ...any) {
-	bullet := args[0].(*object.Shell)
-	pobj := s.playableObjs[bullet.InstId()]
-	if pobj != nil {
-		pobj.playable.Uninit()
-		delete(s.playableObjs, bullet.InstId())
-	}
-}
-
-func (s *PlayableScene) onSurroundObjRemovedHandle(args ...any) {
-	ball := args[0].(*object.SurroundObj)
-	bobj := s.playableObjs[ball.InstId()]
-	if bobj != nil {
-		bobj.playable.Uninit()
-		delete(s.playableObjs, ball.InstId())
-	}
-}
-
-func (s *PlayableScene) onStaticObjRemovedHandle(args ...any) {
-	robj := args[0].(object.IObject)
-	// todo 希望做成對象池可以復用這部分内存
-	pobj := s.playableObjs[robj.InstId()]
-	if pobj != nil {
-		pobj.playable.Uninit()
-		delete(s.playableObjs, robj.InstId())
+func (s *PlayableScene) onObjRemovedHandle(args ...any) {
+	obj := args[0].(object.IObject)
+	cache := s.playableObjs[obj.InstId()]
+	if cache != nil {
+		cache.playable.Uninit()
+		delete(s.playableObjs, obj.InstId())
 	}
 }
 

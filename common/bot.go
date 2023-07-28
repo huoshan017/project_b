@@ -17,6 +17,7 @@ const (
 	BotStateAttacking = 2
 )
 
+// Bot
 type Bot struct {
 	id                            int32
 	scene                         *SceneLogic
@@ -165,6 +166,7 @@ func (b *Bot) unregisterEnemyGetHandle(handle func(...any)) {
 	b.enemyGetEvent.Unregister(handle)
 }
 
+// BotManager
 type BotManager struct {
 	botList     *ds.MapListUnion[int32, *Bot]
 	botPool     *base.ObjectPool[Bot]

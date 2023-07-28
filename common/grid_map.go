@@ -115,6 +115,7 @@ func (m *GridMap) Unload() {
 	m.grids = m.grids[:0]
 	m.sobjs.Clear()
 	m.mobjs.Clear()
+	m.mobj2GridIndex.Clear()
 	m.grids = nil
 	m.minGridTileSize = 0
 	m.gridXTiles = 0
@@ -147,17 +148,17 @@ func (m *GridMap) AddObj(obj object.IObject) {
 
 	x, y := obj.Pos()
 	index := m.posGridIndex(x, y)
-	if m.grids[index].addObj(instId) {
-		if obj.Type() == object.ObjTypeMovable {
-			m.mobjs.Add(instId, obj.(object.IMovableObject))
-			m.mobj2GridIndex.Add(instId, index)
-		} else {
-			m.sobjs.Add(instId, obj.(object.IStaticObject))
-		}
-		log.Info("GridMap: obj %v(type:%v, subtype:%v) add to grid(index: %v)", instId, obj.Type(), obj.Subtype(), index)
-	} else {
+	if !m.grids[index].addObj(instId) {
 		log.Warn("GridMap: obj %v already exists in grid %v", index)
+		return
 	}
+	if obj.Type() == object.ObjTypeMovable {
+		m.mobjs.Add(instId, obj.(object.IMovableObject))
+		m.mobj2GridIndex.Add(instId, index)
+	} else {
+		m.sobjs.Add(instId, obj.(object.IStaticObject))
+	}
+	log.Info("GridMap: obj %v(type:%v, subtype:%v) add to grid(index: %v)", instId, obj.Type(), obj.Subtype(), index)
 }
 
 func (m *GridMap) RemoveObj(instId uint32) {

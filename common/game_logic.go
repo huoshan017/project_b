@@ -53,8 +53,8 @@ func (g *GameLogic) LoadScene(config *game_map.Config) bool {
 		return false
 	}
 	g.createBots(config)
-	g.scene.RegisterTankAddedHandle(g.onTankCreated)
-	g.scene.RegisterTankRemovedHandle(g.onTankDestroyed)
+	g.scene.RegisterObjectAddedHandle(g.onTankCreated)
+	g.scene.RegisterObjectRemovedHandle(g.onTankDestroyed)
 	g.eventMgr.InvokeEvent(EventIdMapLoaded, g.scene)
 	return loaded
 }
@@ -62,8 +62,8 @@ func (g *GameLogic) LoadScene(config *game_map.Config) bool {
 // 卸載場景圖
 func (g *GameLogic) UnloadScene() {
 	g.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
-	g.scene.UnregisterTankAddedHandle(g.onTankCreated)
-	g.scene.UnregisterTankRemovedHandle(g.onTankDestroyed)
+	g.scene.UnregisterObjectAddedHandle(g.onTankCreated)
+	g.scene.UnregisterObjectRemovedHandle(g.onTankDestroyed)
 	g.scene.UnloadMap()
 	g.player2Tank.Clear()
 	g.tank2Player.Clear()
@@ -129,16 +129,6 @@ func (g *GameLogic) RegisterEvent(eid base.EventId, handle func(args ...interfac
 // 注销事件
 func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interface{})) {
 	g.eventMgr.UnregisterEvent(eid, handle)
-}
-
-// 注册场景事件
-func (g *GameLogic) RegisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
-	g.scene.RegisterEvent(eid, handle)
-}
-
-// 注销场景事件
-func (g *GameLogic) UnregisterSceneEvent(eid base.EventId, handle func(args ...interface{})) {
-	g.scene.UnregisterEvent(eid, handle)
 }
 
 // 注册坦克事件
@@ -298,26 +288,6 @@ func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
 	g.scene.TankRotate(tankId, angle)
 }
 
-// 检测玩家
-/*func (g *GameLogic) CheckPlayerTankStartMove(uid uint64, startPos object.Pos, dir object.Direction, speed int32) bool {
-	tank := g.GetPlayerTank(uid)
-	if tank == nil {
-		log.Error("Cant get tank from uid %v", uid)
-		return false
-	}
-	x, y := tank.Pos()
-	// 坐标是不是一致
-	if startPos.X != x || startPos.Y != y {
-		return false
-	}
-	// 速度是不是合法
-	if speed != tank.CurrentSpeed() {
-		return false
-	}
-	g.PlayerTankMove(uid, dir)
-	return true
-}*/
-
 // 創建bot列表
 func (g *GameLogic) createBots(config *game_map.Config) {
 	for _, b := range config.BotInfoList {
@@ -346,7 +316,10 @@ func (g *GameLogic) onTankCreated(args ...any) {
 
 // 坦克被擊毀事件函數
 func (g *GameLogic) onTankDestroyed(args ...any) {
-	tank := args[0].(*object.Tank)
+	tank, o := args[0].(*object.Tank)
+	if !o {
+		return
+	}
 	instId := tank.InstId()
 	pid, o := g.tank2Player.Get(instId)
 	if !o {

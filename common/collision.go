@@ -5,7 +5,7 @@ import (
 )
 
 // checkMovableObjCollisionObj 檢查可移動物體和物體是否碰撞
-func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent /*dir object.Direction, */, dx, dy int32, obj object.IObject) bool {
+func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.IComponent, dx, dy int32, obj object.IObject) bool {
 	if !(mobj.StaticInfo().Layer() == obj.StaticInfo().Layer() ||
 		(obj.Type() == object.ObjTypeStatic && (obj.Subtype() == object.ObjSubtypeWater || obj.Subtype() == object.ObjSubtypeIce))) {
 		return false
@@ -17,7 +17,7 @@ func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.ICompon
 	)
 	collisionComp = comp.(*object.ColliderComp)
 	aabb1 = collisionComp.GetAABB(mobj)
-	aabb1.Move( /*dir, */ int32(dx), int32(dy))
+	aabb1.Move(int32(dx), int32(dy))
 	comp2 := obj.GetComp("Collider")
 	if comp2 == nil {
 		return false
@@ -27,18 +27,20 @@ func checkMovableObjCollisionObj(mobj object.IMovableObject, comp object.ICompon
 		return false
 	}
 	aabb2 := collisionComp2.GetAABB(obj)
-	if aabb1.MoveIntersect( /*dir,*/ dx, dy, &aabb2) {
+	if aabb1.MoveIntersect(dx, dy, &aabb2) {
 		if onMovableObjCollisionObj(mobj, obj) {
-			mx, my := mobj.Pos()
-			if dx < 0 {
-				mobj.SetPos(obj.OriginalRight()+mobj.Length()/2, my)
-			} else if dx > 0 {
-				mobj.SetPos(obj.OriginalLeft()-mobj.Length()/2, my)
-			}
-			if dy < 0 {
-				mobj.SetPos(mx, obj.OriginalTop()+mobj.Length()/2)
-			} else if dy > 0 {
-				mobj.SetPos(mx, obj.OriginalBottom()-mobj.Length()/2)
+			if isCollisionCorrectPosition(mobj, obj) {
+				mx, my := mobj.Pos()
+				if dx < 0 {
+					mobj.SetPos(obj.OriginalRight()+mobj.Length()/2, my)
+				} else if dx > 0 {
+					mobj.SetPos(obj.OriginalLeft()-mobj.Length()/2, my)
+				}
+				if dy < 0 {
+					mobj.SetPos(mx, obj.OriginalTop()+mobj.Length()/2)
+				} else if dy > 0 {
+					mobj.SetPos(mx, obj.OriginalBottom()-mobj.Length()/2)
+				}
 			}
 			return true
 		}
@@ -94,4 +96,21 @@ func onMovableObjCollisionObj(mobj object.IMovableObject, obj object.IObject) bo
 		}
 	}
 	return collision
+}
+
+func isCollisionCorrectPosition(mobj object.IMovableObject, obj object.IObject) bool {
+	if mobj.Subtype() == object.ObjSubtypeTank {
+		if obj.Type() == object.ObjTypeStatic {
+			switch obj.Subtype() {
+			case object.ObjSubtypeBrick, object.ObjSubtypeIron, object.ObjSubtypeWater, object.ObjSubtypeIce, object.ObjSubtypeHome:
+				return true
+			}
+		} else if obj.Type() == object.ObjTypeMovable {
+			switch obj.Subtype() {
+			case object.ObjSubtypeTank:
+				return true
+			}
+		}
+	}
+	return false
 }

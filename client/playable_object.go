@@ -3,11 +3,25 @@ package main
 import (
 	"project_b/client/base"
 	core "project_b/client_core"
+	common_base "project_b/common/base"
 	"project_b/common/object"
 	"project_b/common/time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+type Transform struct {
+	tx, ty   float64
+	rotation common_base.Angle
+	sx, sy   float64
+}
+
+func NewTransform() Transform {
+	return Transform{
+		sx: 1,
+		sy: 1,
+	}
+}
 
 // 可播放接口
 type IPlayable interface {
@@ -22,7 +36,7 @@ type IPlayable interface {
 	// 绘制
 	Draw(*ebiten.Image, *ebiten.DrawImageOptions)
 	// 插值
-	Interpolation() (float64, float64)
+	Interpolation(*Transform)
 }
 
 // 可播放对象
@@ -73,9 +87,10 @@ func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 	po.anim.Update(screen, op)
 }
 
-func (po *PlayableObject) Interpolation() (float64, float64) {
+func (po *PlayableObject) Interpolation(transform *Transform) {
 	x, y := po.obj.Pos()
-	return float64(x), float64(y)
+	transform.tx, transform.ty = float64(x), float64(y)
+	transform.sx, transform.sy = 1, 1
 }
 
 // 可播放的静态对象
@@ -99,29 +114,31 @@ type IPlayableMovableObject interface {
 
 // 可移动物体的播放对象，有四个方向的动画
 type PlayableMoveObject struct {
-	op                                     *ebiten.DrawImageOptions
-	mobj                                   object.IMovableObject
-	anim                                   *base.SpriteAnim
-	currSpeed                              int32           // 当前速度
-	lastTime                               time.CustomTime // 更新时间点
-	interpolate                            bool            // 上次是停止状态
-	lastX, lastY                           int32           // 上次物體位置
-	lastInterpolationX, lastInterpolationY float64         // 上次插值位置
+	op                *ebiten.DrawImageOptions
+	mobj              object.IMovableObject
+	anim              *base.SpriteAnim
+	currSpeed         int32           // 当前速度
+	lastTime          time.CustomTime // 更新时间点
+	interpolate       bool            // 上次是停止状态
+	lastX, lastY      int32           // 上次物體位置
+	lastInterpolation Transform       // 上次插值位置
 }
 
 // 创建可移动物体的播放对象
 func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObjectAnimConfig) *PlayableMoveObject {
 	x, y := mobj.Pos()
 	pobj := &PlayableMoveObject{
-		op:                 &ebiten.DrawImageOptions{},
-		mobj:               mobj,
-		anim:               base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
-		interpolate:        mobj.IsMoving(),
-		lastX:              x,
-		lastY:              y,
-		lastInterpolationX: float64(x),
-		lastInterpolationY: float64(y),
+		op:          &ebiten.DrawImageOptions{},
+		mobj:        mobj,
+		anim:        base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
+		interpolate: mobj.IsMoving(),
+		lastX:       x,
+		lastY:       y,
 	}
+	pobj.lastInterpolation.tx = float64(x)
+	pobj.lastInterpolation.ty = float64(y)
+	pobj.lastInterpolation.sx, pobj.lastInterpolation.sy = 1, 1
+	pobj.lastInterpolation.rotation = mobj.WorldRotation()
 	return pobj
 }
 
@@ -156,21 +173,27 @@ func (po *PlayableMoveObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOpt
 }
 
 // 上次插值位置
-func (po *PlayableMoveObject) LastInterpolation() (float64, float64) {
-	return po.lastInterpolationX, po.lastInterpolationY
+func (po *PlayableMoveObject) LastInterpolation() *Transform {
+	return &po.lastInterpolation
 }
 
 // 插值，在Draw前同步调用，得到位置插值
 // ----|------------|------------|------------|------------|-------------|--------------|--------------|--------------|--------------|----
 //
 //	Draw      Update(Draw)    Draw         Draw         Draw       Update(Draw)      Draw           Draw           Draw        Update(Draw)
-func (po *PlayableMoveObject) Interpolation() (x, y float64) {
+func (po *PlayableMoveObject) Interpolation(transform *Transform) {
+	transform.sx, transform.sy = 1, 1
+	transform.rotation = po.mobj.WorldRotation()
+
 	cx, cy := po.mobj.Pos()
 	if !po.interpolate {
-		return float64(cx), float64(cy)
+		transform.tx, transform.ty = float64(cx), float64(cy)
+		return
 	}
+
 	if !po.mobj.IsMoving() {
-		return float64(cx), float64(cy)
+		transform.tx, transform.ty = float64(cx), float64(cy)
+		return
 	}
 	// 上一次Update的坐标点与当前的不一样，说明又Update了，重置LastX和LastY和开始时间
 	// 所以每次Update后都要重置LastX,lastY,LastTime，是因为要从重置点开始计算位置插值
@@ -181,8 +204,8 @@ func (po *PlayableMoveObject) Interpolation() (x, y float64) {
 	}
 	duration := time.Since(po.lastTime)
 	nx, ny := object.DefaultMove(po.mobj, duration)
-	po.lastInterpolationX, po.lastInterpolationY = float64(nx), float64(ny)
-	return po.lastInterpolationX, po.lastInterpolationY
+	transform.tx, transform.ty = float64(nx), float64(ny)
+	po.lastInterpolation = *transform
 }
 
 // 移动事件处理
@@ -197,6 +220,72 @@ func (po *PlayableMoveObject) onEventMove(args ...any) {
 func (po *PlayableMoveObject) onEventStopMove(args ...any) {
 	po.Stop()
 	po.interpolate = false
+}
+
+// 炮彈播放對象
+type PlayableShell struct {
+	*PlayableMoveObject
+	shell    object.IShell
+	tx, ty   int32
+	rotation common_base.Angle
+	updated  bool
+}
+
+// 創建炮彈播放對象
+func NewPlayableShell(shell object.IShell, animConfig *MovableObjectAnimConfig) *PlayableShell {
+	playable := &PlayableShell{
+		PlayableMoveObject: NewPlayableMoveObject(shell, animConfig),
+		shell:              shell,
+	}
+	playable.lastTime = core.GetSyncServTime()
+	return playable
+}
+
+// 初始化
+func (ps *PlayableShell) Init() {
+	ps.shell.RegisterLateUpdateEventHandle(ps.onEventLateUpdate)
+}
+
+// 反初始化
+func (ps *PlayableShell) Uninit() {
+	ps.shell.UnregisterLateUpdateEventHandle(ps.onEventLateUpdate)
+}
+
+// 插值
+func (ps *PlayableShell) Interpolation(transform *Transform) {
+	if !ps.shell.ShellStaticInfo().TrackTarget {
+		ps.PlayableMoveObject.Interpolation(transform)
+		return
+	}
+
+	transform.rotation = ps.shell.WorldRotation()
+	transform.sx, transform.sy = 1, 1
+	nx, ny := ps.shell.Pos()
+	if !ps.interpolate || !ps.mobj.IsMoving() {
+		transform.tx, transform.ty = float64(nx), float64(ny)
+		return
+	}
+
+	duration := time.Since(ps.lastTime)
+	//ps.lastTime = core.GetSyncServTime()
+	if ps.updated {
+		nx, ny = ps.tx, ps.ty
+		transform.rotation = ps.rotation
+		ps.updated = false
+	} else {
+		transform.rotation = ps.shell.WorldRotation()
+		nx, ny = object.GetShellTrackMovedPos(ps.shell, duration, &transform.rotation)
+	}
+	transform.tx, transform.ty = float64(nx), float64(ny)
+	ps.lastInterpolation = *transform
+}
+
+// 后更新事件處理
+func (ps *PlayableShell) onEventLateUpdate(args ...any) {
+	ps.tx, ps.ty = args[0].(int32), args[1].(int32)
+	ps.rotation = args[2].(common_base.Angle)
+	ps.updated = true
+	ps.lastTime = core.GetSyncServTime()
 }
 
 // 坦克播放对象
@@ -247,8 +336,9 @@ func NewPlayableSurroundObj(sobj object.ISurroundObject, animConfig *MovableObje
 	}
 	pobj.interpolate = true
 	pobj.lastTime = core.GetSyncSendTime()
-	cx, cy := playableAroundCenterObj.Interpolation()
-	pobj.lastMoveInfo.LastCenterX, pobj.lastMoveInfo.LastCenterY = int32(cx), int32(cy)
+	var transform Transform
+	playableAroundCenterObj.Interpolation(&transform)
+	pobj.lastMoveInfo.LastCenterX, pobj.lastMoveInfo.LastCenterY = int32(transform.tx), int32(transform.ty)
 	return pobj
 }
 
@@ -263,25 +353,33 @@ func (ps *PlayableSurroundObj) Uninit() {
 }
 
 // 插值
-func (ps *PlayableSurroundObj) Interpolation() (x, y float64) {
+func (ps *PlayableSurroundObj) Interpolation(transform *Transform) {
+	transform.rotation = ps.mobj.WorldRotation()
+	transform.sx, transform.sy = 1, 1
+
 	nx, ny := ps.sobj.Pos()
 	if !ps.interpolate {
-		return float64(nx), float64(ny)
+		transform.tx, transform.ty = float64(nx), float64(ny)
+		return
 	}
 	if !ps.mobj.IsMoving() {
-		return float64(nx), float64(ny)
+		transform.tx, transform.ty = float64(nx), float64(ny)
+		return
 	}
 	duration := time.Since(ps.lastTime)
-	ps.lastTime = time.Now()
+	ps.lastTime = core.GetSyncServTime()
 	var interpolateX, interpolateY float64
 	if pobj, o := ps.playableAroundCenterObj.(IPlayableMovableObject); !o {
-		interpolateX, interpolateY = ps.playableAroundCenterObj.Interpolation()
+		var t Transform
+		ps.playableAroundCenterObj.Interpolation(&t)
+		interpolateX, interpolateY = t.tx, t.ty
 	} else {
 		interpolateX, interpolateY = pobj.LastInterpolation()
 	}
 	ps.lastMoveInfo.LastCenterX, ps.lastMoveInfo.LastCenterY = int32(interpolateX), int32(interpolateY)
 	nx, ny = object.GetSurroundObjMovedPos(ps.sobj.(*object.SurroundObj), duration, &ps.lastMoveInfo)
-	return float64(nx), float64(ny)
+	transform.tx, transform.ty = float64(nx), float64(ny)
+	ps.lastInterpolation = *transform
 }
 
 // 更新事件處理
@@ -334,7 +432,8 @@ func (po *PlayableEffect) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 }
 
 // 插值
-func (po *PlayableEffect) Interpolation() (float64, float64) {
+func (po *PlayableEffect) Interpolation(transform *Transform) {
 	x, y := po.effect.Pos()
-	return float64(x), float64(y)
+	transform.tx, transform.ty = float64(x), float64(y)
+	transform.sx, transform.sy = 1, 1
 }

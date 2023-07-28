@@ -1480,7 +1480,7 @@ func ArcCosine(cn, cd int32) Angle {
 	return Angle{degree: minutes / 60, minute: minutes % 60}
 }
 
-// 反正切 [-90, 90]
+// 反正切 (-90, 90)
 func ArcTangent(y, x int32) Angle {
 	if x == 0 {
 		if y < 0 {
@@ -1549,7 +1549,7 @@ bl:
 	return Angle{m, n * 10}
 }
 
-// 反餘切 [0, 180]
+// 反餘切 (0, 180)
 func ArcCotangent(y, x int32) Angle {
 	angle := ArcTangent(y, x)
 	minutes := 90*60 - (angle.degree*60 + angle.minute)

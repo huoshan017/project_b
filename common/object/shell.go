@@ -1,6 +1,9 @@
 package object
 
 import (
+	"project_b/common/base"
+	"project_b/common/log"
+	"project_b/common/time"
 	"unsafe"
 )
 
@@ -10,6 +13,7 @@ type Shell struct {
 	trackTargetId    uint32               // 跟蹤目標id
 	searchTargetFunc func(*Shell) IObject // 搜索目標函數
 	fetchTargetFunc  func(uint32) IObject // 獲得目標函數
+	lateUpdateEvent  base.Event           // 后更新事件
 }
 
 // 创建炮彈
@@ -46,4 +50,37 @@ func (b *Shell) SetSearchTargetFunc(f func(*Shell) IObject) {
 // 設置獲取目標函數
 func (b *Shell) SetFetchTargetFunc(f func(uint32) IObject) {
 	b.fetchTargetFunc = f
+}
+
+// 立即移動
+func (s *Shell) MoveNow(dir base.Angle) {
+	s.moveDir = dir
+	if s.state == stopped {
+		d := GetDefaultLinearDistance(s, s.lastTick)
+		v := dir.DistanceToVec2(d)
+		if !s.checkMove(v.X(), v.Y()) {
+			return
+		}
+		s.state = isMoving
+		log.Debug("@@@ object %v stopped => moving", s.instId)
+	}
+}
+
+// 更新
+func (s *Shell) Update(tick time.Duration) {
+	s.MovableObject.Update(tick)
+	if s.state == isMoving {
+		x, y := s.Pos()
+		s.lateUpdateEvent.Call(x, y, s.WorldRotation())
+	}
+}
+
+// 注冊后更新事件
+func (s *Shell) RegisterLateUpdateEventHandle(handle func(args ...any)) {
+	s.lateUpdateEvent.Register(handle)
+}
+
+// 注銷后更新事件
+func (s *Shell) UnregisterLateUpdateEventHandle(handle func(args ...any)) {
+	s.lateUpdateEvent.Unregister(handle)
 }

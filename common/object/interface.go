@@ -83,13 +83,10 @@ type IMovableObject interface {
 	UnregisterUpdateEventHandle(handle func(args ...any))    // 注销更新事件
 }
 
-// 環繞物
-type ISurroundObject interface {
+// 炮彈接口
+type IShell interface {
 	IMovableObject
-	SurroundObjStaticInfo() *SurroundObjStaticInfo                                 // 靜態配置
-	SetAroundCenterObject(centerObjInstId uint32, getObjFunc func(uint32) IObject) // 設置環繞中心物體
-	GetAroundCenterObject() IObject                                                // 獲得中心點
-
+	ShellStaticInfo() *ShellStaticInfo
 	// 事件接口
 	RegisterLateUpdateEventHandle(handle func(args ...any))   // 注冊后更新事件
 	UnregisterLateUpdateEventHandle(handle func(args ...any)) // 注銷后更新事件
@@ -111,6 +108,18 @@ type ITank interface {
 	// 事件接口
 	RegisterChangeEventHandle(handle func(args ...any))   // 注册变化事件
 	UnregisterChangeEventHandle(handle func(args ...any)) // 注销变化事件
+}
+
+// 環繞物
+type ISurroundObject interface {
+	IMovableObject
+	SurroundObjStaticInfo() *SurroundObjStaticInfo                                 // 靜態配置
+	SetAroundCenterObject(centerObjInstId uint32, getObjFunc func(uint32) IObject) // 設置環繞中心物體
+	GetAroundCenterObject() IObject                                                // 獲得中心點
+
+	// 事件接口
+	RegisterLateUpdateEventHandle(handle func(args ...any))   // 注冊后更新事件
+	UnregisterLateUpdateEventHandle(handle func(args ...any)) // 注銷后更新事件
 }
 
 // 效果接口
