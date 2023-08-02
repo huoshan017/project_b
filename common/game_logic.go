@@ -11,6 +11,13 @@ import (
 	"project_b/game_map"
 )
 
+type TankType int32
+
+const (
+	TankTypePlayer TankType = iota
+	TankTypeBot    TankType = 1
+)
+
 const (
 	defaultLogicFrameMax = math.MaxInt32
 )
@@ -189,7 +196,7 @@ func (g *GameLogic) NewPlayerEnterWithPos(pid uint64, x, y int32) *object.Tank {
 }
 
 // 玩家進入
-func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32 /*dir object.Direction, */, orientation int32, currentSpeed int32) uint32 {
+func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32, orientation int32, currentSpeed int32) uint32 {
 	tank := g.scene.NewTankWithStaticInfo(id, level, x, y /*dir, */, currentSpeed)
 	if tank == nil {
 		log.Error("player %v enter with static info to create tank failed", pid)
@@ -288,16 +295,36 @@ func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
 	g.scene.TankRotate(tankId, angle)
 }
 
+// 坦克復活
+func (g *GameLogic) PlayerTankRevive(uid uint64, tankId int32, tankLevel int32, x, y int32, orientation int32, currSpeed int32) {
+	g.PlayerEnterWithStaticInfo(uid, tankId, tankLevel, x, y, orientation, currSpeed)
+}
+
 // 創建bot列表
 func (g *GameLogic) createBots(config *game_map.Config) {
+	var (
+		tankBornPosList = g.scene.GetTankBornPosList()
+		index           int32
+	)
 	for _, b := range config.BotInfoList {
 		staticInfo := common_data.TankConfigData[b.TankId]
 		if staticInfo == nil {
 			log.Error("GameLogic.createBots tank config not found by id(%v)", b.TankId)
 			continue
 		}
+
+		for index < int32(len(tankBornPosList)) && tankBornPosList[index].flag != object.BotTileFlag {
+			index++
+		}
+
+		if index >= int32(len(tankBornPosList)) {
+			break
+		}
+
+		x := tankBornPosList[index].x
+		y := tankBornPosList[index].y
 		// todo 等級從1開始
-		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1, b.Pos.X, b.Pos.Y /*staticInfo.Dir(),*/, staticInfo.Speed())
+		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1 /*b.Pos.X, b.Pos.Y*/, x, y, staticInfo.Speed())
 		tank.SetCamp(b.Camp)
 		tank.SetLevel(b.Level)
 		bot := g.botMgr.NewBot(g.scene, tank.InstId())
@@ -306,6 +333,8 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 			continue
 		}
 		g.tank2Bot.Add(tank.InstId(), bot.id)
+
+		index += 1
 	}
 }
 
@@ -330,10 +359,13 @@ func (g *GameLogic) onTankDestroyed(args ...any) {
 		}
 		g.tank2Bot.Remove(instId)
 		g.botMgr.RemoveBot(botId)
+		g.eventMgr.InvokeEvent(EventIdTankDestroy, TankTypeBot, botId)
 	} else {
 		g.tank2Player.Remove(instId)
 		g.player2Tank.Remove(pid)
+		g.eventMgr.InvokeEvent(EventIdTankDestroy, TankTypePlayer, pid)
 	}
 	// bot中處理坦克被擊毀
 	g.botMgr.onEnemyTankDestoryed(instId)
+
 }

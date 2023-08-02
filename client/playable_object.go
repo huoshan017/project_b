@@ -1,7 +1,7 @@
 package main
 
 import (
-	"project_b/client/base"
+	"project_b/client_base"
 	core "project_b/client_core"
 	common_base "project_b/common/base"
 	"project_b/common/object"
@@ -43,11 +43,11 @@ type IPlayable interface {
 type PlayableObject struct {
 	op   *ebiten.DrawImageOptions
 	obj  object.IObject
-	anim *base.SpriteAnim
+	anim *client_base.SpriteAnim
 }
 
 // 创建可播放对象
-func NewPlayableObject(obj object.IObject, spriteConfig *base.SpriteAnimConfig) *PlayableObject {
+func NewPlayableObject(obj object.IObject, spriteConfig *client_base.SpriteAnimConfig) *PlayableObject {
 	if spriteConfig == nil {
 		panic("spriteConfig nil !!!")
 	}
@@ -56,7 +56,7 @@ func NewPlayableObject(obj object.IObject, spriteConfig *base.SpriteAnimConfig) 
 	return &PlayableObject{
 		obj:  obj,
 		op:   op,
-		anim: base.NewSpriteAnim(spriteConfig),
+		anim: client_base.NewSpriteAnim(spriteConfig),
 	}
 }
 
@@ -116,7 +116,7 @@ type IPlayableMovableObject interface {
 type PlayableMoveObject struct {
 	op                *ebiten.DrawImageOptions
 	mobj              object.IMovableObject
-	anim              *base.SpriteAnim
+	anim              *client_base.SpriteAnim
 	currSpeed         int32           // 当前速度
 	lastTime          time.CustomTime // 更新时间点
 	interpolate       bool            // 上次是停止状态
@@ -130,7 +130,7 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObject
 	pobj := &PlayableMoveObject{
 		op:          &ebiten.DrawImageOptions{},
 		mobj:        mobj,
-		anim:        base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
+		anim:        client_base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
 		interpolate: mobj.IsMoving(),
 		lastX:       x,
 		lastY:       y,
@@ -393,14 +393,14 @@ func (ps *PlayableSurroundObj) onEventLateUpdate(args ...any) {
 type PlayableEffect struct {
 	op     ebiten.DrawImageOptions
 	effect object.IEffect
-	anim   *base.SpriteAnim
+	anim   *client_base.SpriteAnim
 }
 
 // 創建可播放效果
-func NewPlayableEffect(effect object.IEffect, animConfig *base.SpriteAnimConfig) *PlayableEffect {
+func NewPlayableEffect(effect object.IEffect, animConfig *client_base.SpriteAnimConfig) *PlayableEffect {
 	return &PlayableEffect{
 		effect: effect,
-		anim:   base.NewSpriteAnim(animConfig),
+		anim:   client_base.NewSpriteAnim(animConfig),
 	}
 }
 

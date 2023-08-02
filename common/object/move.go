@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/log"
 	"project_b/common/time"
 )
 
@@ -150,9 +149,9 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rota
 		return DefaultMove(shell, tick)
 	}
 
-	if !onlyRead {
-		log.Debug("@@@@@@@@ target dir %v, shell current dir %v", targetDir, shellDir)
-	}
+	//if !onlyRead {
+	//	log.Debug("@@@@@@@@ target dir %v, shell current dir %v", targetDir, shellDir)
+	//}
 
 	// tick時間轉向角度
 	deltaMinutes := int16(time.Duration(shell.ShellStaticInfo().SteeringAngularVelocity) * tick / time.Second)
@@ -188,19 +187,18 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rota
 	if !onlyRead {
 		shell.Move(angle)
 		shell.RotateTo(angle)
-		if cross > 0 {
+		/*if cross > 0 {
 			log.Debug("< 逆時針 !!!!!!!! rotate to angle %v, previous angle %v, track target %v, tick %v", angle, *rotation, target.InstId(), tick)
 		} else {
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, previous angle %v, track target %v, tick %v", angle, *rotation, target.InstId(), tick)
-		}
+		}*/
 	} else {
 		*rotation = angle
-		if cross > 0 {
+		/*if cross > 0 {
 			log.Debug("< 逆時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
 		} else {
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
-		}
+		}*/
 	}
-
 	return DefaultMove(shell, tick)
 }

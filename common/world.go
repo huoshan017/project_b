@@ -18,12 +18,18 @@ type PlayerTankKV struct {
 	Tank     *object.Tank
 }
 
+type TankBornPosInfo struct {
+	x, y int32
+	flag int16
+}
+
 // 场景圖，沒有玩家(Player)概念的游戲邏輯
 // 必须在单个goroutine中执行
 type SceneLogic struct {
 	mapConfig                            *game_map.Config                               // 地圖配置
 	mapWidth, mapHeight                  int32                                          // 地圖寬高
 	gmap                                 *GridMap                                       // 網格地圖
+	tankBornPosList                      []TankBornPosInfo                              // 坦克出生位置信息列表
 	eventMgr                             base.IEventManager                             // 事件管理器
 	staticObjList                        *ds.MapListUnion[uint32, *object.StaticObject] // 靜態對象列表，用map和list的聯合體是爲了遍歷時的有序性
 	tankList                             *ds.MapListUnion[uint32, *object.Tank]         // 坦克列表，不區分玩家和BOT
@@ -67,6 +73,11 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 		for col := 0; col < len(m.Layers[line]); col++ {
 			st := object.StaticObjType(m.Layers[line][col])
 			if common_data.StaticObjectConfigData[st] == nil {
+				s.tankBornPosList = append(s.tankBornPosList, TankBornPosInfo{
+					x:    m.TileWidth*int32(col) + m.TileWidth/2,
+					y:    m.TileHeight*int32(len(m.Layers)-1-line) + m.TileHeight/2,
+					flag: m.Layers[line][col],
+				})
 				continue
 			}
 			tileObj := s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
@@ -90,35 +101,30 @@ func (s *SceneLogic) UnloadMap() {
 	for i := int32(0); i < s.staticObjList.Count(); i++ {
 		_, v := s.staticObjList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
 			s.objFactory.RecycleStaticObject(v)
 		}
 	}
 	for i := int32(0); i < s.tankList.Count(); i++ {
 		_, v := s.tankList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
 			s.objFactory.RecycleTank(v)
 		}
 	}
 	for i := int32(0); i < s.shellList.Count(); i++ {
 		_, v := s.shellList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
 			s.objFactory.RecycleShell(v)
 		}
 	}
 	for i := int32(0); i < s.surroundObjList.Count(); i++ {
 		_, v := s.surroundObjList.GetByIndex(i)
 		if v != nil {
-			s.objRemovedEvent.Call(v)
 			s.objFactory.RecycleSurroundObj(v)
 		}
 	}
 	for i := int32(0); i < s.effectList.Count(); i++ {
 		_, v := s.effectList.GetByIndex(i)
 		if v != nil {
-			s.effectRemovedEvent.Call(v)
 			s.effectPool.Put(v)
 		}
 	}
@@ -136,6 +142,22 @@ func (s *SceneLogic) UnloadMap() {
 	s.staticObjRecycleList = s.staticObjRecycleList[:0]
 	s.effectRecycleList = s.effectRecycleList[:0]
 	s.effectSearchedList = s.effectSearchedList[:0]
+}
+
+func (s *SceneLogic) Center() (int32, int32) {
+	return s.mapConfig.X + s.mapWidth/2, s.mapConfig.Y + s.mapHeight/2
+}
+
+func (s *SceneLogic) GetTankBornPosList() []TankBornPosInfo {
+	return s.tankBornPosList
+}
+
+func (s *SceneLogic) RegisterEventHandle(id base.EventId, handle func(...any)) {
+	s.eventMgr.RegisterEvent(id, handle)
+}
+
+func (s *SceneLogic) UnregisterEventHandle(id base.EventId, handle func(...any)) {
+	s.eventMgr.UnregisterEvent(id, handle)
 }
 
 func (s *SceneLogic) RegisterEffectAddedHandle(handle func(...any)) {
@@ -599,9 +621,6 @@ func (s *SceneLogic) searchShellTarget(shell *object.Shell) object.IObject {
 	cx, cy := shell.Pos()
 	rect := math.NewRect(cx-staticInfo.SearchTargetRadius, cy-staticInfo.SearchTargetRadius, cx+staticInfo.SearchTargetRadius, cy+staticInfo.SearchTargetRadius)
 	objList := s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeTank)
-	if len(objList) > 0 {
-		log.Debug("searched shell target list: %v", objList)
-	}
 	var (
 		tank *object.Tank
 		o    bool

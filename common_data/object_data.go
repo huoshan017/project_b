@@ -85,9 +85,9 @@ var (
 				ObjStaticInfo: *object.NewObjStaticInfo(1, object.ObjTypeMovable, object.ObjSubtypeTank, object.CampTypeNone, 0, 0, 280, 280, 0, 600, 1, true),
 			},
 			Level:                   1,
-			SteeringAngularVelocity: 220 * 60,
+			SteeringAngularVelocity: 460 * 60,
 			ShellLaunchPos:          base.NewVec2(160, 0),
-			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
+			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 300},
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{

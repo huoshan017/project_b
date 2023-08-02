@@ -1,4 +1,4 @@
-package base
+package client_base
 
 type Viewport struct {
 	x, y int32 // 左上角坐标

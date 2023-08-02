@@ -3,9 +3,11 @@ package main
 import (
 	"reflect"
 
+	"project_b/client_base"
 	core "project_b/client_core"
 	"project_b/common"
 	"project_b/common/base"
+	"project_b/common/log"
 	"project_b/common/object"
 	"project_b/game_proto"
 )
@@ -19,7 +21,7 @@ type EventHandles struct {
 	net           *core.NetClient
 	logic         *core.GameLogic
 	playableScene *PlayableScene
-	gameData      *GameData
+	gameData      *client_base.GameData
 	// --------------------------------------
 	// 事件处理
 	gameEvent2Handles   []event2Handle // 游戏事件
@@ -27,7 +29,7 @@ type EventHandles struct {
 }
 
 // 创建EventHandles
-func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableScene *PlayableScene, gameData *GameData) *EventHandles {
+func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableScene *PlayableScene, gameData *client_base.GameData) *EventHandles {
 	eh := &EventHandles{
 		net:           net,
 		logic:         logic,
@@ -101,21 +103,21 @@ func (g *EventHandles) onEventReqLogin(args ...any) {
 	account, o = a.(string)
 	if !o {
 		t := reflect.TypeOf(a)
-		glog.Warn("account type must string on req login, this is %v", t)
+		log.Warn("account type must string on req login, this is %v", t)
 		return
 	}
 	password, o = p.(string)
 	if !o {
-		glog.Warn("password type must string on req login")
+		log.Warn("password type must string on req login")
 		return
 	}
 	err := g.net.SendLoginReq(account, password)
 	if err != nil {
-		glog.Warn("send login req err: %v", err)
+		log.Warn("send login req err: %v", err)
 		return
 	}
-	g.gameData.myAcc = account
-	glog.Info("handle event: account %v password %v send login req", account, password)
+	g.gameData.MyAcc = account
+	log.Info("handle event: account %v password %v send login req", account, password)
 }
 
 /*
@@ -128,15 +130,15 @@ func (g *EventHandles) onEventReqEnterGame(args ...any) {
 	var o bool
 	account, o = args[0].(string)
 	if !o {
-		glog.Warn("account type must string on req enter game")
+		log.Warn("account type must string on req enter game")
 		return
 	}
 	err := g.net.SendEnterGameReq(account, sessionToken)
 	if err != nil {
-		glog.Warn("send enter game err: %v", err)
+		log.Warn("send enter game err: %v", err)
 		return
 	}
-	glog.Info("handle event: account %v send enter game req", account)
+	log.Info("handle event: account %v send enter game req", account)
 }
 
 /*
@@ -147,7 +149,7 @@ args[1]: uid(uint64)
 */
 func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 	if len(args) < 3 {
-		glog.Warn("onEventEnterGame event args length cant less than 3")
+		log.Warn("onEventEnterGame event args length cant less than 3")
 		return
 	}
 
@@ -155,14 +157,14 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 	uid := args[1].(uint64)
 	tank := args[2].(*object.Tank)
 
-	if g.gameData.myAcc == account {
-		g.gameData.myId = uid
+	if g.gameData.MyAcc == account {
+		g.gameData.MyId = uid
 		g.logic.SetMyId(uid)
 		// 游戏状态
-		g.gameData.state = GameStateInGame
-		glog.Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
+		g.gameData.State = client_base.GameStateInWorld
+		log.Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
 	} else {
-		glog.Info("handle event: player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
+		log.Info("handle event: player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
 	}
 }
 
@@ -173,16 +175,16 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...any) {
 	// 准备同步服务器时间
 	if err := g.net.SendTimeSyncReq(); err != nil {
-		glog.Error("handle event: send time sync request err: %v", err)
+		log.Error("handle event: send time sync request err: %v", err)
 		return
 	}
 
 	// 注册本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
-		g.logic.RegisterPlayerSceneEvent(g.gameData.myId, e2h.eid, e2h.handle)
+		g.logic.RegisterPlayerSceneEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
-	glog.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.gameData.myAcc, g.gameData.myId)
+	log.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.gameData.MyAcc, g.gameData.MyId)
 }
 
 /*
@@ -192,7 +194,7 @@ args[0]: uid(uint64)
 */
 func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 	if len(args) < 1 {
-		glog.Warn("onEventPlayerExitGame event args length cant less 1")
+		log.Warn("onEventPlayerExitGame event args length cant less 1")
 		return
 	}
 
@@ -200,10 +202,10 @@ func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 
 	// 注销本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
-		g.logic.UnregisterPlayerSceneEvent(g.gameData.myId, e2h.eid, e2h.handle)
+		g.logic.UnregisterPlayerSceneEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
-	glog.Info("handle event: player (uid: %v) exited game", uid)
+	log.Info("handle event: player (uid: %v) exited game", uid)
 }
 
 /*
@@ -212,7 +214,7 @@ func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 */
 func (g *EventHandles) onEventTimeSync(args ...any) {
 	if err := g.net.SendTimeSyncReq(); err != nil {
-		glog.Error("handle event: send time sync request err: %v", err)
+		log.Error("handle event: send time sync request err: %v", err)
 		return
 	}
 }
@@ -221,7 +223,7 @@ func (g *EventHandles) onEventTimeSync(args ...any) {
  *处理时间同步结束事件
  */
 func (g *EventHandles) onEventTimeSyncEnd(args ...any) {
-	glog.Info("handle event: time sync end")
+	log.Info("handle event: time sync end")
 }
 
 /**
@@ -266,7 +268,7 @@ func (eh *EventHandles) onEventTankMove(args ...any) {
 	speed := args[2].(int32)
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_StartMove, pos, int32(orientation.ToMinutes()) /*dir*/, speed)
 	if err != nil {
-		glog.Error("send tank move req err: %v", err)
+		log.Error("send tank move req err: %v", err)
 	}
 }
 
@@ -283,7 +285,7 @@ func (eh *EventHandles) onEventTankStopMove(args ...any) {
 	speed := args[2].(int32)
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos /*dir*/, int32(orientation.ToMinutes()), speed)
 	if err != nil {
-		glog.Error("send tank stop move req err: %v", err)
+		log.Error("send tank stop move req err: %v", err)
 	}
 }
 
@@ -300,7 +302,7 @@ func (eh *EventHandles) onEventTankSetPos(args ...any) {
 	speed := args[2].(int32)
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos /*dir*/, int32(orientation.ToMinutes()), speed)
 	if err != nil {
-		glog.Error("send tank update pos req err: %v", err)
+		log.Error("send tank update pos req err: %v", err)
 	}
 }
 
@@ -312,26 +314,26 @@ args[1]: *object.Tank
 */
 func (eh *EventHandles) onEventTankChange(args ...any) {
 	if len(args) < 2 {
-		glog.Error("onEventTankChange event need 3 args")
+		log.Error("onEventTankChange event need 3 args")
 		return
 	}
 	pid := args[0].(uint64)
 	tank := args[1].(*object.Tank)
-	glog.Info("handle event: player %v changed tank to %v", pid, tank.Id())
+	log.Info("handle event: player %v changed tank to %v", pid, tank.Id())
 }
 
 /*
-*
+**
 处理坦克恢复事件
 args[0]: uint64
 args[1]: *object.Tank
 */
 func (eh *EventHandles) onEventTankRestore(args ...any) {
 	if len(args) < 2 {
-		glog.Error("onEventTankRestore event need 3 args")
+		log.Error("onEventTankRestore event need 2 args")
 		return
 	}
 	pid := args[0].(uint64)
 	tank := args[1].(*object.Tank)
-	glog.Info("handle event: player %v restore tank id to %v", pid, tank.Id())
+	log.Info("handle event: player %v restore tank id to %v", pid, tank.Id())
 }

@@ -67,18 +67,24 @@ const (
 type Direction int
 
 const (
-	DirNone  = Direction(0) // 无，用于静止物体
-	DirLeft  = Direction(1) // 左
-	DirRight = Direction(2) // 右
-	DirUp    = Direction(3) // 上
-	DirDown  = Direction(4) // 下
-	DirMin   = DirNone      // 最小
-	DirMax   = DirDown      // 最大
+	DirNone      = Direction(0) // 无，用于静止物体
+	DirLeft      = Direction(1) // 左
+	DirRight     = Direction(2) // 右
+	DirUp        = Direction(3) // 上
+	DirDown      = Direction(4) // 下
+	DirLeftUp    = Direction(5) // 左上
+	DirLeftDown  = Direction(6) // 左下
+	DirRightUp   = Direction(7) // 右上
+	DirRightDown = Direction(8) // 右下
+	DirMin       = DirNone      // 最小
+	DirMax       = DirDown      // 最大
 )
 
 // 其他常量
 const (
-	DefaultMinMoveDistance = 1 // 默认最小移动距离
+	DefaultMinMoveDistance = 1  // 默认最小移动距离
+	BotTileFlag            = -1 // bot瓦片位置標記
+	PlayerTileFlag         = -2 // 玩家瓦片位置標記
 )
 
 // 效果作用類型
@@ -110,6 +116,14 @@ func Dir2Orientation(dir Direction) int32 {
 		return 90
 	case DirDown:
 		return 270
+	case DirLeftUp:
+		return 135
+	case DirLeftDown:
+		return 225
+	case DirRightUp:
+		return 45
+	case DirRightDown:
+		return 315
 	}
 	return 0
 }

@@ -9,7 +9,12 @@ import (
 
 type GameLogic struct {
 	common.GameLogic
-	myId uint64
+	myId               uint64
+	tankId             int32
+	tankLevel          int32
+	tankPosX, tankPosY int32
+	tankOrientation    int32
+	tankCurrSpeed      int32
 }
 
 func CreateGameLogic(eventMgr base.IEventManager) *GameLogic {
@@ -29,11 +34,17 @@ func (l *GameLogic) GetMyId() uint64 {
 // 玩家坦克进入
 func (l *GameLogic) PlayerEnterWithTankInfo(cplayer *CPlayer, tankProtoInfo *game_proto.TankInfo) {
 	orientation := object.Dir2Orientation(object.Direction(tankProtoInfo.Direction))
-	l.GameLogic.PlayerEnterWithStaticInfo(cplayer.Id(), tankProtoInfo.Id, tankProtoInfo.Level, tankProtoInfo.CurrPos.X, tankProtoInfo.CurrPos.Y /*object.Direction(tankProtoInfo.Direction)*/, orientation, tankProtoInfo.CurrSpeed)
+	l.GameLogic.PlayerEnterWithStaticInfo(cplayer.Id(), tankProtoInfo.Id, tankProtoInfo.Level, tankProtoInfo.CurrPos.X, tankProtoInfo.CurrPos.Y, orientation, tankProtoInfo.CurrSpeed)
+	l.tankId = tankProtoInfo.Id
+	l.tankLevel = tankProtoInfo.Level
+	l.tankPosX = tankProtoInfo.CurrPos.X
+	l.tankPosY = tankProtoInfo.CurrPos.Y
+	l.tankOrientation = orientation
+	l.tankCurrSpeed = tankProtoInfo.CurrSpeed
 }
 
-func (l *GameLogic) MyPlayerTankMove( /*moveDir object.Direction*/ orientation int32) {
-	l.PlayerTankMove(l.myId /*moveDir*/, orientation)
+func (l *GameLogic) MyPlayerTankMove(orientation int32) {
+	l.PlayerTankMove(l.myId, orientation)
 }
 
 func (l *GameLogic) MyPlayerTankStopMove() {
@@ -50,4 +61,8 @@ func (l *GameLogic) MyPlayerTankReleaseSurroundObj() {
 
 func (l *GameLogic) MyPlayerTankRotate(angle int32) {
 	l.PlayerTankRotate(l.myId, angle)
+}
+
+func (l *GameLogic) MyPlayerTankRevive() {
+	l.PlayerTankRevive(l.myId, l.tankId, l.tankLevel, l.tankPosX, l.tankPosY, l.tankOrientation, l.tankCurrSpeed)
 }

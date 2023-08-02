@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
-	client_base "project_b/client/base"
+	"project_b/client/ui"
+	"project_b/client_base"
+	"project_b/client_core"
 	core "project_b/client_core"
 	"project_b/common/base"
 	"project_b/common/time"
@@ -10,23 +12,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/huoshan017/gsnet/options"
 )
-
-type GameState int
-
-const (
-	GameStateMainMenu GameState = iota
-	GameStateInGame
-	GameStateOver
-)
-
-type GameData struct {
-	state GameState
-	myId  uint64 // 我的ID
-	myAcc string // 我的帐号
-}
 
 type Game struct {
 	//---------------------------------------
@@ -44,9 +31,10 @@ type Game struct {
 
 	viewport      *client_base.Viewport // 视口
 	playableScene *PlayableScene        // 場景圖繪製
-	uiMgr         *UIManager            // UI管理
+	uiMgr         client_base.IUIMgr    // UI管理
 	eventHandles  *EventHandles         // 事件处理
-	gameData      GameData              // 其他游戏数据
+	inputMgr      *InputMgr             // 輸入管理器
+	gameData      client_base.GameData  // 其他游戏数据
 }
 
 // 创建游戏
@@ -60,9 +48,10 @@ func NewGame(conf *Config) *Game {
 	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
 	g.playerMgr = core.CreateCPlayerManager()
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
-	g.uiMgr = NewUIMgr(g)
+	g.uiMgr = ui.NewImguiManager(g) //ui.NewUIMgr(g)
 	g.playableScene = CreatePlayableScene(g.viewport)
 	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
+	g.inputMgr = NewInputMgr(g.cmdMgr)
 	return g
 }
 
@@ -83,17 +72,27 @@ func (g *Game) Uninit() {
 
 // 重新开始
 func (g *Game) restart() {
-	g.gameData.state = GameStateMainMenu
+	g.gameData.State = client_base.GameStateBeforeLogin
 }
 
 // 当前模式
-func (g *Game) GetState() GameState {
-	return g.gameData.state
+func (g *Game) GetState() client_base.GameState {
+	return g.gameData.State
+}
+
+// 獲得游戲數據
+func (g *Game) GetGameData() *client_base.GameData {
+	return &g.gameData
 }
 
 // 事件管理器
 func (g *Game) EventMgr() base.IEventManager {
 	return g.eventMgr
+}
+
+// 命令管理器
+func (g *Game) CmdMgr() *client_core.CmdHandleManager {
+	return g.cmdMgr
 }
 
 // 布局
@@ -108,13 +107,16 @@ func (g *Game) Update() error {
 		return err
 	}
 
-	switch g.gameData.state {
-	case GameStateMainMenu:
-	case GameStateInGame:
+	switch g.gameData.State {
+	case client_base.GameStateBeforeLogin:
+	case client_base.GameStateInLogin:
+	case client_base.GameStateMainMenu:
+	case client_base.GameStateEnteringWorld:
+	case client_base.GameStateInWorld:
 		g.update()
-		g.handleInput()
-	case GameStateOver:
-		g.restart()
+		g.inputMgr.HandleInput()
+	case client_base.GameStateExitingWorld:
+		//	g.restart()
 	}
 	g.uiMgr.Update()
 	return nil
@@ -122,7 +124,7 @@ func (g *Game) Update() error {
 
 // 绘制
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.gameData.state == GameStateInGame && g.logic.IsStart() {
+	if g.gameData.State == client_base.GameStateInWorld && g.logic.IsStart() {
 		// 画场景
 		g.playableScene.Draw(screen)
 		// 显示帧数
@@ -130,6 +132,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	// 画UI
 	g.uiMgr.Draw(screen)
+}
+
+// 屏幕寬高
+func (g *Game) ScreenWidthHeight() (int32, int32) {
+	return screenWidth, screenHeight
 }
 
 // 更新
@@ -150,21 +157,6 @@ func (g *Game) update() {
 				g.logic.Update(common_data.GameLogicTick)
 				g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
 			}
-		}
-	}
-}
-
-// 处理输入
-func (g *Game) handleInput() {
-	pressedKey := inpututil.AppendPressedKeys(nil)
-	for _, pk := range pressedKey {
-		if c, o := keyPressed2CmdMap[pk]; o {
-			g.cmdMgr.Handle(c.cmd, c.args...)
-		}
-	}
-	for k, cmd := range keyReleased2CmdMap {
-		if inpututil.IsKeyJustReleased(k) {
-			g.cmdMgr.Handle(cmd)
 		}
 	}
 }

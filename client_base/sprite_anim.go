@@ -1,4 +1,4 @@
-package base
+package client_base
 
 import (
 	"image"

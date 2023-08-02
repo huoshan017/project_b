@@ -3,7 +3,6 @@ module project_b
 go 1.21
 
 require (
-	github.com/blizzy78/ebitenui v0.0.0-20211114161546-ca1a302d930b
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hajimehoshi/ebiten/v2 v2.5.6
 	github.com/huoshan017/gsnet v0.0.0-20230616021512-71c289103e5e
@@ -14,8 +13,11 @@ require (
 )
 
 require (
+	github.com/ebitenui/ebitenui v0.5.4
+	github.com/gabstv/ebiten-imgui v0.5.0
 	github.com/golang/protobuf v1.5.3
 	github.com/huoshan017/ponu v0.0.0-20230705160850-37cacf1f8fb9
+	github.com/inkyblackness/imgui-go/v4 v4.4.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/tealeg/xlsx v1.0.5
@@ -31,6 +33,7 @@ require (
 	github.com/hajimehoshi/oto/v2 v2.4.1 // indirect
 	github.com/huoshan017/kcpgo v0.0.0-20230615185351-fa69383497ba // indirect
 	github.com/jezek/xgb v1.1.0 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/thrift-iterator/go v0.0.0-20190402154806-9b5a67519118 // indirect
 	github.com/v2pro/plz v0.0.0-20200805122259-422184e41b6e // indirect
 	github.com/v2pro/quokka v0.0.0-20171201153428-382cb39c6ee6 // indirect

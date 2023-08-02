@@ -1,7 +1,7 @@
 package main
 
 import (
-	"project_b/client/base"
+	"project_b/client_base"
 	"project_b/common/object"
 )
 
@@ -12,42 +12,42 @@ type frameConfig struct {
 }
 
 var (
-	mapTileAnimOriginalConfig     map[object.StaticObjType]*base.SpriteAnimConfig // 地图瓦片动画初始配置
-	mapTileFrameConfig            map[object.StaticObjType]*frameConfig           // 地图瓦片动画初始配置
-	tankAnimOriginalConfig        map[int32]*base.SpriteAnimConfig                // 坦克动画初始配置map
-	tankFrameConfig               map[int32]*frameConfig                          // 帧配置map
-	bulletAnimOriginalConfig      map[int32]*base.SpriteAnimConfig                // 子弹动画初始配置
-	bulletFrameConfig             *frameConfig                                    // 子弹帧配置
-	effectAnimOriginalConfig      map[int32]*base.SpriteAnimConfig                // 爆炸動畫初始配置
-	surroundObjAnimOriginalConfig map[int32]*base.SpriteAnimConfig                // 小球動畫初始配置
+	mapTileAnimOriginalConfig     map[object.StaticObjType]*client_base.SpriteAnimConfig // 地图瓦片动画初始配置
+	mapTileFrameConfig            map[object.StaticObjType]*frameConfig                  // 地图瓦片动画初始配置
+	tankAnimOriginalConfig        map[int32]*client_base.SpriteAnimConfig                // 坦克动画初始配置map
+	tankFrameConfig               map[int32]*frameConfig                                 // 帧配置map
+	bulletAnimOriginalConfig      map[int32]*client_base.SpriteAnimConfig                // 子弹动画初始配置
+	bulletFrameConfig             *frameConfig                                           // 子弹帧配置
+	effectAnimOriginalConfig      map[int32]*client_base.SpriteAnimConfig                // 爆炸動畫初始配置
+	surroundObjAnimOriginalConfig map[int32]*client_base.SpriteAnimConfig                // 小球動畫初始配置
 )
 
 // 初始化动画初始配置
 func initAnimOriginalConfigs() {
-	mapTileAnimOriginalConfig = map[object.StaticObjType]*base.SpriteAnimConfig{
+	mapTileAnimOriginalConfig = map[object.StaticObjType]*client_base.SpriteAnimConfig{
 		// 砖块
 		object.StaticObjBrick: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 		// 铁
 		object.StaticObjIron: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 1, Y: 0}},
+			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 1, Y: 0}},
 		},
 		// 樹
 		object.StaticObjTree: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 2, Y: 0}},
+			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 2, Y: 0}},
 		},
 		// 水
 		object.StaticObjWater: {
-			Image: tile_img, PlayInterval: 200, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 3, Y: 0}, {X: 4, Y: 0}},
+			Image: tile_img, PlayInterval: 200, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 3, Y: 0}, {X: 4, Y: 0}},
 		},
 		// 基地
 		object.StaticObjHome: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 5, Y: 0}},
+			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 5, Y: 0}},
 		},
 		// 摧毁的基地
 		object.StaticObjRuins: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []base.SpriteIndex{{X: 6, Y: 0}},
+			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 6, Y: 0}},
 		},
 	}
 	mapTileFrameConfig = map[object.StaticObjType]*frameConfig{
@@ -82,11 +82,11 @@ func initAnimOriginalConfigs() {
 			frameLevelList: [][]int32{{0}},
 		},
 	}
-	tankAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
+	tankAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		// 玩家坦克动画配置
 		1: {
 			Image: player1_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []base.SpriteIndex{
+			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}, {X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}, {X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
 				{X: 0, Y: 2}, {X: 1, Y: 2}, {X: 2, Y: 2}, {X: 3, Y: 2}, {X: 4, Y: 2}, {X: 5, Y: 2}, {X: 6, Y: 2}, {X: 7, Y: 2},
@@ -96,7 +96,7 @@ func initAnimOriginalConfigs() {
 		// 同伴坦克动画配置
 		2: {
 			Image: player2_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []base.SpriteIndex{
+			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}, {X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}, {X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
 				{X: 0, Y: 2}, {X: 1, Y: 2}, {X: 2, Y: 2}, {X: 3, Y: 2}, {X: 4, Y: 2}, {X: 5, Y: 2}, {X: 6, Y: 2}, {X: 7, Y: 2},
@@ -106,7 +106,7 @@ func initAnimOriginalConfigs() {
 		// 轻型坦克动画配置
 		1000: {
 			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []base.SpriteIndex{
+			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1},
 				{X: 0, Y: 2}, {X: 1, Y: 2}, {X: 2, Y: 2}, {X: 3, Y: 2},
@@ -116,7 +116,7 @@ func initAnimOriginalConfigs() {
 		// 快速坦克动画配置
 		1001: {
 			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []base.SpriteIndex{
+			FramePosList: []client_base.SpriteIndex{
 				{X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
 				{X: 4, Y: 2}, {X: 5, Y: 2}, {X: 6, Y: 2}, {X: 7, Y: 2},
@@ -126,7 +126,7 @@ func initAnimOriginalConfigs() {
 		// 重型坦克动画配置
 		1002: {
 			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
-			FramePosList: []base.SpriteIndex{
+			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 4}, {X: 1, Y: 4}, {X: 2, Y: 4}, {X: 3, Y: 4}, {X: 4, Y: 4}, {X: 5, Y: 4}, {X: 6, Y: 4}, {X: 7, Y: 4},
 				{X: 0, Y: 5}, {X: 1, Y: 5}, {X: 2, Y: 5}, {X: 3, Y: 5}, {X: 4, Y: 5}, {X: 5, Y: 5}, {X: 6, Y: 5}, {X: 7, Y: 5},
 				{X: 0, Y: 6}, {X: 1, Y: 6}, {X: 2, Y: 6}, {X: 3, Y: 6}, {X: 4, Y: 6}, {X: 5, Y: 6}, {X: 6, Y: 6}, {X: 7, Y: 6},
@@ -210,12 +210,12 @@ func initAnimOriginalConfigs() {
 	}
 
 	// 子彈動畫原始配置
-	bulletAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
+	bulletAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		1: {
-			Image: bullet_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}},
+			Image: bullet_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}},
 		},
 		2: {
-			Image: shell_img, FrameWidth: 8, FrameHeight: 16, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+			Image: shell_img, FrameWidth: 8, FrameHeight: 16, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 	}
 
@@ -230,18 +230,18 @@ func initAnimOriginalConfigs() {
 		frameLevelList: [][]int32{{0, 1, 2, 3}},
 	}
 
-	effectAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
+	effectAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		1: {
-			Image: explode1_img, FrameWidth: 28, FrameHeight: 28, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+			Image: explode1_img, FrameWidth: 28, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 		2: {
-			Image: explode2_img, FrameWidth: 64, FrameHeight: 64, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+			Image: explode2_img, FrameWidth: 64, FrameHeight: 64, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 	}
 
-	surroundObjAnimOriginalConfig = map[int32]*base.SpriteAnimConfig{
+	surroundObjAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		1: {
-			Image: smallball_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []base.SpriteIndex{{X: 0, Y: 0}},
+			Image: smallball_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 	}
 }
@@ -250,7 +250,7 @@ func initAnimOriginalConfigs() {
 type StaticObjectAnimConfig struct {
 	Type       object.ObjectType
 	Subtype    object.ObjSubtype
-	AnimConfig *base.SpriteAnimConfig
+	AnimConfig *client_base.SpriteAnimConfig
 }
 
 // 移动物体动画配置
@@ -259,7 +259,7 @@ type MovableObjectAnimConfig struct {
 	Subtype    object.ObjSubtype
 	Id         int32
 	Level      int32
-	AnimConfig *base.SpriteAnimConfig // 使用物体方向枚举做索引
+	AnimConfig *client_base.SpriteAnimConfig // 使用物体方向枚举做索引
 }
 
 var (
@@ -488,10 +488,10 @@ func initResources() {
 }
 
 // 根据静态物体类型创建瓦片动画配置
-func createStaticObjAnimConfig(objStaticType object.StaticObjType) *base.SpriteAnimConfig {
+func createStaticObjAnimConfig(objStaticType object.StaticObjType) *client_base.SpriteAnimConfig {
 	ac := mapTileAnimOriginalConfig[objStaticType]
 	fc := mapTileFrameConfig[objStaticType]
-	anim := &base.SpriteAnimConfig{
+	anim := &client_base.SpriteAnimConfig{
 		Image:        ac.Image,
 		FrameWidth:   ac.FrameWidth,
 		FrameHeight:  ac.FrameHeight,
@@ -504,8 +504,8 @@ func createStaticObjAnimConfig(objStaticType object.StaticObjType) *base.SpriteA
 }
 
 // 根据等级和方向创建坦克动画配置
-func createTankAnimConfig(id int32, level int32, dir object.Direction) *base.SpriteAnimConfig {
-	anim := &base.SpriteAnimConfig{}
+func createTankAnimConfig(id int32, level int32, dir object.Direction) *client_base.SpriteAnimConfig {
+	anim := &client_base.SpriteAnimConfig{}
 	anim0 := tankAnimOriginalConfig[id]
 	frame0 := tankFrameConfig[id]
 	anim.Image = anim0.Image
@@ -521,9 +521,9 @@ func createTankAnimConfig(id int32, level int32, dir object.Direction) *base.Spr
 }
 
 // 根据方向创建坦克动画配置
-func createBulletAnimConfig(id int32, dir object.Direction) *base.SpriteAnimConfig {
+func createBulletAnimConfig(id int32, dir object.Direction) *client_base.SpriteAnimConfig {
 	animConfig := bulletAnimOriginalConfig[id]
-	anim := &base.SpriteAnimConfig{
+	anim := &client_base.SpriteAnimConfig{
 		Image:       animConfig.Image,
 		FrameWidth:  animConfig.FrameWidth,
 		FrameHeight: animConfig.FrameHeight,
@@ -532,7 +532,7 @@ func createBulletAnimConfig(id int32, dir object.Direction) *base.SpriteAnimConf
 	if !o {
 		dirIdx = 0
 	}
-	anim.FramePosList = []base.SpriteIndex{animConfig.FramePosList[dirIdx]}
+	anim.FramePosList = []client_base.SpriteIndex{animConfig.FramePosList[dirIdx]}
 	return anim
 }
 
@@ -594,11 +594,11 @@ func GetRuinsAnimConfig() *StaticObjectAnimConfig {
 }
 
 // 獲得效果動畫配置
-func getEffectAnimConfig(id int32) *base.SpriteAnimConfig {
+func getEffectAnimConfig(id int32) *client_base.SpriteAnimConfig {
 	return effectAnimOriginalConfig[id]
 }
 
 // 獲得小球動畫配置
-func getSurroundObjAnimConfig(id int32) *base.SpriteAnimConfig {
+func getSurroundObjAnimConfig(id int32) *client_base.SpriteAnimConfig {
 	return surroundObjAnimOriginalConfig[id]
 }

@@ -209,7 +209,9 @@ func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
 		m.grids[lastIndex].removeObj(obj.InstId())
 		m.grids[index].addObj(obj.InstId())
 		m.mobj2GridIndex.Set(obj.InstId(), index)
-		log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(%v), add to grid(%v)", obj.InstId(), obj.Type(), obj.Subtype(), lastIndex, index)
+		if obj.Subtype() == object.ObjSubtypeTank {
+			log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(%v), add to grid(%v)", obj.InstId(), obj.Type(), obj.Subtype(), lastIndex, index)
+		}
 	}
 }
 

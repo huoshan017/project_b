@@ -132,6 +132,7 @@ func (t *Tank) Move(dir base.Angle) {
 	t.moveDir = dir
 	if t.moveDir != t.Rotation() || t.state == rotating {
 		t.state = rotating
+		log.Debug("@@@ tank %v rotating", t.instId)
 		return
 	}
 	t.MovableObject.Move(dir)
@@ -141,7 +142,10 @@ func (t *Tank) Move(dir base.Angle) {
 func (t *Tank) Stop() {
 	if t.state == rotating {
 		t.state = stopped
+		x, y := t.Pos()
+		t.stopEvent.Call(Pos{X: x, Y: y}, t.moveDir, t.CurrentSpeed())
 		log.Debug("@@@ tank %v rotating => stopped", t.instId)
+		return
 	}
 	t.MovableObject.Stop()
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"math"
-	"project_b/client/base"
+	"project_b/client_base"
 	"project_b/common"
 	pmath "project_b/common/math"
 	"project_b/common/object"
@@ -21,8 +21,8 @@ type objOpCache struct {
  */
 type PlayableScene struct {
 	scene           *common.SceneLogic
-	camera          *base.Camera
-	viewport        *base.Viewport
+	camera          *client_base.Camera
+	viewport        *client_base.Viewport
 	playableObjs    map[uint32]*objOpCache
 	playableEffects map[uint32]*objOpCache
 }
@@ -30,7 +30,7 @@ type PlayableScene struct {
 /**
  * 创建可绘制场景
  */
-func CreatePlayableScene(viewport *base.Viewport) *PlayableScene {
+func CreatePlayableScene(viewport *client_base.Viewport) *PlayableScene {
 	return &PlayableScene{
 		viewport:        viewport,
 		playableObjs:    make(map[uint32]*objOpCache),
@@ -43,8 +43,8 @@ func CreatePlayableScene(viewport *base.Viewport) *PlayableScene {
  */
 func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
 	mapInfo := mapInfoArray[scene.GetMapId()]
-	s.camera = base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultNearPlane)
-	s.CameraMoveTo(mapInfo.cameraPos.X, mapInfo.cameraPos.Y)
+	s.camera = client_base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultNearPlane)
+	s.CameraMoveTo(scene.Center() /*mapInfo.cameraPos.X, mapInfo.cameraPos.Y*/)
 	s.CameraSetHeight(mapInfo.cameraHeight)
 	s.scene = scene
 	s.scene.RegisterObjectRemovedHandle(s.onObjRemovedHandle)
@@ -203,10 +203,10 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebi
 	tc.playable.Draw(dstImage, &tc.op)
 }
 
-func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.Image) (IPlayable, *base.SpriteAnimConfig) {
+func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.Image) (IPlayable, *client_base.SpriteAnimConfig) {
 	var (
 		playableObj IPlayable
-		animConfig  *base.SpriteAnimConfig
+		animConfig  *client_base.SpriteAnimConfig
 	)
 	switch obj.Type() {
 	case object.ObjTypeStatic:
