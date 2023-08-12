@@ -22,6 +22,15 @@ type CollisionInfo struct {
 	TangentPointsNum int8            // 相切時碰撞點數量[0,1,2]，兩個點表示物體相切的綫段兩端點
 }
 
+func (ci *CollisionInfo) Clear() {
+	ci.Result = CollisionNone
+	ci.ObjList = ci.ObjList[:0]
+	ci.MovingObj = nil
+	ci.MovingObjPos.X = 0
+	ci.MovingObjPos.Y = 0
+	ci.TangentPointsNum = 0
+}
+
 // CheckMovingObjCollisionObj 檢查可移動物體和物體是否碰撞
 func CheckMovingObjCollisionObj(mobj IMovableObject, dx, dy int32, obj IObject) CollisionResult {
 	var cr CollisionResult

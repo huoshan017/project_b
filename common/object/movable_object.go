@@ -34,6 +34,7 @@ type MovableObject struct {
 	pauseEvent     base.Event      // 暫停事件
 	resumeEvent    base.Event      // 恢復事件
 	pause          bool            // 是否暫停
+	collisionInfo  CollisionInfo   // 碰撞信息
 }
 
 // 创建可移动物体
@@ -267,22 +268,19 @@ func (o *MovableObject) Update(tick time.Duration) {
 }
 
 func (o *MovableObject) checkMove(dx, dy int32, update bool) bool {
-	var (
-		collisionInfo CollisionInfo
-	)
-
-	o.checkMoveEvent.Call(o.instId, dx, dy, &collisionInfo)
-	if collisionInfo.Result != CollisionNone {
-		if collisionInfo.Result == CollisionAndBlock {
+	o.collisionInfo.Clear()
+	o.checkMoveEvent.Call(o.instId, dx, dy, &o.collisionInfo)
+	if o.collisionInfo.Result != CollisionNone {
+		if o.collisionInfo.Result == CollisionAndBlock {
 			if update {
-				o.SetPos(collisionInfo.MovingObjPos.X, collisionInfo.MovingObjPos.Y)
+				o.SetPos(o.collisionInfo.MovingObjPos.X, o.collisionInfo.MovingObjPos.Y)
 			}
 		}
 		if o.colliderComp != nil {
-			o.colliderComp.CallCollisionEventHandle(o.super, &collisionInfo)
+			o.colliderComp.CallCollisionEventHandle(o.super, &o.collisionInfo)
 		}
 	}
-	return collisionInfo.Result != CollisionAndBlock
+	return o.collisionInfo.Result != CollisionAndBlock
 }
 
 // 注冊檢查坐標事件

@@ -53,6 +53,7 @@ type GridMap struct {
 	mobj2GridIndex          *ds.MapListUnion[uint32, int32]                 // 移動對象與網格索引的映射
 	resultLayerObjs         [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32]  // 缓存返回的结果给调用者，主要为了提高性能，减少GC
 	resultMovableObjList    []uint32                                        // 緩存搜索的可移動物體的結果
+	checkCollisionObjList   []object.IObject                                // 檢測碰撞物體列表
 }
 
 func NewGridMap(gridTileSize int16) *GridMap {
@@ -381,10 +382,10 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 	}
 
 	var (
-		obj              object.IObject
-		collisionObjList []object.IObject
-		o                bool
+		obj object.IObject
+		o   bool
 	)
+	m.checkCollisionObjList = m.checkCollisionObjList[:0]
 	for i := 0; i < len(nineSquared); i++ {
 		for j := 0; j < len(nineSquared[i]); j++ {
 			index = nineSquared[i][j]
@@ -405,7 +406,7 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 				if obj.InstId() != mobj.InstId() {
 					cr := object.CheckMovingObjCollisionObj(mobj, dx, dy, obj)
 					if cr == object.CollisionAndBlock {
-						collisionObjList = append(collisionObjList, obj)
+						m.checkCollisionObjList = append(m.checkCollisionObjList, obj)
 					} else if cr == object.CollisionOnly {
 						collisionInfo.ObjList = append(collisionInfo.ObjList, obj)
 					}
@@ -414,7 +415,7 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 		}
 	}
 
-	if len(collisionObjList) == 0 {
+	if len(m.checkCollisionObjList) == 0 {
 		if len(collisionInfo.ObjList) == 0 {
 			return object.CollisionNone
 		}
@@ -423,5 +424,5 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 		return object.CollisionOnly
 	}
 
-	return object.NarrowPhaseCheckMovingObjCollision2ObjList(mobj, dx, dy, collisionObjList, collisionInfo)
+	return object.NarrowPhaseCheckMovingObjCollision2ObjList(mobj, dx, dy, m.checkCollisionObjList, collisionInfo)
 }
