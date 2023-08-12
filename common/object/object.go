@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 )
 
 /*******************************
@@ -40,7 +39,7 @@ type object struct {
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
 	super             IObject        // 派生類對象
-	destroyedEvent    base.Event     // 銷毀事件
+	colliderComp      *ColliderComp  // 碰撞器組件
 }
 
 // 回收
@@ -60,14 +59,12 @@ func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.currentCamp = staticInfo.camp
 	o.staticInfo = staticInfo
 	if staticInfo.collision {
-		o.AddComp(&ColliderComp{})
+		o.AddComp(&ColliderComp{obj: o})
 	}
 }
 
 // 反初始化
 func (o *object) Uninit() {
-	o.destroyedEvent.Call(o.instId)
-	o.destroyedEvent.Clear()
 	o.instId = 0
 	o.ownerType = OwnerNone
 	o.currentCamp = CampTypeNone
@@ -196,19 +193,16 @@ func (o *object) x_y(x1, y1 int32) (int32, int32) {
 		x0, y0 int32
 	)
 	if o.changedStaticInfo != nil {
-		x0, y0 = o.changedStaticInfo.x0, o.changedStaticInfo.y0
+		x0, y0 = o.x+o.changedStaticInfo.x0, o.y+o.changedStaticInfo.y0
 	} else {
-		x0, y0 = o.staticInfo.x0, o.staticInfo.y0
+		x0, y0 = o.x+o.staticInfo.x0, o.y+o.staticInfo.y0
 	}
 
 	rotation := o.Rotation()
-	sn, sd := base.Sine(rotation)
-	cn, cd := base.Cosine(rotation)
 	// 公式
 	// x = (x1-x0)*cos(a) - (y1-y0)*sin(a) + x0
 	// y = (x1-x0)*sin(a) + (y1-y0)*cos(a) + y0
-	x := o.x + int32((x1-x0)*cn/cd-(y1-y0)*sn/sd) + x0
-	y := o.y + int32((x1-x0)*sn/sd+(y1-y0)*cn/cd) + y0
+	x, y := base.Rotate(x1, y1, x0, y0, rotation)
 	return x, y
 }
 
@@ -218,9 +212,9 @@ func (o object) LeftTop() (int32, int32) {
 		x1, y1 int32
 	)
 	if o.changedStaticInfo != nil {
-		x1, y1 = o.changedStaticInfo.l/2+o.changedStaticInfo.x0, o.changedStaticInfo.w/2+o.changedStaticInfo.y0
+		x1, y1 = o.x+o.changedStaticInfo.x0+o.changedStaticInfo.l/2, o.y+o.changedStaticInfo.y0+o.changedStaticInfo.w/2
 	} else {
-		x1, y1 = o.staticInfo.l/2+o.staticInfo.x0, o.staticInfo.w/2+o.staticInfo.y0
+		x1, y1 = o.x+o.staticInfo.x0+o.staticInfo.l/2, o.y+o.staticInfo.y0+o.staticInfo.w/2
 	}
 	return o.x_y(x1, y1)
 }
@@ -231,9 +225,9 @@ func (o object) LeftBottom() (int32, int32) {
 		x1, y1 int32
 	)
 	if o.changedStaticInfo != nil {
-		x1, y1 = o.changedStaticInfo.x0-o.changedStaticInfo.l/2, o.changedStaticInfo.y0+o.changedStaticInfo.w/2
+		x1, y1 = o.x+o.changedStaticInfo.x0-o.changedStaticInfo.l/2, o.y+o.changedStaticInfo.y0+o.changedStaticInfo.w/2
 	} else {
-		x1, y1 = o.staticInfo.x0-o.staticInfo.l/2, o.staticInfo.y0+o.staticInfo.w/2
+		x1, y1 = o.x+o.staticInfo.x0-o.staticInfo.l/2, o.y+o.staticInfo.y0+o.staticInfo.w/2
 	}
 	return o.x_y(x1, y1)
 }
@@ -244,9 +238,9 @@ func (o object) RightBottom() (int32, int32) {
 		x1, y1 int32
 	)
 	if o.changedStaticInfo != nil {
-		x1, y1 = o.changedStaticInfo.x0-o.changedStaticInfo.l/2, o.changedStaticInfo.y0-o.changedStaticInfo.w/2
+		x1, y1 = o.x+o.changedStaticInfo.x0-o.changedStaticInfo.l/2, o.y+o.changedStaticInfo.y0-o.changedStaticInfo.w/2
 	} else {
-		x1, y1 = o.staticInfo.x0-o.staticInfo.l/2, o.staticInfo.y0-o.staticInfo.w/2
+		x1, y1 = o.x+o.staticInfo.x0-o.staticInfo.l/2, o.y+o.staticInfo.y0-o.staticInfo.w/2
 	}
 	return o.x_y(x1, y1)
 }
@@ -257,9 +251,9 @@ func (o object) RightTop() (int32, int32) {
 		x1, y1 int32
 	)
 	if o.changedStaticInfo != nil {
-		x1, y1 = o.changedStaticInfo.x0+o.changedStaticInfo.l/2, o.changedStaticInfo.y0-o.changedStaticInfo.w/2
+		x1, y1 = o.x+o.changedStaticInfo.x0+o.changedStaticInfo.l/2, o.y+o.changedStaticInfo.y0-o.changedStaticInfo.w/2
 	} else {
-		x1, y1 = o.staticInfo.x0+o.staticInfo.l/2, o.staticInfo.y0-o.staticInfo.w/2
+		x1, y1 = o.x+o.staticInfo.x0+o.staticInfo.l/2, o.y+o.staticInfo.y0-o.staticInfo.w/2
 	}
 	return o.x_y(x1, y1)
 }
@@ -282,38 +276,6 @@ func (o object) Rotation() base.Angle {
 	return rotation
 }
 
-// 原始左坐標
-func (o object) OriginalLeft() int32 {
-	if o.changedStaticInfo != nil {
-		return o.x + o.changedStaticInfo.x0 - o.changedStaticInfo.w/2
-	}
-	return o.x + o.staticInfo.x0 - o.staticInfo.w/2
-}
-
-// 原始右坐標
-func (o object) OriginalRight() int32 {
-	if o.changedStaticInfo != nil {
-		return o.x + o.changedStaticInfo.x0 + o.changedStaticInfo.w/2
-	}
-	return o.x + o.staticInfo.x0 + o.staticInfo.w/2
-}
-
-// 原始上坐標
-func (o object) OriginalTop() int32 {
-	if o.changedStaticInfo != nil {
-		return o.y + o.changedStaticInfo.y0 + o.changedStaticInfo.l/2
-	}
-	return o.y + o.staticInfo.y0 + o.staticInfo.l/2
-}
-
-// 原始下坐標
-func (o object) OriginalBottom() int32 {
-	if o.changedStaticInfo != nil {
-		return o.y + o.changedStaticInfo.y0 - o.changedStaticInfo.l/2
-	}
-	return o.y + o.staticInfo.y0 - o.staticInfo.l/2
-}
-
 // 設置陣營
 func (o *object) SetCamp(camp CampType) {
 	o.currentCamp = camp
@@ -327,6 +289,9 @@ func (o *object) RestoreCamp() {
 // 添加組件
 func (o *object) AddComp(comp IComponent) {
 	o.components = append(o.components, comp)
+	if comp.Name() == "Collider" {
+		o.colliderComp = comp.(*ColliderComp)
+	}
 }
 
 // 去除組件
@@ -359,19 +324,21 @@ func (o object) HasComp(name string) bool {
 	return false
 }
 
+// 設置碰撞處理函數
+func (o *object) SetCollisionHandle(handle func(...any)) {
+	if o.colliderComp != nil {
+		o.colliderComp.SetCollisionHandle(handle)
+	}
+}
+
+// 獲得碰撞器組件
+func (o *object) GetColliderComp() *ColliderComp {
+	return o.colliderComp
+}
+
 // 設置派生類
 func (o *object) setSuper(super IObject) {
 	o.super = super
-}
-
-// 注冊銷毀事件處理函數
-func (o *object) RegisterDestroyedEventHandle(handle func(...any)) {
-	o.destroyedEvent.Register(handle)
-}
-
-// 注銷銷毀事件處理函數
-func (o *object) UnregisterDestroyedEventHandle(handle func(...any)) {
-	o.destroyedEvent.Unregister(handle)
 }
 
 // 静态物体
@@ -395,11 +362,6 @@ func (o *StaticObject) Init(instId uint32, info *ObjStaticInfo) {
 // 反初始化
 func (o *StaticObject) Uninit() {
 	o.object.Uninit()
-}
-
-// 更新
-func (o *StaticObject) Update(tick time.Duration) {
-
 }
 
 // 距離的平方

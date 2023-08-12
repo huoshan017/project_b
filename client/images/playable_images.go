@@ -1,4 +1,4 @@
-package main
+package images
 
 import (
 	_ "image/png"
@@ -26,9 +26,82 @@ var (
 	tile_img      *ebiten.Image
 	smallball_img *ebiten.Image
 	shell_img     *ebiten.Image
+	title_img     *ebiten.Image
 )
 
-func initImages() {
+func GetBonusImg() *ebiten.Image {
+	return bonus_img
+}
+
+func GetBoreImg() *ebiten.Image {
+	return bore_img
+}
+
+func GetBulletImg() *ebiten.Image {
+	return bullet_img
+}
+
+func GetEnemyImg() *ebiten.Image {
+	return enemy_img
+}
+
+func GetExplode1Img() *ebiten.Image {
+	return explode1_img
+}
+
+func GetExplode2Img() *ebiten.Image {
+	return explode2_img
+}
+
+func GetFlagImg() *ebiten.Image {
+	return flag_img
+}
+
+func GetGameOverImg() *ebiten.Image {
+	return gameover_img
+}
+
+func GetMiscImg() *ebiten.Image {
+	return misc_img
+}
+
+func GetNumImg() *ebiten.Image {
+	return num_img
+}
+
+func GetPlayer1Img() *ebiten.Image {
+	return player1_img
+}
+
+func GetPlayer2Img() *ebiten.Image {
+	return player2_img
+}
+
+func GetShieldImg() *ebiten.Image {
+	return shield_img
+}
+
+func GetSplashImg() *ebiten.Image {
+	return splash_img
+}
+
+func GetTileImg() *ebiten.Image {
+	return tile_img
+}
+
+func GetSmallBallImg() *ebiten.Image {
+	return smallball_img
+}
+
+func GetShellImg() *ebiten.Image {
+	return shell_img
+}
+
+func GetTitleImg() *ebiten.Image {
+	return title_img
+}
+
+func InitImages() {
 	imgPtrList := []**ebiten.Image{
 		&bonus_img,
 		&bore_img,
@@ -47,6 +120,7 @@ func initImages() {
 		&tile_img,
 		&smallball_img,
 		&shell_img,
+		&title_img,
 	}
 
 	imgPathList := []string{
@@ -67,6 +141,7 @@ func initImages() {
 		"png/tile.png",
 		"png/small_ball.png",
 		"png/shell.png",
+		"png/title.png",
 	}
 
 	var err error

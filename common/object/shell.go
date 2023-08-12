@@ -54,11 +54,18 @@ func (b *Shell) SetFetchTargetFunc(f func(uint32) IObject) {
 
 // 立即移動
 func (s *Shell) MoveNow(dir base.Angle) {
+	if s.pause {
+		return
+	}
 	s.moveDir = dir
 	if s.state == stopped {
-		d := GetDefaultLinearDistance(s, s.lastTick)
+		tick := s.lastTick
+		if tick == 0 {
+			tick = 100 * time.Millisecond
+		}
+		d := GetDefaultLinearDistance(s, tick)
 		v := dir.DistanceToVec2(d)
-		if !s.checkMove(v.X(), v.Y()) {
+		if !s.checkMove(v.X(), v.Y(), false) {
 			return
 		}
 		s.state = isMoving
@@ -68,6 +75,9 @@ func (s *Shell) MoveNow(dir base.Angle) {
 
 // 更新
 func (s *Shell) Update(tick time.Duration) {
+	if s.pause {
+		return
+	}
 	s.MovableObject.Update(tick)
 	if s.state == isMoving {
 		x, y := s.Pos()

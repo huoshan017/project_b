@@ -2,6 +2,7 @@ package common_data
 
 import (
 	"project_b/common/base"
+	"project_b/common/effect"
 	"project_b/common/object"
 )
 
@@ -88,6 +89,7 @@ var (
 			SteeringAngularVelocity: 460 * 60,
 			ShellLaunchPos:          base.NewVec2(160, 0),
 			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 300},
+			ShieldConfig:            object.TankShieldStaticInfo{},
 		},
 		2: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
@@ -144,17 +146,17 @@ var (
 	}
 
 	// 效果配置信息
-	EffectConfigData = map[int32]*object.EffectStaticInfo{
+	EffectConfigData = map[int32]*effect.EffectStaticInfo{
 		1: {
 			Id:     1,
-			Et:     object.EffectTypeRequency,
+			Et:     effect.EffectTypeRequency,
 			Param:  1,
 			Width:  280,
 			Height: 280,
 		},
 		2: {
 			Id:     2,
-			Et:     object.EffectTypeTime,
+			Et:     effect.EffectTypeTime,
 			Param:  500,
 			Width:  640,
 			Height: 640,
@@ -172,6 +174,18 @@ var (
 			AroundRadius:    600,
 			AngularVelocity: 100 * 60, // 單位: 分(1/60度)每秒
 			Clockwise:       false,
+		},
+	}
+
+	// 坦克護盾配置信息
+	TankShieldConfigData = map[int32]*object.TankShieldStaticInfo{
+		1: {
+			Width: 32, Length: 32,
+			Duration: 0,
+		},
+		2: {
+			Width: 32, Length: 32,
+			Duration: 10,
 		},
 	}
 )

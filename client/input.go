@@ -2,7 +2,6 @@ package main
 
 import (
 	core "project_b/client_core"
-	"project_b/common/log"
 	"project_b/common/object"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -49,6 +48,7 @@ var keyReleased2CmdMap = map[ebiten.Key]core.CmdCode{
 	ebiten.KeyC: core.CMD_CHANGE_TANK,
 	ebiten.KeyR: core.CMD_RESTORE_TANK,
 	ebiten.Key1: core.CMD_RELEASE_SMALL_BALL,
+	ebiten.KeyU: core.CMD_SHIELD,
 }
 
 type ComboKeyIndex struct {

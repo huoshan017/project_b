@@ -410,12 +410,6 @@ func (m *PartitionMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
 
 // checkMovableObjCollision 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
 func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, dx, dy int32, collisionObj *object.IObject) bool {
-	// 是否擁有碰撞組件
-	comp := obj.GetComp("Collider")
-	if comp == nil {
-		return false
-	}
-
 	// 獲取檢測碰撞範圍
 	lx, by, rx, ty := m.objGridBounds(obj)
 	if rx < lx || ty < by {
@@ -434,7 +428,7 @@ func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir o
 					continue
 				}
 				if obj2.InstId() != obj.InstId() && obj2.StaticInfo().Layer() == obj.StaticInfo().Layer() {
-					if checkMovableObjCollisionObj(obj, comp /*dir, */, dx, dy, obj2) {
+					if object.CheckMovingObjCollisionObj(obj, dx, dy, obj2) != object.CollisionNone {
 						if collisionObj != nil {
 							*collisionObj = obj2
 						}
@@ -451,7 +445,7 @@ func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir o
 					log.Warn("Collision: grid(x:%v y:%v) not found static object %v", x, y, item.Key)
 					continue
 				}
-				if checkMovableObjCollisionObj(obj, comp /*dir, */, dx, dy, obj2) {
+				if object.CheckMovingObjCollisionObj(obj, dx, dy, obj2) != object.CollisionNone {
 					if collisionObj != nil {
 						*collisionObj = obj2
 					}

@@ -2,12 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 
 	"net/http"
 	_ "net/http/pprof"
-	core "project_b/client_core"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -21,13 +19,8 @@ type Config struct {
 	serverAddress string
 }
 
-var (
-	glog *core.Logger
-)
-
 func main() {
 	if len(os.Args) < 2 {
-		log.Printf("args num invalid")
 		return
 	}
 
@@ -36,16 +29,16 @@ func main() {
 
 	initResources()
 
-	glog = core.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
+	InitLog("./log/client.log", 2, 100, 30, false, true, 1)
 
 	game := NewGame(&Config{serverAddress: *ip_str})
 	err := game.Init()
 	if err != nil {
-		glog.Error("game init err: %v", err)
+		log.Error("game init err: %v", err)
 		return
 	}
 	defer game.Uninit()
-	defer glog.Sync()
+	defer log.Sync()
 
 	go func() {
 		http.ListenAndServe("0.0.0.0:6060", nil)
@@ -54,6 +47,6 @@ func main() {
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("ProjectB")
 	if err := ebiten.RunGame(game); err != nil {
-		glog.Error("game run err: %v", err)
+		log.Error("game run err: %v", err)
 	}
 }

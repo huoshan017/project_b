@@ -1,21 +1,21 @@
-package client_core
+package main
 
 import (
-	"project_b/common/log"
+	common_log "project_b/common/log"
 
 	"go.uber.org/zap/zapcore"
 )
 
 type Logger struct {
-	log.Logger
+	common_log.Logger
 }
 
-var gslog *Logger
+var log *Logger
 
 func InitLog(fileName string, maxSize, maxBackups, maxAge int, compress, consoleOutput bool, logLevel int) *Logger {
-	if gslog == nil {
-		gslog = &Logger{
-			Logger: *log.NewWithConfig(&log.LogConfig{
+	if log == nil {
+		log = &Logger{
+			Logger: *common_log.NewWithConfig(&common_log.LogConfig{
 				Filename:      fileName,      // "./log/client.log",
 				MaxSize:       maxSize,       // 2,
 				MaxBackups:    maxBackups,    // 100,
@@ -25,9 +25,9 @@ func InitLog(fileName string, maxSize, maxBackups, maxAge int, compress, console
 			}, zapcore.Level(logLevel)),
 		}
 	}
-	return gslog
+	return log
 }
 
 func Log() *Logger {
-	return gslog
+	return log
 }

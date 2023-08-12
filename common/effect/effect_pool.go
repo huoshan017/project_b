@@ -1,4 +1,4 @@
-package object
+package effect
 
 type EffectPool struct {
 	effects   []*Effect

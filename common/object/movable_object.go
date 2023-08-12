@@ -31,6 +31,9 @@ type MovableObject struct {
 	moveEvent      base.Event      // 移动事件
 	stopEvent      base.Event      // 停止事件
 	updateEvent    base.Event      // 更新事件
+	pauseEvent     base.Event      // 暫停事件
+	resumeEvent    base.Event      // 恢復事件
+	pause          bool            // 是否暫停
 }
 
 // 创建可移动物体
@@ -107,11 +110,17 @@ func (o MovableObject) CurrentSpeed() int32 {
 
 // 逆時針旋轉
 func (o *MovableObject) Rotate(angle base.Angle) {
+	if o.pause {
+		return
+	}
 	o.rotation.Add(angle)
 }
 
 // 逆時針旋轉到
 func (o *MovableObject) RotateTo(angle base.Angle) {
+	if o.pause {
+		return
+	}
 	angle.Sub(base.NewAngle(int16(o.staticInfo.rotation), 0))
 	o.rotation = angle
 }
@@ -126,11 +135,18 @@ func (o *MovableObject) Forward() base.Vec2 {
 
 // 移动
 func (o *MovableObject) Move(dir base.Angle) {
+	if o.pause {
+		return
+	}
 	o.moveDir = dir
 	if o.state == stopped {
-		d := GetDefaultLinearDistance(o, o.lastTick)
+		var tick time.Duration = o.lastTick
+		if tick == 0 {
+			tick = 100 * time.Millisecond
+		}
+		d := GetDefaultLinearDistance(o, tick)
 		v := dir.DistanceToVec2(d)
-		if !o.checkMove(v.X(), v.Y()) {
+		if !o.checkMove(v.X(), v.Y(), false) {
 			return
 		}
 		o.state = toMove
@@ -140,6 +156,9 @@ func (o *MovableObject) Move(dir base.Angle) {
 
 // 停止
 func (o *MovableObject) Stop() {
+	if o.pause {
+		return
+	}
 	// 准备移动则直接停止
 	if o.state == toMove {
 		o.state = stopped
@@ -154,8 +173,27 @@ func (o *MovableObject) Stop() {
 	}
 }
 
+// 立即停止
+func (o *MovableObject) StopNow() {
+	if o.pause {
+		return
+	}
+	if o.state == toMove || o.state == isMoving {
+		o.state = stopped
+		if o.state == toMove {
+			log.Debug("@@@ object %v to move => stopped", o.instId)
+		} else {
+			log.Debug("@@@ object %v moving => stopped", o.instId)
+		}
+		return
+	}
+}
+
 // 是否正在移动
 func (o *MovableObject) IsMoving() bool {
+	if o.pause {
+		return false
+	}
 	return o.state == toMove || o.state == isMoving || o.state == toStop
 }
 
@@ -170,8 +208,23 @@ func (o MovableObject) LastPos() (int32, int32) {
 	return o.lastX, o.lastY
 }
 
+// 暫停
+func (o *MovableObject) Pause() {
+	o.pause = true
+	o.pauseEvent.Call()
+}
+
+// 繼續
+func (o *MovableObject) Resume() {
+	o.pause = false
+	o.resumeEvent.Call()
+}
+
 // 更新
 func (o *MovableObject) Update(tick time.Duration) {
+	if o.pause {
+		return
+	}
 	// 每次Update都要更新lastX和lastY
 	o.lastX, o.lastY = o.Pos()
 	o.lastTick = tick
@@ -197,13 +250,11 @@ func (o *MovableObject) Update(tick time.Duration) {
 		x, y = DefaultMove(o, tick)
 	}
 
-	if o.state != stopped {
-		ox, oy := o.Pos()
-		if o.checkMove(x-ox, y-oy) {
-			o.SetPos(x, y)
-		}
-	} else {
+	ox, oy := o.Pos()
+	if o.checkMove(x-ox, y-oy, true) {
 		o.SetPos(x, y)
+	} else {
+		o.state = toStop
 	}
 
 	if o.state == isMoving {
@@ -215,21 +266,23 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 }
 
-func (o *MovableObject) checkMove(dx, dy int32) bool {
+func (o *MovableObject) checkMove(dx, dy int32, update bool) bool {
 	var (
-		isMove, isCollision bool = true, false
-		resObj              IObject
+		collisionInfo CollisionInfo
 	)
 
-	o.checkMoveEvent.Call(o.instId, dx, dy, &isMove, &isCollision, &resObj)
-	if isCollision {
-		comp := o.GetComp("Collider")
-		if comp != nil {
-			collisionComp := comp.(*ColliderComp)
-			collisionComp.CallCollisionEventHandle(o.super, resObj)
+	o.checkMoveEvent.Call(o.instId, dx, dy, &collisionInfo)
+	if collisionInfo.Result != CollisionNone {
+		if collisionInfo.Result == CollisionAndBlock {
+			if update {
+				o.SetPos(collisionInfo.MovingObjPos.X, collisionInfo.MovingObjPos.Y)
+			}
+		}
+		if o.colliderComp != nil {
+			o.colliderComp.CallCollisionEventHandle(o.super, &collisionInfo)
 		}
 	}
-	return isMove
+	return collisionInfo.Result != CollisionAndBlock
 }
 
 // 注冊檢查坐標事件
@@ -270,4 +323,24 @@ func (o *MovableObject) RegisterUpdateEventHandle(handle func(args ...any)) {
 // 注销更新事件
 func (o *MovableObject) UnregisterUpdateEventHandle(handle func(args ...any)) {
 	o.updateEvent.Unregister(handle)
+}
+
+// 注冊暫停事件
+func (o *MovableObject) RegisterPauseEventHandle(handle func(args ...any)) {
+	o.pauseEvent.Register(handle)
+}
+
+// 注銷暫停事件
+func (o *MovableObject) UnregisterPauseEventHandle(handle func(args ...any)) {
+	o.pauseEvent.Unregister(handle)
+}
+
+// 注冊恢復事件
+func (o *MovableObject) RegisterResumeEventHandle(handle func(args ...any)) {
+	o.resumeEvent.Register(handle)
+}
+
+// 注銷恢復事件
+func (o *MovableObject) UnregisterResumeEventHandle(handle func(args ...any)) {
+	o.resumeEvent.Unregister(handle)
 }

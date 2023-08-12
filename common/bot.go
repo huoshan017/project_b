@@ -172,6 +172,7 @@ type BotManager struct {
 	botPool     *base.ObjectPool[Bot]
 	idCounter   int32
 	enemyId2Bot *ds.MapListUnion[uint32, []int32]
+	pause       bool
 }
 
 func NewBotManager() *BotManager {
@@ -213,6 +214,9 @@ func (bm *BotManager) RemoveBot(id int32) bool {
 }
 
 func (bm *BotManager) Update(tick time.Duration) {
+	if bm.pause {
+		return
+	}
 	count := bm.botList.Count()
 	for i := int32(0); i < count; i++ {
 		_, bot := bm.botList.GetByIndex(i)
@@ -227,6 +231,14 @@ func (bm *BotManager) Clear() {
 	bm.botList.Clear()
 	bm.idCounter = 0
 	bm.enemyId2Bot.Clear()
+}
+
+func (bm *BotManager) Pause() {
+	bm.pause = true
+}
+
+func (bm *BotManager) Resume() {
+	bm.pause = false
 }
 
 func (bm *BotManager) onEmenyTankGet(args ...any) {

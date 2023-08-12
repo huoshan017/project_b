@@ -1,13 +1,16 @@
 package main
 
 import (
+	"image/color"
 	"math"
 	"project_b/client_base"
 	"project_b/common"
+	"project_b/common/effect"
 	pmath "project_b/common/math"
 	"project_b/common/object"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type objOpCache struct {
@@ -25,16 +28,18 @@ type PlayableScene struct {
 	viewport        *client_base.Viewport
 	playableObjs    map[uint32]*objOpCache
 	playableEffects map[uint32]*objOpCache
+	debug           *client_base.Debug
 }
 
 /**
  * 创建可绘制场景
  */
-func CreatePlayableScene(viewport *client_base.Viewport) *PlayableScene {
+func CreatePlayableScene(viewport *client_base.Viewport, debug *client_base.Debug) *PlayableScene {
 	return &PlayableScene{
 		viewport:        viewport,
 		playableObjs:    make(map[uint32]*objOpCache),
 		playableEffects: make(map[uint32]*objOpCache),
+		debug:           debug,
 	}
 }
 
@@ -95,6 +100,7 @@ func (s *PlayableScene) CameraSetHeight(height int32) {
  * 绘制场景
  */
 func (s *PlayableScene) Draw(dstImage *ebiten.Image) {
+	s.drawMapGrid(dstImage)
 	// 屏幕左下角
 	lx, ly := s.camera.Screen2World(0, s.viewport.H())
 	// 屏幕右上角
@@ -138,7 +144,7 @@ func (s *PlayableScene) Draw(dstImage *ebiten.Image) {
 func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 	tc := s.playableObjs[obj.InstId()]
 	if tc == nil {
-		playableObj, animConfig := s.GetPlayableObject(obj, dstImage)
+		playableObj, animConfig := s.getPlayableObject(obj, dstImage)
 		tc = &objOpCache{
 			playable:    playableObj,
 			op:          ebiten.DrawImageOptions{},
@@ -150,9 +156,11 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 	}
 
 	s._draw(tc, obj.Width(), obj.Length(), dstImage)
+	s.drawBoundingbox(obj, dstImage)
+	s.drawAABB(obj, dstImage)
 }
 
-func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image) {
+func (s *PlayableScene) drawEffect(effect effect.IEffect, dstImage *ebiten.Image) {
 	tc := s.playableEffects[effect.InstId()]
 	if tc == nil {
 		animConfig := getEffectAnimConfig(effect.StaticInfo().Id)
@@ -167,6 +175,52 @@ func (s *PlayableScene) drawEffect(effect object.IEffect, dstImage *ebiten.Image
 	}
 
 	s._draw(tc, effect.Width(), effect.Height(), dstImage)
+}
+
+func (s *PlayableScene) drawBoundingbox(obj object.IObject, dstImage *ebiten.Image) {
+	showShellBoundingbox := (s.debug.IsShowShellBoundingbox() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeShell)
+	showTankBoundingbox := (s.debug.IsShowTankBoundingbox() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeTank)
+	if showShellBoundingbox || showTankBoundingbox {
+		x0, y0 := obj.LeftTop()
+		x1, y1 := obj.RightTop()
+		x2, y2 := obj.RightBottom()
+		x3, y3 := obj.LeftBottom()
+		x0, y0 = s.camera.World2Screen(x0, y0)
+		x1, y1 = s.camera.World2Screen(x1, y1)
+		x2, y2 = s.camera.World2Screen(x2, y2)
+		x3, y3 = s.camera.World2Screen(x3, y3)
+		var c color.RGBA
+		if showShellBoundingbox {
+			c = color.RGBA{255, 0, 0, 0}
+		} else {
+			c = color.RGBA{0, 255, 0, 0}
+		}
+		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
+	}
+}
+
+func (s *PlayableScene) drawAABB(obj object.IObject, dstImage *ebiten.Image) {
+	showShellAABB := (s.debug.IsShowShellAABB() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeShell)
+	showTankAABB := (s.debug.IsShowTankAABB() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeTank)
+	if showShellAABB || showTankAABB {
+		collider := obj.GetColliderComp()
+		if collider == nil {
+			return
+		}
+		aabb := collider.GetAABB()
+		x0, y0 := s.camera.World2Screen(aabb.Left, aabb.Bottom)
+		x1, y1 := s.camera.World2Screen(aabb.Right, aabb.Bottom)
+		x2, y2 := s.camera.World2Screen(aabb.Right, aabb.Top)
+		x3, y3 := s.camera.World2Screen(aabb.Left, aabb.Top)
+		c := color.RGBA{255, 255, 0, 0}
+		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
+	}
 }
 
 func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebiten.Image) {
@@ -203,7 +257,28 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebi
 	tc.playable.Draw(dstImage, &tc.op)
 }
 
-func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.Image) (IPlayable, *client_base.SpriteAnimConfig) {
+func (s *PlayableScene) drawMapGrid(dstImage *ebiten.Image) {
+	if !s.debug.IsShowMapGrid() {
+		return
+	}
+	mw, mh := s.scene.GetMapWidthHeight()
+	left, bottom := s.scene.GetMapLeftBottom()
+	gw, gh := s.scene.GetGridMap().GetGridWidthHeight()
+	log.Debug("map width %v  map height %v,  map left %v  map bottom %v,  grid width %v  grid height %v", mw, mh, left, bottom, gw, gh)
+	var x, y int32
+	for x = left; x <= left+mw; x += gw {
+		sx0, sy0 := s.camera.World2Screen(x, bottom)
+		sx1, sy1 := s.camera.World2Screen(x, bottom+mh)
+		vector.StrokeLine(dstImage, float32(sx0), float32(sy0), float32(sx1), float32(sy1), 1, color.RGBA{100, 100, 100, 0}, false)
+	}
+	for y = bottom; y <= bottom+mh; y += gh {
+		sx0, sy0 := s.camera.World2Screen(left, y)
+		sx1, sy1 := s.camera.World2Screen(left+mw, y)
+		vector.StrokeLine(dstImage, float32(sx0), float32(sy0), float32(sx1), float32(sy1), 1, color.RGBA{100, 100, 100, 0}, false)
+	}
+}
+
+func (s *PlayableScene) getPlayableObject(obj object.IObject, dstImage *ebiten.Image) (IPlayable, *client_base.SpriteAnimConfig) {
 	var (
 		playableObj IPlayable
 		animConfig  *client_base.SpriteAnimConfig
@@ -215,11 +290,22 @@ func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.I
 		}
 		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
 		if config == nil {
-			glog.Error("can't get static object anim by subtype %v", obj.Subtype())
+			log.Error("can't get static object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		playableObj = NewPlayableStaticObject(obj, config)
 		animConfig = config.AnimConfig
+	case object.ObjTypeItem:
+		if object.ItemObjType(obj.Subtype()) == object.ItemObjNone {
+			return nil, nil
+		}
+		config := getItemObjAnimConfig(object.ItemObjType(obj.Subtype()))
+		if config == nil {
+			log.Error("can't get item object anim by subtype %v", obj.Subtype())
+			return nil, nil
+		}
+		playableObj = NewPlayableItemObject(obj, config)
+		animConfig = config
 	case object.ObjTypeMovable:
 		if object.MovableObjType(obj.Subtype()) == object.MovableObjNone {
 			return nil, nil
@@ -227,7 +313,7 @@ func (s *PlayableScene) GetPlayableObject(obj object.IObject, dstImage *ebiten.I
 		mobj := obj.(object.IMovableObject)
 		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
 		if config == nil {
-			glog.Error("can't get movable object anim by subtype %v", obj.Subtype())
+			log.Error("can't get movable object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		switch obj.Subtype() {
@@ -264,7 +350,7 @@ func (s *PlayableScene) onObjRemovedHandle(args ...any) {
 }
 
 func (s *PlayableScene) onEffectRemovedHandle(args ...any) {
-	effect := args[0].(object.IEffect)
+	effect := args[0].(effect.IEffect)
 	// todo 希望做成對象池可以復用這部分内存
 	peffect := s.playableEffects[effect.InstId()]
 	if peffect != nil {

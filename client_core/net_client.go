@@ -1,6 +1,7 @@
 package client_core
 
 import (
+	"project_b/common/log"
 	"project_b/common/object"
 	custom_time "project_b/common/time"
 	"project_b/game_proto"
@@ -65,7 +66,7 @@ func (c *NetClient) Update() error {
 
 func (c *NetClient) SendLoginReq(account, password string) error {
 	if c.msgClient.IsConnected() {
-		gslog.Warn("already connected")
+		log.Warn("already connected")
 		return nil
 	}
 	err := c.msgClient.Connect(c.serverAddress)

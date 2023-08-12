@@ -3,6 +3,7 @@ package common
 import (
 	"project_b/common/base"
 	"project_b/common/ds"
+	"project_b/common/effect"
 	"project_b/common/log"
 	"project_b/common/math"
 	"project_b/common/object"
@@ -36,15 +37,15 @@ type SceneLogic struct {
 	shellList                            *ds.MapListUnion[uint32, *object.Shell]        // 炮彈列表，不區分坦克的炮彈
 	surroundObjList                      *ds.MapListUnion[uint32, *object.SurroundObj]  // 環繞物體列表
 	objFactory                           *object.ObjectFactory                          // 對象池
-	effectList                           *ds.MapListUnion[uint32, *object.Effect]       // 效果列表
-	effectPool                           *object.EffectPool                             // 效果池
+	effectList                           *ds.MapListUnion[uint32, *effect.Effect]       // 效果列表
+	effectPool                           *effect.EffectPool                             // 效果池
 	objAddedEvent, objRemovedEvent       base.Event                                     // obj添加和刪除事件
 	effectAddedEvent, effectRemovedEvent base.Event                                     // 效果添加刪除事件
 	staticObjRecycleList                 []*object.StaticObject                         // 靜態對象回收列表
 	tankRecycleList                      []*object.Tank                                 // 坦克對象回收列表
 	shellRecycleList                     []*object.Shell                                // 炮彈對象回收列表
 	surroundObjRecycleList               []*object.SurroundObj                          // 環繞物體對象回收列表
-	effectRecycleList                    []*object.Effect                               // 效果回收列表
+	effectRecycleList                    []*effect.Effect                               // 效果回收列表
 	effectSearchedList                   []uint32                                       // 效果搜索結果列表
 }
 
@@ -56,9 +57,9 @@ func NewSceneLogic(eventMgr base.IEventManager) *SceneLogic {
 		shellList:       ds.NewMapListUnion[uint32, *object.Shell](),
 		surroundObjList: ds.NewMapListUnion[uint32, *object.SurroundObj](),
 		objFactory:      object.NewObjectFactory(true),
-		effectList:      ds.NewMapListUnion[uint32, *object.Effect](),
-		effectPool:      object.NewEffectPool(),
-		gmap:            NewGridMap(2),
+		effectList:      ds.NewMapListUnion[uint32, *effect.Effect](),
+		effectPool:      effect.NewEffectPool(),
+		gmap:            NewGridMap(1),
 	}
 }
 
@@ -82,7 +83,7 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 			}
 			tileObj := s.objFactory.NewStaticObject(common_data.StaticObjectConfigData[st])
 			// 二維數組Y軸是自上而下的，而世界坐標Y軸是自下而上的，所以設置Y坐標要倒過來
-			tileObj.SetPos(m.TileWidth*int32(col), m.TileHeight*int32(len(m.Layers)-1-line))
+			tileObj.SetPos(m.TileWidth*int32(col)+m.TileWidth/2, m.TileHeight*int32(len(m.Layers)-1-line)+m.TileHeight/2)
 			s.objAddedEvent.Call(tileObj)
 			// 加入網格分區地圖
 			s.gmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
@@ -142,6 +143,18 @@ func (s *SceneLogic) UnloadMap() {
 	s.staticObjRecycleList = s.staticObjRecycleList[:0]
 	s.effectRecycleList = s.effectRecycleList[:0]
 	s.effectSearchedList = s.effectSearchedList[:0]
+}
+
+func (s *SceneLogic) GetGridMap() *GridMap {
+	return s.gmap
+}
+
+func (s *SceneLogic) GetMapLeftBottom() (int32, int32) {
+	return s.mapConfig.X, s.mapConfig.Y
+}
+
+func (s *SceneLogic) GetMapWidthHeight() (int32, int32) {
+	return s.mapWidth, s.mapHeight
 }
 
 func (s *SceneLogic) Center() (int32, int32) {
@@ -257,7 +270,7 @@ func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
 	return s.effectSearchedList
 }
 
-func (s *SceneLogic) GetEffect(instId uint32) object.IEffect {
+func (s *SceneLogic) GetEffect(instId uint32) effect.IEffect {
 	effect, o := s.effectList.Get(instId)
 	if !o {
 		return nil
@@ -278,6 +291,8 @@ func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
 	// 注冊檢測移動事件處理
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	tank.SetPos(x, y)
+	// 設置碰撞處理
+	tank.SetCollisionHandle(s.onTankCollision)
 	// 加入到玩家坦克列表
 	s.tankList.Add(tank.InstId(), tank)
 	// 加入網格分區地圖
@@ -293,13 +308,15 @@ func (s *SceneLogic) AddTank(tank *object.Tank) {
 	s.gmap.AddObj(tank)
 }
 
-func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32 /*dir object.Direction, */, currSpeed int32) *object.Tank {
+func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, currSpeed int32) *object.Tank {
 	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
 	tank.SetPos(x, y)
 	tank.SetLevel(level)
 	tank.SetCurrentSpeed(currSpeed)
 	// 注冊檢測移動事件處理
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
+	// 設置碰撞處理
+	tank.SetCollisionHandle(s.onTankCollision)
 	// 加入玩家坦克列表
 	s.tankList.Add(tank.InstId(), tank)
 	// 加入網格分區地圖
@@ -346,11 +363,7 @@ func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
 	if shell != nil {
 		s.shellList.Add(shell.InstId(), shell)
 		shell.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
-		collider := shell.GetComp("Collider")
-		if collider != nil {
-			c := collider.(*object.ColliderComp)
-			c.SetCollisionHandle(s.onShellCollision)
-		}
+		shell.SetCollisionHandle(s.onShellCollision)
 		if shellConfig.TrackTarget {
 			shell.SetSearchTargetFunc(s.searchShellTarget)
 			shell.SetFetchTargetFunc(s.GetObj)
@@ -406,6 +419,22 @@ func (s *SceneLogic) TankRestore(instId uint32) int32 {
 	}
 	tank.Restore()
 	return tank.Id()
+}
+
+func (s *SceneLogic) TankShield(instId uint32, shieldId int32) {
+	tank, o := s.tankList.Get(instId)
+	if !o {
+		return
+	}
+	if tank.HasShield() {
+		tank.CancelShield()
+	} else {
+		tank.AddShield(common_data.TankShieldConfigData[shieldId])
+	}
+}
+
+func (s *SceneLogic) TankUnlimitedShield(instId uint32) {
+	s.TankShield(instId, 1)
 }
 
 func (s *SceneLogic) Update(tick time.Duration) {
@@ -499,13 +528,41 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	}
 }
 
+func (s *SceneLogic) Pause() {
+	for i := int32(0); i < s.tankList.Count(); i++ {
+		_, tank := s.tankList.GetByIndex(i)
+		tank.Pause()
+	}
+	for i := int32(0); i < s.shellList.Count(); i++ {
+		_, shell := s.shellList.GetByIndex(i)
+		shell.Pause()
+	}
+	for i := int32(0); i < s.surroundObjList.Count(); i++ {
+		_, sobj := s.surroundObjList.GetByIndex(i)
+		sobj.Pause()
+	}
+}
+
+func (s *SceneLogic) Resume() {
+	for i := int32(0); i < s.tankList.Count(); i++ {
+		_, tank := s.tankList.GetByIndex(i)
+		tank.Resume()
+	}
+	for i := int32(0); i < s.shellList.Count(); i++ {
+		_, shell := s.shellList.GetByIndex(i)
+		shell.Resume()
+	}
+	for i := int32(0); i < s.surroundObjList.Count(); i++ {
+		_, sobj := s.surroundObjList.GetByIndex(i)
+		sobj.Resume()
+	}
+}
+
 func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	instId := args[0].(uint32)
 	dx := args[1].(int32)
 	dy := args[2].(int32)
-	isMove := args[3].(*bool)
-	isCollision := args[4].(*bool)
-	resObj := args[5].(*object.IObject)
+	ci := args[3].(*object.CollisionInfo)
 
 	obj := s.objFactory.GetObj(instId)
 	if obj.Type() != object.ObjTypeMovable {
@@ -514,57 +571,67 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	}
 
 	var (
-		x, y int32
 		mobj = obj.(object.IMovableObject)
 	)
-	if !s.checkObjMoveRange(mobj /*dir,*/, dx, dy, &x, &y) {
-		mobj.SetPos(x, y)
-		mobj.Stop()
-		*isMove = false
-		*isCollision = false
+	if !s.checkObjMoveRange(mobj, dx, dy, ci) {
 		s.onMovableObjReachMapBorder(mobj)
-	} else if s.gmap.CheckMovableObjCollision(mobj /*dir,*/, dx, dy, resObj) {
-		mobj.Stop()
-		*isCollision = true
-		*isMove = false
 	} else {
-		*isMove = true
-		*isCollision = false
+		s.gmap.CheckMovingObjCollision(mobj, dx, dy, ci)
 	}
 }
 
-func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject /*dir object.Direction, */, dx, dy int32, rx, ry *int32) bool {
+func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dx, dy int32, ci *object.CollisionInfo) bool {
 	x, y := obj.Pos()
-	var move bool = true
+	colliderComp := obj.GetColliderComp()
 	if dx != 0 {
-		if x+dx <= s.mapConfig.X {
-			move = false
-			x = s.mapConfig.X
-		}
-		if x+dx >= s.mapConfig.X+s.mapWidth-obj.Width() {
-			move = false
-			x = s.mapConfig.X + s.mapWidth - obj.Width()
+		if colliderComp != nil {
+			aabb := colliderComp.GetAABB()
+			if aabb.Left+dx <= s.mapConfig.X {
+				ci.Result = object.CollisionAndBlock
+				x = s.mapConfig.X + (aabb.Right-aabb.Left)/2
+			}
+			if aabb.Right+dx >= s.mapConfig.X+s.mapWidth {
+				ci.Result = object.CollisionAndBlock
+				x = s.mapConfig.X + s.mapWidth - (aabb.Right-aabb.Left)/2
+			}
+		} else {
+			if x-obj.Width()/2 <= s.mapConfig.X {
+				ci.Result = object.CollisionAndBlock
+				x = s.mapConfig.X + obj.Width()/2
+			}
+			if x+obj.Width()/2 >= s.mapConfig.X+s.mapWidth {
+				ci.Result = object.CollisionAndBlock
+				x = s.mapConfig.X + s.mapWidth - obj.Width()/2
+			}
 		}
 	}
 	if dy != 0 {
-		if y+dy >= s.mapConfig.Y+s.mapHeight-obj.Length() {
-			move = false
-			y = s.mapConfig.Y + s.mapHeight - obj.Length()
-		}
-		if y+dy <= s.mapConfig.Y {
-			move = false
-			y = s.mapConfig.Y
+		if colliderComp != nil {
+			aabb := colliderComp.GetAABB()
+			if aabb.Top+dy >= s.mapConfig.Y+s.mapHeight {
+				ci.Result = object.CollisionAndBlock
+				y = s.mapConfig.Y + s.mapHeight - (aabb.Top-aabb.Bottom)/2
+			}
+			if aabb.Bottom+dy <= s.mapConfig.Y {
+				ci.Result = object.CollisionAndBlock
+				y = s.mapConfig.Y + (aabb.Top-aabb.Bottom)/2
+			}
+		} else {
+			if y-obj.Length()/2 <= s.mapConfig.Y {
+				ci.Result = object.CollisionAndBlock
+				y = s.mapConfig.Y + obj.Length()/2
+			}
+			if y+obj.Length()/2 >= s.mapConfig.Y+s.mapHeight {
+				ci.Result = object.CollisionAndBlock
+				y = s.mapConfig.Y + s.mapHeight - obj.Length()/2
+			}
 		}
 	}
-	if !move {
-		if rx != nil {
-			*rx = x
-		}
-		if ry != nil {
-			*ry = y
-		}
+	if ci.Result == object.CollisionAndBlock {
+		ci.MovingObjPos.X = x
+		ci.MovingObjPos.Y = y
 	}
-	return move
+	return ci.Result != object.CollisionAndBlock
 }
 
 func (s *SceneLogic) onMovableObjReachMapBorder(mobj object.IMovableObject) {
@@ -573,36 +640,70 @@ func (s *SceneLogic) onMovableObjReachMapBorder(mobj object.IMovableObject) {
 	}
 }
 
+func (s *SceneLogic) onTankCollision(args ...any) {
+	tank, o := args[0].(*object.Tank)
+	if !o {
+		return
+	}
+	ci := args[1].(*object.CollisionInfo)
+	for i := 0; i < len(ci.ObjList); i++ {
+		obj := ci.ObjList[i]
+		objType := obj.Type()
+		if objType == object.ObjTypeMovable {
+			if obj.Subtype() == object.ObjSubtypeShell {
+				s.shellEffect(obj.(*object.Shell), tank)
+			}
+		} else if objType == object.ObjTypeItem {
+			objSubtype := obj.Subtype()
+			switch objSubtype {
+			case object.ObjSubtypeRewardLife:
+			case object.ObjSubtypeReinforcement:
+			case object.ObjSubtypeFrozen:
+			case object.ObjSubtypeSelfUpgrade:
+			case object.ObjSubtypeShield:
+				tank.AddShield(common_data.TankShieldConfigData[2])
+			case object.ObjSubtypeBomb:
+			}
+		}
+	}
+}
+
 func (s *SceneLogic) onShellCollision(args ...any) {
-	// todo 處理炮彈碰撞
 	shell := args[0].(*object.Shell)
-	obj := args[1].(object.IObject)
+	ci := args[1].(*object.CollisionInfo)
+	for i := 0; i < len(ci.ObjList); i++ {
+		obj := ci.ObjList[i]
+		s.shellEffect(shell, obj)
+	}
+}
+
+func (s *SceneLogic) shellEffect(shell *object.Shell, obj object.IObject) {
 	var (
+		objType      = obj.Type()
 		effectParams = [2]struct {
 			effectFunc func(...any)
 			effectId   int32
 			cx, cy     int32
 		}{}
 	)
-	if obj.Type() == object.ObjTypeStatic {
-		shell.ToRecycle()
-		effectParams[0].effectId = 1
-		effectParams[0].effectFunc = bulletExplodeEffect
-		effectParams[0].cx, effectParams[0].cy = shell.Pos()
-	} else if obj.Type() == object.ObjTypeMovable {
-		shell.ToRecycle()
-		obj.ToRecycle()
+	shell.ToRecycle()
+	effectParams[0].effectId = 1
+	effectParams[0].effectFunc = bulletExplodeEffect
+	effectParams[0].cx, effectParams[0].cy = shell.Pos()
+	if objType == object.ObjTypeMovable {
 		if obj.Subtype() == object.ObjSubtypeShell {
-			effectParams[0].effectId = 1
-			effectParams[0].effectFunc = bulletExplodeEffect
-			effectParams[0].cx, effectParams[0].cy = shell.Pos()
+			obj.ToRecycle()
 			effectParams[1].effectId = 1
 			effectParams[1].effectFunc = bulletExplodeEffect
 			effectParams[1].cx, effectParams[1].cy = obj.Pos()
 		} else if obj.Subtype() == object.ObjSubtypeTank {
-			effectParams[0].effectFunc = bigBulletExplodeEffect
-			effectParams[0].effectId = 2
-			effectParams[0].cx, effectParams[0].cy = obj.Pos()
+			tank := obj.(*object.Tank)
+			if !tank.HasShield() {
+				obj.ToRecycle()
+				effectParams[1].effectId = 2
+				effectParams[1].effectFunc = bigBulletExplodeEffect
+				effectParams[1].cx, effectParams[1].cy = obj.Pos()
+			}
 		}
 	}
 	// 生成爆炸效果
@@ -610,7 +711,7 @@ func (s *SceneLogic) onShellCollision(args ...any) {
 		if effectParams[i].effectId <= 0 {
 			continue
 		}
-		effect := s.effectPool.Get(common_data.EffectConfigData[effectParams[i].effectId], effectParams[i].effectFunc /*s.pmap*/, s.gmap, shell)
+		effect := s.effectPool.Get(common_data.EffectConfigData[effectParams[i].effectId], effectParams[i].effectFunc, s.gmap, shell)
 		effect.SetPos(effectParams[i].cx, effectParams[i].cy)
 		s.effectList.Add(effect.InstId(), effect)
 	}

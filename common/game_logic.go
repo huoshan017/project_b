@@ -22,10 +22,18 @@ const (
 	defaultLogicFrameMax = math.MaxInt32
 )
 
+type logicStateType int32
+
+const (
+	logicStateNotStart logicStateType = iota
+	logicStateRunning
+	logicStatePause
+)
+
 // 基於SceneLogic增加了玩家(Player)概念的游戲邏輯
 type GameLogic struct {
 	eventMgr    base.IEventManager               // 事件管理
-	state       int32                            // 0 未开始  1. 运行中
+	state       logicStateType                   // 0 未开始  1. 运行中
 	mapIndex    int32                            // 地图索引
 	frame       int32                            // 帧序号，每Update一次加1
 	maxFrame    int32                            // 最大帧序号
@@ -101,6 +109,12 @@ func (g *GameLogic) GetCurrFrame() int32 {
 
 // 在逻辑线程中更新
 func (g *GameLogic) Update(tick time.Duration) {
+	if g.state == logicStateNotStart {
+		g.state = logicStateRunning
+	}
+	if g.state != logicStateRunning {
+		return
+	}
 	g.botMgr.Update(tick)
 	g.scene.Update(tick)
 	g.frame += 1
@@ -113,19 +127,18 @@ func (g *GameLogic) Update(tick time.Duration) {
 	}
 }
 
-// 开始逻辑
-func (g *GameLogic) Start() {
-	g.state = 1
+// 暫停
+func (g *GameLogic) Pause() {
+	g.state = logicStatePause
+	g.scene.Pause()
+	g.botMgr.Pause()
 }
 
-// 结束逻辑
-func (g *GameLogic) End() {
-	g.state = 0
-}
-
-// 是否已开始
-func (g *GameLogic) IsStart() bool {
-	return g.state == 1
+// 繼續
+func (g *GameLogic) Resume() {
+	g.state = logicStateRunning
+	g.scene.Resume()
+	g.botMgr.Resume()
 }
 
 // 注册事件
@@ -234,6 +247,9 @@ func (g *GameLogic) PlayerLeave(pid uint64) {
 
 // 玩家坦克移动
 func (g *GameLogic) PlayerTankMove(uid uint64 /*moveDir object.Direction*/, orientation int32) {
+	if g.state == logicStatePause {
+		return
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -243,6 +259,9 @@ func (g *GameLogic) PlayerTankMove(uid uint64 /*moveDir object.Direction*/, orie
 
 // 玩家坦克停止
 func (g *GameLogic) PlayerTankStopMove(uid uint64) {
+	if g.state == logicStatePause {
+		return
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -252,6 +271,9 @@ func (g *GameLogic) PlayerTankStopMove(uid uint64) {
 
 // 玩家坦克改变
 func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.TankStaticInfo) bool {
+	if g.state == logicStatePause {
+		return false
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return false
@@ -261,6 +283,9 @@ func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.TankStaticIn
 
 // 玩家坦克恢复
 func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
+	if g.state == logicStatePause {
+		return 0
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return 0
@@ -270,6 +295,9 @@ func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
 
 // 玩家坦克開炮
 func (g *GameLogic) PlayerTankFire(uid uint64, shellId int32) {
+	if g.state == logicStatePause {
+		return
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -279,6 +307,9 @@ func (g *GameLogic) PlayerTankFire(uid uint64, shellId int32) {
 
 // 坦克釋放環繞物體
 func (g *GameLogic) PlayerTankReleaseSurroundObj(uid uint64) {
+	if g.state == logicStatePause {
+		return
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -288,6 +319,9 @@ func (g *GameLogic) PlayerTankReleaseSurroundObj(uid uint64) {
 
 // 坦克旋轉
 func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
+	if g.state == logicStatePause {
+		return
+	}
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -297,7 +331,22 @@ func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
 
 // 坦克復活
 func (g *GameLogic) PlayerTankRevive(uid uint64, tankId int32, tankLevel int32, x, y int32, orientation int32, currSpeed int32) {
+	if g.state == logicStatePause {
+		return
+	}
 	g.PlayerEnterWithStaticInfo(uid, tankId, tankLevel, x, y, orientation, currSpeed)
+}
+
+// 坦克護盾
+func (g *GameLogic) PlayerTankShield(uid uint64) {
+	if g.state == logicStatePause {
+		return
+	}
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.scene.TankUnlimitedShield(tankId)
 }
 
 // 創建bot列表

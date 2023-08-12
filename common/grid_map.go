@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"project_b/common/ds"
 	"project_b/common/log"
 	"project_b/common/math"
@@ -44,7 +45,6 @@ func (gl *gridObjList) clear() {
 type GridMap struct {
 	config                  *game_map.Config
 	minGridTileSize         int16                                           // 最小网格中的瓦片数
-	gridXTiles, gridYTiles  int16                                           // x轴网格瓦片数，y轴网格瓦片数
 	gridLineNum, gridColNum int16                                           // 網格行數和列數
 	gridWidth, gridHeight   int32                                           // 網格寬度高度
 	sobjs                   *ds.MapListUnion[uint32, object.IStaticObject]  // 对象map
@@ -84,10 +84,6 @@ func (m *GridMap) Load(config *game_map.Config) {
 		gridTileHeight += 1
 	}
 
-	// 網格x軸和y軸方向包含的tile數量
-	m.gridXTiles = gridTileWidth
-	m.gridYTiles = gridTileHeight
-
 	// 創建網格
 	gridColNum, gridLineNum := (colNum+gridTileWidth-1)/gridTileWidth, (lineNum+gridTileHeight-1)/gridTileHeight
 	m.grids = make([]gridObjList, gridLineNum*gridColNum)
@@ -118,12 +114,14 @@ func (m *GridMap) Unload() {
 	m.mobj2GridIndex.Clear()
 	m.grids = nil
 	m.minGridTileSize = 0
-	m.gridXTiles = 0
-	m.gridYTiles = 0
 	m.gridLineNum = 0
 	m.gridColNum = 0
 	m.gridWidth = 0
 	m.gridHeight = 0
+}
+
+func (m *GridMap) GetGridWidthHeight() (int32, int32) {
+	return m.gridWidth, m.gridHeight
 }
 
 func (m *GridMap) AddTile(line, col int16, tile object.IObject) {
@@ -149,8 +147,7 @@ func (m *GridMap) AddObj(obj object.IObject) {
 	x, y := obj.Pos()
 	index := m.posGridIndex(x, y)
 	if !m.grids[index].addObj(instId) {
-		log.Warn("GridMap: obj %v already exists in grid %v", index)
-		return
+		panic(fmt.Sprintf("GridMap: obj %v already exists in grid %v", instId, index))
 	}
 	if obj.Type() == object.ObjTypeMovable {
 		m.mobjs.Add(instId, obj.(object.IMovableObject))
@@ -169,6 +166,16 @@ func (m *GridMap) RemoveObj(instId uint32) {
 	obj, o = m.mobjs.Get(instId)
 	if o {
 		m.mobjs.Remove(instId)
+		index, o := m.mobj2GridIndex.Get(instId)
+		if !o {
+			log.Error("GridMap: obj %v cant get grid index to remove", instId)
+			return
+		}
+		if !m.grids[index].removeObj(instId) {
+			panic(fmt.Sprintf("GridMap.RemoveObj: remove obj %v from grid %v failed", instId, index))
+		}
+		m.mobj2GridIndex.Remove(instId)
+		log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(index: %v)", instId, obj.Type(), obj.Subtype(), index)
 	} else {
 		obj, o = m.sobjs.Get(instId)
 		if !o {
@@ -176,15 +183,6 @@ func (m *GridMap) RemoveObj(instId uint32) {
 		}
 		m.sobjs.Remove(instId)
 	}
-
-	index, o := m.mobj2GridIndex.Get(instId)
-	if !o {
-		log.Warn("GridMap: obj %v cant get grid index to remove", instId)
-		return
-	}
-	m.grids[index].removeObj(instId)
-	m.mobj2GridIndex.Remove(instId)
-	log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(index: %v)", instId, obj.Type(), obj.Subtype(), index)
 }
 
 func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
@@ -206,8 +204,12 @@ func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
 		return
 	}
 	if index != lastIndex {
-		m.grids[lastIndex].removeObj(obj.InstId())
-		m.grids[index].addObj(obj.InstId())
+		if !m.grids[lastIndex].removeObj(obj.InstId()) {
+			panic(fmt.Sprintf("GridMap.UpdateMovable: remove obj %v from grid %v failed", obj.InstId(), lastIndex))
+		}
+		if !m.grids[index].addObj(obj.InstId()) {
+			panic(fmt.Sprintf("GridMap.UpdateMovable: add obj %v to grid %v failed", obj.InstId(), index))
+		}
 		m.mobj2GridIndex.Set(obj.InstId(), index)
 		if obj.Subtype() == object.ObjSubtypeTank {
 			log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(%v), add to grid(%v)", obj.InstId(), obj.Type(), obj.Subtype(), lastIndex, index)
@@ -308,10 +310,6 @@ func (m *GridMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
 	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeNone)
 }
 
-func (m *GridMap) gridLineCol2Index(line, col int16) int32 {
-	return int32(line)*int32(m.gridColNum) + int32(col)
-}
-
 func (m *GridMap) gridBoundsBy(left, bottom, right, top int32) (lx, by, rx, ty int16) {
 	lx = int16((left - m.config.X) / m.gridWidth)
 	rx = int16((right - m.config.X) / m.gridWidth)
@@ -332,10 +330,19 @@ func (m *GridMap) gridBoundsBy(left, bottom, right, top int32) (lx, by, rx, ty i
 	return
 }
 
+func (m GridMap) pos2LineColumn(x, y int32) (int16, int16) {
+	cx := (x - m.config.X) / m.gridWidth
+	ly := (y - m.config.Y) / m.gridHeight
+	return int16(ly), int16(cx)
+}
+
 func (m GridMap) posGridIndex(x, y int32) int32 {
-	lx := int16(x / m.gridWidth)
-	by := int16(y / m.gridHeight)
-	return m.gridLineCol2Index(by, lx)
+	l, c := m.pos2LineColumn(x, y)
+	return m.gridLineCol2Index(l, c)
+}
+
+func (m *GridMap) gridLineCol2Index(line, col int16) int32 {
+	return int32(line)*int32(m.gridColNum) + int32(col)
 }
 
 func (m GridMap) gridIndex2LineColumn(index int32) (int32, int32) {
@@ -343,38 +350,40 @@ func (m GridMap) gridIndex2LineColumn(index int32) (int32, int32) {
 }
 
 // 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
-func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dx, dy int32, collisionObj *object.IObject) bool {
+func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int32, collisionInfo *object.CollisionInfo) object.CollisionResult {
 	// 是否擁有碰撞組件
-	comp := obj.GetComp("Collider")
-	if comp == nil {
-		return false
+	if mobj.GetColliderComp() == nil {
+		return object.CollisionNone
 	}
 
 	// 九宮格
 	var nineSquared = [3][3]int32{{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}}
-	x, y := obj.Pos()
-	index := m.posGridIndex(x, y)
-	nineSquared[1][1] = index
+	x, y := mobj.Pos()
+	x += dx
+	y += dy
 
-	for j := int32(-1); j <= 1; j++ {
-		dy := y + j*m.gridHeight
-		// y坐標範圍[Y, Y+MapHeight]
-		if dy < m.config.Y || dy >= m.config.Y+m.config.TileHeight*int32(len(m.config.Layers)) {
+	var index int32
+	line, column := m.pos2LineColumn(x, y)
+	for l := int16(-1); l <= 1; l++ {
+		if line+l < 0 || line+l >= m.gridLineNum {
 			continue
 		}
-		for i := int32(-1); i <= 1; i++ {
-			dx := x + i*m.gridWidth
-			// x坐標範圍[X, X+MapWidth]
-			if dx < m.config.X || dx >= m.config.X+m.config.TileWidth*int32(len(m.config.Layers[0])) {
+		for c := int16(-1); c <= 1; c++ {
+			if column+c < 0 || column+c >= m.gridColNum {
 				continue
 			}
-			nineSquared[1+j][1+i] = index + j*int32(m.gridColNum) + i
+			nineSquared[l-(-1)][c-(-1)] = m.gridLineCol2Index(line+l, column+c)
 		}
 	}
 
+	if mobj.Type() == object.ObjTypeMovable && mobj.Subtype() == object.ObjSubtypeTank {
+		log.Debug("GridMap.CheckMovingObjCollision: movable object %v collision grids: %v", mobj.InstId(), nineSquared)
+	}
+
 	var (
-		obj2 object.IObject
-		o    bool
+		obj              object.IObject
+		collisionObjList []object.IObject
+		o                bool
 	)
 	for i := 0; i < len(nineSquared); i++ {
 		for j := 0; j < len(nineSquared[i]); j++ {
@@ -384,25 +393,35 @@ func (m *GridMap) CheckMovableObjCollision(obj object.IMovableObject, dx, dy int
 			}
 			ids := m.grids[index]
 			for n := 0; n < len(ids); n++ {
-				obj2, o = m.mobjs.Get(ids[n])
+				obj, o = m.mobjs.Get(ids[n])
 				if !o {
-					obj2, o = m.sobjs.Get(ids[n])
+					obj, o = m.sobjs.Get(ids[n])
 					if !o {
 						gl, gc := m.gridIndex2LineColumn(index)
 						log.Warn("Collision: grid(x:%v y:%v, index:%v) exist object %v, but not found in obj map", gc, gl, index, ids[n])
 						continue
 					}
 				}
-				if obj2.InstId() != obj.InstId() {
-					if checkMovableObjCollisionObj(obj, comp, dx, dy, obj2) {
-						if collisionObj != nil {
-							*collisionObj = obj2
-						}
-						return true
+				if obj.InstId() != mobj.InstId() {
+					cr := object.CheckMovingObjCollisionObj(mobj, dx, dy, obj)
+					if cr == object.CollisionAndBlock {
+						collisionObjList = append(collisionObjList, obj)
+					} else if cr == object.CollisionOnly {
+						collisionInfo.ObjList = append(collisionInfo.ObjList, obj)
 					}
 				}
 			}
 		}
 	}
-	return false
+
+	if len(collisionObjList) == 0 {
+		if len(collisionInfo.ObjList) == 0 {
+			return object.CollisionNone
+		}
+		collisionInfo.MovingObj = mobj
+		collisionInfo.Result = object.CollisionOnly
+		return object.CollisionOnly
+	}
+
+	return object.NarrowPhaseCheckMovingObjCollision2ObjList(mobj, dx, dy, collisionObjList, collisionInfo)
 }

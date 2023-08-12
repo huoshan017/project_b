@@ -66,3 +66,7 @@ func (l *GameLogic) MyPlayerTankRotate(angle int32) {
 func (l *GameLogic) MyPlayerTankRevive() {
 	l.PlayerTankRevive(l.myId, l.tankId, l.tankLevel, l.tankPosX, l.tankPosY, l.tankOrientation, l.tankCurrSpeed)
 }
+
+func (l *GameLogic) MyPlayerTankShield() {
+	l.PlayerTankShield(l.myId)
+}

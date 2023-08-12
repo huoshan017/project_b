@@ -30,6 +30,54 @@ func (v *Vehicle) Uninit() {
 	v.MovableObject.Uninit()
 }
 
+// 護盾
+type Shield struct {
+	tank        *Tank
+	staticInfo  *TankShieldStaticInfo
+	startTime   time.CustomTime
+	pause       bool
+	isEffective bool
+}
+
+// 創建護盾
+func NewShield(tank *Tank, staticInfo *TankShieldStaticInfo) *Shield {
+	shield := &Shield{
+		tank:       tank,
+		staticInfo: staticInfo,
+	}
+	if staticInfo.Duration > 0 {
+		shield.startTime = time.Now()
+	}
+	shield.isEffective = true
+	return shield
+}
+
+// 更新
+func (s *Shield) Update(tick time.Duration) {
+	if s.pause {
+		return
+	}
+	if s.staticInfo.Duration > 0 && time.Since(s.startTime) > s.staticInfo.Duration {
+		s.isEffective = false
+		return
+	}
+}
+
+// 暫停
+func (s *Shield) Pause() {
+	s.pause = true
+}
+
+// 恢復
+func (s *Shield) Resume() {
+	s.pause = false
+}
+
+// 是否有效果
+func (s *Shield) IsEffective() bool {
+	return s.isEffective
+}
+
 // 坦克
 type Tank struct {
 	Vehicle
@@ -37,6 +85,9 @@ type Tank struct {
 	changeEvent                base.Event
 	fireTime, fireIntervalTime time.CustomTime
 	shellFireCount             int8
+	shield                     *Shield
+	addShieldEvent             base.Event
+	cancelShieldEvent          base.Event
 }
 
 // 创建坦克
@@ -60,6 +111,7 @@ func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 
 // 反初始化
 func (t *Tank) Uninit() {
+	t.shield = nil
 	t.Vehicle.Uninit()
 }
 
@@ -82,6 +134,9 @@ func (t *Tank) Change(info *TankStaticInfo) {
 
 // 还原
 func (t *Tank) Restore() {
+	if t.pause {
+		return
+	}
 	t.RestoreStaticInfo()
 	t.changeEvent.Call(t.staticInfo, t.level)
 }
@@ -94,6 +149,26 @@ func (t *Tank) RegisterChangeEventHandle(handle func(args ...any)) {
 // 注销变化事件
 func (t *Tank) UnregisterChangeEventHandle(handle func(args ...any)) {
 	t.changeEvent.Unregister(handle)
+}
+
+// 注冊加護盾事件
+func (t *Tank) RegisterAddShieldEventHandle(handle func(args ...any)) {
+	t.addShieldEvent.Register(handle)
+}
+
+// 注銷加護盾事件
+func (t *Tank) UnregisterAddShieldEventHandle(handle func(args ...any)) {
+	t.addShieldEvent.Unregister(handle)
+}
+
+// 注冊取消護盾事件
+func (t *Tank) RegisterCancelShieldEventHandle(handle func(args ...any)) {
+	t.cancelShieldEvent.Register(handle)
+}
+
+// 注銷取消護盾事件
+func (t *Tank) UnregisterCancelShieldEventHandle(handle func(args ...any)) {
+	t.cancelShieldEvent.Unregister(handle)
 }
 
 // 檢測是否可以開炮
@@ -129,6 +204,9 @@ func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell, shellInf
 
 // 移動
 func (t *Tank) Move(dir base.Angle) {
+	if t.pause {
+		return
+	}
 	t.moveDir = dir
 	if t.moveDir != t.Rotation() || t.state == rotating {
 		t.state = rotating
@@ -140,6 +218,9 @@ func (t *Tank) Move(dir base.Angle) {
 
 // 停止
 func (t *Tank) Stop() {
+	if t.pause {
+		return
+	}
 	if t.state == rotating {
 		t.state = stopped
 		x, y := t.Pos()
@@ -152,10 +233,33 @@ func (t *Tank) Stop() {
 
 // 炮彈更新
 func (t *Tank) Update(tick time.Duration) {
+	if t.pause {
+		return
+	}
+
 	if t.checkRotateState(tick) {
 		return
 	}
 	t.MovableObject.Update(tick)
+}
+
+// 加護盾
+func (t *Tank) AddShield(staticInfo *TankShieldStaticInfo) {
+	t.shield = NewShield(t, staticInfo)
+	t.addShieldEvent.Call()
+}
+
+// 取消護盾
+func (t *Tank) CancelShield() {
+	if t.shield != nil {
+		t.shield = nil // todo 暫時先用垃圾回收處理，有需要的時候再考慮對象池或者復用
+		t.cancelShieldEvent.Call()
+	}
+}
+
+// 是否有護盾
+func (t *Tank) HasShield() bool {
+	return t.shield != nil
 }
 
 // 炮彈發射口

@@ -1,13 +1,44 @@
-package object
+package effect
 
-import "project_b/common/time"
+import (
+	"project_b/common/object"
+	"project_b/common/time"
+)
+
+// 效果作用類型
+type EffectType int
+
+const (
+	EffectTypeTime     = iota // 時間
+	EffectTypeRequency = 1    // 次數
+)
+
+// 效果接口
+type IEffect interface {
+	InstId() uint32
+	StaticInfo() *EffectStaticInfo
+	SetPos(int32, int32)
+	Pos() (int32, int32)
+	Width() int32
+	Height() int32
+	Update()
+	IsOver() bool
+}
+
+// 效果靜態信息
+type EffectStaticInfo struct {
+	Id            int32      // 配置id
+	Et            EffectType // 效果類型
+	Param         int32      // 參數
+	Width, Height int32      // 寬高
+}
 
 type Effect struct {
 	instId     uint32
 	staticInfo *EffectStaticInfo
 	effectFunc func(...any)
 	args       []any
-	center     Pos
+	center     object.Pos
 	count      int32
 	startTime  time.CustomTime
 	isOver     bool

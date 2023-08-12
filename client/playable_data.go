@@ -1,6 +1,7 @@
 package main
 
 import (
+	"project_b/client/images"
 	"project_b/client_base"
 	"project_b/common/object"
 )
@@ -20,6 +21,8 @@ var (
 	bulletFrameConfig             *frameConfig                                           // 子弹帧配置
 	effectAnimOriginalConfig      map[int32]*client_base.SpriteAnimConfig                // 爆炸動畫初始配置
 	surroundObjAnimOriginalConfig map[int32]*client_base.SpriteAnimConfig                // 小球動畫初始配置
+	itemObjAnimOriginalConfig     map[object.ItemObjType]*client_base.SpriteAnimConfig   // 物品動畫初始配置
+	shieldAnimOriginalConfig      *client_base.SpriteAnimConfig                          // 護盾動畫初始配置
 )
 
 // 初始化动画初始配置
@@ -27,27 +30,27 @@ func initAnimOriginalConfigs() {
 	mapTileAnimOriginalConfig = map[object.StaticObjType]*client_base.SpriteAnimConfig{
 		// 砖块
 		object.StaticObjBrick: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
+			Image: images.GetTileImg(), FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 		// 铁
 		object.StaticObjIron: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 1, Y: 0}},
+			Image: images.GetTileImg(), FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 1, Y: 0}},
 		},
 		// 樹
 		object.StaticObjTree: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 2, Y: 0}},
+			Image: images.GetTileImg(), FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 2, Y: 0}},
 		},
 		// 水
 		object.StaticObjWater: {
-			Image: tile_img, PlayInterval: 200, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 3, Y: 0}, {X: 4, Y: 0}},
+			Image: images.GetTileImg(), PlayInterval: 200, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 3, Y: 0}, {X: 4, Y: 0}},
 		},
 		// 基地
 		object.StaticObjHome: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 5, Y: 0}},
+			Image: images.GetTileImg(), FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 5, Y: 0}},
 		},
 		// 摧毁的基地
 		object.StaticObjRuins: {
-			Image: tile_img, FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 6, Y: 0}},
+			Image: images.GetTileImg(), FrameWidth: 32, FrameHeight: 32, FramePosList: []client_base.SpriteIndex{{X: 6, Y: 0}},
 		},
 	}
 	mapTileFrameConfig = map[object.StaticObjType]*frameConfig{
@@ -85,7 +88,7 @@ func initAnimOriginalConfigs() {
 	tankAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		// 玩家坦克动画配置
 		1: {
-			Image: player1_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
+			Image: images.GetPlayer1Img(), PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
 			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}, {X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}, {X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
@@ -95,7 +98,7 @@ func initAnimOriginalConfigs() {
 		},
 		// 同伴坦克动画配置
 		2: {
-			Image: player2_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
+			Image: images.GetPlayer2Img(), PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
 			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}, {X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}, {X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
@@ -105,7 +108,7 @@ func initAnimOriginalConfigs() {
 		},
 		// 轻型坦克动画配置
 		1000: {
-			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
+			Image: images.GetEnemyImg(), PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
 			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0},
 				{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1},
@@ -115,7 +118,7 @@ func initAnimOriginalConfigs() {
 		},
 		// 快速坦克动画配置
 		1001: {
-			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
+			Image: images.GetEnemyImg(), PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
 			FramePosList: []client_base.SpriteIndex{
 				{X: 4, Y: 0}, {X: 5, Y: 0}, {X: 6, Y: 0}, {X: 7, Y: 0},
 				{X: 4, Y: 1}, {X: 5, Y: 1}, {X: 6, Y: 1}, {X: 7, Y: 1},
@@ -125,7 +128,7 @@ func initAnimOriginalConfigs() {
 		},
 		// 重型坦克动画配置
 		1002: {
-			Image: enemy_img, PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
+			Image: images.GetEnemyImg(), PlayInterval: 200, FrameWidth: 28, FrameHeight: 28,
 			FramePosList: []client_base.SpriteIndex{
 				{X: 0, Y: 4}, {X: 1, Y: 4}, {X: 2, Y: 4}, {X: 3, Y: 4}, {X: 4, Y: 4}, {X: 5, Y: 4}, {X: 6, Y: 4}, {X: 7, Y: 4},
 				{X: 0, Y: 5}, {X: 1, Y: 5}, {X: 2, Y: 5}, {X: 3, Y: 5}, {X: 4, Y: 5}, {X: 5, Y: 5}, {X: 6, Y: 5}, {X: 7, Y: 5},
@@ -212,13 +215,14 @@ func initAnimOriginalConfigs() {
 	// 子彈動畫原始配置
 	bulletAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		1: {
-			Image: bullet_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}},
+			Image: images.GetBulletImg(), FrameWidth: 8, FrameHeight: 8, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 3, Y: 0}},
 		},
 		2: {
-			Image: shell_img, FrameWidth: 8, FrameHeight: 16, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
+			Image: images.GetShellImg(), FrameWidth: 8, FrameHeight: 16, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 	}
 
+	// 炮彈幀配置
 	bulletFrameConfig = &frameConfig{
 		frameNum: 1,
 		dirMap: map[object.Direction]int32{
@@ -230,19 +234,49 @@ func initAnimOriginalConfigs() {
 		frameLevelList: [][]int32{{0, 1, 2, 3}},
 	}
 
+	// 效果動畫配置
 	effectAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		1: {
-			Image: explode1_img, FrameWidth: 28, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
+			Image: images.GetExplode1Img(), FrameWidth: 28, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 		2: {
-			Image: explode2_img, FrameWidth: 64, FrameHeight: 64, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
+			Image: images.GetExplode2Img(), FrameWidth: 64, FrameHeight: 64, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
 	}
 
+	// 環繞物動畫配置
 	surroundObjAnimOriginalConfig = map[int32]*client_base.SpriteAnimConfig{
 		1: {
-			Image: smallball_img, FrameWidth: 8, FrameHeight: 8, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
+			Image: images.GetSmallBallImg(), FrameWidth: 8, FrameHeight: 8, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
 		},
+	}
+
+	// 物品動畫配置
+	itemObjAnimOriginalConfig = map[object.ItemObjType]*client_base.SpriteAnimConfig{
+		object.ItemObjRewardLife: {
+			Image: images.GetBonusImg(), FrameWidth: 32, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}},
+		},
+		object.ItemObjFrozen: {
+			Image: images.GetBonusImg(), FrameWidth: 32, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 30, Y: 0}},
+		},
+		object.ItemObjReinforcement: {
+			Image: images.GetBonusImg(), FrameWidth: 32, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 60, Y: 0}},
+		},
+		object.ItemObjBomb: {
+			Image: images.GetBonusImg(), FrameWidth: 32, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 90, Y: 0}},
+		},
+		object.ItemObjSelfUpgrade: {
+			Image: images.GetBonusImg(), FrameWidth: 32, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 120, Y: 0}},
+		},
+		object.ItemObjShield: {
+			Image: images.GetBonusImg(), FrameWidth: 32, FrameHeight: 28, FramePosList: []client_base.SpriteIndex{{X: 150, Y: 0}},
+		},
+	}
+
+	// 護盾動畫配置
+	shieldAnimOriginalConfig = &client_base.SpriteAnimConfig{
+		Image: images.GetShieldImg(), FrameWidth: 32, FrameHeight: 32, PlayInterval: 100,
+		FramePosList: []client_base.SpriteIndex{{X: 0, Y: 0}, {X: 0, Y: 1}},
 	}
 }
 
@@ -260,6 +294,13 @@ type MovableObjectAnimConfig struct {
 	Id         int32
 	Level      int32
 	AnimConfig *client_base.SpriteAnimConfig // 使用物体方向枚举做索引
+}
+
+// 物品動畫配置
+type ItemObjectAnimConfig struct {
+	Type       object.ObjectType
+	Subtype    object.ObjSubtype
+	AnimConfig *client_base.SpriteAnimConfig
 }
 
 var (
@@ -299,174 +340,71 @@ func initAnimConfigs() {
 	moveableObjectAnimConfigList = []*MovableObjectAnimConfig{
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1, Level: 1,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			// 空左右上下
-			//nil,
-			//createTankAnimConfig(1, 1, object.DirLeft),
-			createTankAnimConfig(1, 1, object.DirRight),
-			//createTankAnimConfig(1, 1, object.DirUp),
-			//createTankAnimConfig(1, 1, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1, 1, object.DirRight),
 		}, // 玩家坦克一级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1, Level: 2,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1, 2, object.DirLeft),
-			createTankAnimConfig(1, 2, object.DirRight),
-			//createTankAnimConfig(1, 2, object.DirUp),
-			//createTankAnimConfig(1, 2, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1, 2, object.DirRight),
 		}, // 玩家坦克二级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1, Level: 3,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1, 3, object.DirLeft),
-			createTankAnimConfig(1, 3, object.DirRight),
-			//createTankAnimConfig(1, 3, object.DirUp),
-			//createTankAnimConfig(1, 3, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1, 3, object.DirRight),
 		}, // 玩家坦克三级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1, Level: 4,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1, 4, object.DirLeft),
-			createTankAnimConfig(1, 4, object.DirRight),
-			//createTankAnimConfig(1, 4, object.DirUp),
-			//createTankAnimConfig(1, 4, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1, 4, object.DirRight),
 		}, // 玩家坦克四级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 2, Level: 1,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(2, 1, object.DirLeft),
-			createTankAnimConfig(2, 1, object.DirRight),
-			//createTankAnimConfig(2, 1, object.DirUp),
-			//createTankAnimConfig(2, 1, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(2, 1, object.DirRight),
 		}, // 同伴坦克一级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 2, Level: 2,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(2, 2, object.DirLeft),
-			createTankAnimConfig(2, 2, object.DirRight),
-			//createTankAnimConfig(2, 2, object.DirUp),
-			//createTankAnimConfig(2, 2, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(2, 2, object.DirRight),
 		}, // 同伴坦克二级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 2, Level: 3,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(2, 3, object.DirLeft),
-			createTankAnimConfig(2, 3, object.DirRight),
-			//createTankAnimConfig(2, 3, object.DirUp),
-			//createTankAnimConfig(2, 3, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(2, 3, object.DirRight),
 		}, // 同伴坦克三级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 2, Level: 4,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(2, 4, object.DirLeft),
-			createTankAnimConfig(2, 4, object.DirRight),
-			//createTankAnimConfig(2, 4, object.DirUp),
-			//createTankAnimConfig(2, 4, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(2, 4, object.DirRight),
 		}, // 同伴坦克四级
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1000, Level: 1,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1000, 1, object.DirLeft),
-			createTankAnimConfig(1000, 1, object.DirRight),
-			//createTankAnimConfig(1000, 1, object.DirUp),
-			//createTankAnimConfig(1000, 1, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1000, 1, object.DirRight),
 		}, // 轻型坦克
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1000, Level: 2,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1000, 2, object.DirLeft),
-			createTankAnimConfig(1000, 2, object.DirRight),
-			//createTankAnimConfig(1000, 2, object.DirUp),
-			//createTankAnimConfig(1000, 2, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1000, 2, object.DirRight),
 		}, // 轻型坦克红色
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1001, Level: 1,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1001, 1, object.DirLeft),
-			createTankAnimConfig(1001, 1, object.DirRight),
-			//createTankAnimConfig(1001, 1, object.DirUp),
-			//createTankAnimConfig(1001, 1, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1001, 1, object.DirRight),
 		}, // 快速坦克
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1001, Level: 2,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1001, 2, object.DirLeft),
-			createTankAnimConfig(1001, 2, object.DirRight),
-			//createTankAnimConfig(1001, 2, object.DirUp),
-			//createTankAnimConfig(1001, 2, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1001, 2, object.DirRight),
 		}, // 快速坦克红
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1002, Level: 1,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1002, 1, object.DirLeft),
-			createTankAnimConfig(1002, 1, object.DirRight),
-			//createTankAnimConfig(1002, 1, object.DirUp),
-			//createTankAnimConfig(1002, 1, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1002, 1, object.DirRight),
 		}, // 重型坦克
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1002, Level: 2,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1002, 2, object.DirLeft),
-			createTankAnimConfig(1002, 2, object.DirRight),
-			//createTankAnimConfig(1002, 2, object.DirUp),
-			//createTankAnimConfig(1002, 2, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1002, 2, object.DirRight),
 		}, // 重型坦克绿
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1002, Level: 3,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1002, 3, object.DirLeft),
-			createTankAnimConfig(1002, 3, object.DirRight),
-			//createTankAnimConfig(1002, 3, object.DirUp),
-			//createTankAnimConfig(1002, 3, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1002, 3, object.DirRight),
 		}, // 重型坦克黄
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeTank, Id: 1002, Level: 4,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createTankAnimConfig(1002, 4, object.DirLeft),
-			createTankAnimConfig(1002, 4, object.DirRight),
-			//createTankAnimConfig(1002, 4, object.DirUp),
-			//createTankAnimConfig(1002, 4, object.DirDown),
-			//},
+			AnimConfig: createTankAnimConfig(1002, 4, object.DirRight),
 		}, // 重型坦克红
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeShell, Id: 1, Level: 0,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			//nil,
-			//createBulletAnimConfig(object.DirLeft),
-			createBulletAnimConfig(1, object.DirRight),
-			//createBulletAnimConfig(object.DirUp),
-			//createBulletAnimConfig(object.DirDown),
-			//},
+			AnimConfig: createBulletAnimConfig(1, object.DirRight),
 		}, // 子弹
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeShell, Id: 2, Level: 0,
@@ -474,15 +412,14 @@ func initAnimConfigs() {
 		}, // 追蹤子彈
 		{
 			Type: object.ObjTypeMovable, Subtype: object.ObjSubtypeSurroundObj, Id: 1, Level: 0,
-			AnimConfig://[]*base.SpriteAnimConfig{
-			getSurroundObjAnimConfig(1),
+			AnimConfig: getSurroundObjAnimConfig(1),
 			//},
 		}, // 環繞物體
 	}
 }
 
 func initResources() {
-	initImages()
+	images.InitImages()
 	initAnimOriginalConfigs()
 	initAnimConfigs()
 }
@@ -601,4 +538,14 @@ func getEffectAnimConfig(id int32) *client_base.SpriteAnimConfig {
 // 獲得小球動畫配置
 func getSurroundObjAnimConfig(id int32) *client_base.SpriteAnimConfig {
 	return surroundObjAnimOriginalConfig[id]
+}
+
+// 獲得物品動畫配置
+func getItemObjAnimConfig(itemType object.ItemObjType) *client_base.SpriteAnimConfig {
+	return itemObjAnimOriginalConfig[itemType]
+}
+
+// 獲得護盾動畫配置
+func getShieldAnimConfig() *client_base.SpriteAnimConfig {
+	return shieldAnimOriginalConfig
 }

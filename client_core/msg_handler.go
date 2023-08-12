@@ -46,11 +46,11 @@ func (h *MsgHandler) setNetEventHandles() {
 }
 
 func (h *MsgHandler) onConnect(sess *gsnet_msg.MsgSession) {
-	Log().Info("connected")
+	log.Info("connected")
 }
 
 func (h *MsgHandler) onDisconnect(sess *gsnet_msg.MsgSession, err error) {
-	Log().Info("disconnected")
+	log.Info("disconnected")
 }
 
 func (h *MsgHandler) onTick(sess *gsnet_msg.MsgSession, tick time.Duration) {
@@ -58,7 +58,7 @@ func (h *MsgHandler) onTick(sess *gsnet_msg.MsgSession, tick time.Duration) {
 }
 
 func (h *MsgHandler) onError(err error) {
-	Log().Info("get error: %v", err)
+	log.Info("get error: %v", err)
 }
 
 func (h *MsgHandler) registerNetMsgHandles() {
@@ -86,12 +86,12 @@ func (h *MsgHandler) registerNetMsgHandles() {
 func (h *MsgHandler) onLoginAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgAccountLoginGameAck)
 	if !o {
-		Log().Warn("can't get to type *game_proto.MsgAccountLoginGameAck")
+		log.Warn("can't get to type *game_proto.MsgAccountLoginGameAck")
 		return nil
 	}
 
 	if ack.Result != 0 {
-		Log().Warn("Account %v login result: %v", ack.Account, ack.Result)
+		log.Warn("Account %v login result: %v", ack.Account, ack.Result)
 		return nil
 	}
 
@@ -99,7 +99,7 @@ func (h *MsgHandler) onLoginAck(sess *gsnet_msg.MsgSession, msg any) error {
 	// 直接发进入游戏的消息
 	err := h.net.SendEnterGameReq(string(ack.Account), string(ack.SessionToken))
 
-	Log().Info("Account %v login", ack.Account)
+	log.Info("Account %v login", ack.Account)
 
 	return err
 }
@@ -108,7 +108,7 @@ func (h *MsgHandler) onLoginAck(sess *gsnet_msg.MsgSession, msg any) error {
 func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerEnterGameAck)
 	if !o {
-		Log().Warn("can't get to type *game_proto.MsgPlayerEnterGameAck")
+		log.Warn("can't get to type *game_proto.MsgPlayerEnterGameAck")
 		return nil
 	}
 
@@ -128,7 +128,7 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) e
 		h.doPlayerEnter(tankInfo, false)
 	}
 
-	Log().Info("my player entered game")
+	log.Info("my player entered game")
 
 	return nil
 }
@@ -137,14 +137,14 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) e
 func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess *gsnet_msg.MsgSession, msg any) error {
 	_, o := msg.(*game_proto.MsgPlayerEnterGameFinishNtf)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerEnterGameFinishNtf")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerEnterGameFinishNtf")
 		return nil
 	}
 
 	// 向上层传递事件
 	h.invoker.InvokeEvent(EventIdPlayerEnterGameCompleted)
 
-	Log().Info("my player entered game completed")
+	log.Info("my player entered game completed")
 
 	return nil
 }
@@ -153,7 +153,7 @@ func (h *MsgHandler) onPlayerEnterGameFinishNtf(sess *gsnet_msg.MsgSession, msg 
 func (h *MsgHandler) onPlayerExitGameAck(sess *gsnet_msg.MsgSession, msg any) error {
 	h.doPlayerExit(h.myId())
 
-	Log().Info("my player exited game")
+	log.Info("my player exited game")
 
 	return nil
 }
@@ -162,7 +162,7 @@ func (h *MsgHandler) onPlayerExitGameAck(sess *gsnet_msg.MsgSession, msg any) er
 func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgTimeSyncAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgTimeSyncAck")
+		log.Warn("cant transfer to type *game_proto.MsgTimeSyncAck")
 		return nil
 	}
 
@@ -181,7 +181,7 @@ func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg any) error {
 		h.invoker.InvokeEvent(EventIdTimeSync)
 	}
 
-	Log().Info("time sync client send time: %v, server time: %v, client recv time : %v, delay: %+v", GetSyncSendTime(), st, now, GetNetworkDelay())
+	log.Info("time sync client send time: %v, server time: %v, client recv time : %v, delay: %+v", GetSyncSendTime(), st, now, GetNetworkDelay())
 
 	return nil
 }
@@ -190,13 +190,13 @@ func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg any) error {
 func (h *MsgHandler) onPlayerEnterGameSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerEnterGameSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerEnterGameSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerEnterGameSync")
 		return nil
 	}
 
 	h.doPlayerEnter(sync.TankInfo, false)
 
-	Log().Info("sync player (account: %v, player_id: %v) entered game", sync.TankInfo.Account, sync.TankInfo.PlayerId)
+	log.Info("sync player (account: %v, player_id: %v) entered game", sync.TankInfo.Account, sync.TankInfo.PlayerId)
 
 	return nil
 }
@@ -205,13 +205,13 @@ func (h *MsgHandler) onPlayerEnterGameSync(sess *gsnet_msg.MsgSession, msg any) 
 func (h *MsgHandler) onPlayerExitGameSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerExitGameSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerExitGameSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerExitGameSync")
 		return nil
 	}
 
 	h.doPlayerExit(sync.PlayerId)
 
-	Log().Info("sync player (player_id: %v) exited game", sync.PlayerId)
+	log.Info("sync player (player_id: %v) exited game", sync.PlayerId)
 
 	return nil
 }
@@ -220,12 +220,12 @@ func (h *MsgHandler) onPlayerExitGameSync(sess *gsnet_msg.MsgSession, msg any) e
 func (h *MsgHandler) onPlayerTankChangeAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerChangeTankAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerChangeTankAck")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerChangeTankAck")
 		return nil
 	}
 
 	if h.doTankChange(h.myId(), ack.ChangedTankInfo.Id) {
-		Log().Info("my player changed tank to %v", ack.ChangedTankInfo.Id)
+		log.Info("my player changed tank to %v", ack.ChangedTankInfo.Id)
 	}
 
 	return nil
@@ -235,12 +235,12 @@ func (h *MsgHandler) onPlayerTankChangeAck(sess *gsnet_msg.MsgSession, msg any) 
 func (h *MsgHandler) onPlayerTankChangeSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerChangeTankSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerChangeTankSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerChangeTankSync")
 		return nil
 	}
 
 	if h.doTankChange(sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id) {
-		Log().Info("sync player %v change tank to %v", sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id)
+		log.Info("sync player %v change tank to %v", sync.ChangedTankInfo.PlayerId, sync.ChangedTankInfo.TankInfo.Id)
 	}
 
 	return nil
@@ -250,12 +250,12 @@ func (h *MsgHandler) onPlayerTankChangeSync(sess *gsnet_msg.MsgSession, msg any)
 func (h *MsgHandler) onPlayerTankRestoreAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerRestoreTankAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankAck")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankAck")
 		return nil
 	}
 
 	if h.doTankRestore(h.myId(), ack.TankId) {
-		Log().Info("my player restored tank to %v", ack.TankId)
+		log.Info("my player restored tank to %v", ack.TankId)
 	}
 
 	return nil
@@ -265,12 +265,12 @@ func (h *MsgHandler) onPlayerTankRestoreAck(sess *gsnet_msg.MsgSession, msg any)
 func (h *MsgHandler) onPlayerTankRestoreSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerRestoreTankSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankSync")
 		return nil
 	}
 
 	if h.doTankRestore(sync.PlayerId, sync.TankId) {
-		Log().Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
+		log.Info("player %v restore tank to %v", sync.PlayerId, sync.TankId)
 	}
 
 	return nil
@@ -280,7 +280,7 @@ func (h *MsgHandler) onPlayerTankRestoreSync(sess *gsnet_msg.MsgSession, msg any
 func (h *MsgHandler) onPlayerTankMoveAck(sess *gsnet_msg.MsgSession, msg any) error {
 	_, o := msg.(*game_proto.MsgPlayerTankMoveAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankMoveAck")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankMoveAck")
 		return nil
 	}
 	return nil
@@ -290,14 +290,14 @@ func (h *MsgHandler) onPlayerTankMoveAck(sess *gsnet_msg.MsgSession, msg any) er
 func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerTankMoveSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankMoveSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankMoveSync")
 		return nil
 	}
 
 	orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
 	h.logic.PlayerTankMove(sync.PlayerId /*object.Direction(sync.MoveInfo.Direction)*/, orientation)
 
-	Log().Debug("Player %v move sync", sync.PlayerId)
+	log.Debug("Player %v move sync", sync.PlayerId)
 
 	return nil
 }
@@ -306,7 +306,7 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) e
 func (h *MsgHandler) onPlayerTankStopMoveAck(sess *gsnet_msg.MsgSession, msg any) error {
 	_, o := msg.(*game_proto.MsgPlayerTankStopMoveAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankStopMoveAck")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankStopMoveAck")
 		return nil
 	}
 	return nil
@@ -316,13 +316,13 @@ func (h *MsgHandler) onPlayerTankStopMoveAck(sess *gsnet_msg.MsgSession, msg any
 func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerTankMoveSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankMoveSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankMoveSync")
 		return nil
 	}
 
 	h.logic.PlayerTankStopMove(sync.PlayerId)
 
-	Log().Debug("Player %v stop move sync", sync.PlayerId)
+	log.Debug("Player %v stop move sync", sync.PlayerId)
 
 	return nil
 }
@@ -331,7 +331,7 @@ func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg an
 func (h *MsgHandler) onPlayerTankUpdatePosAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgPlayerTankUpdatePosAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosAck")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosAck")
 		return nil
 	}
 
@@ -350,7 +350,7 @@ func (h *MsgHandler) onPlayerTankUpdatePosAck(sess *gsnet_msg.MsgSession, msg an
 func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg any) error {
 	sync, o := msg.(*game_proto.MsgPlayerTankUpdatePosSync)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosSync")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosSync")
 		return nil
 	}
 
@@ -364,7 +364,7 @@ func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg a
 		h.logic.PlayerTankStopMove(sync.PlayerId)
 	}
 
-	Log().Debug("Player %v update pos sync: %v", sync.PlayerId, &sync)
+	log.Debug("Player %v update pos sync: %v", sync.PlayerId, &sync)
 
 	return nil
 }
@@ -373,7 +373,7 @@ func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg a
 func (h *MsgHandler) onErrorAck(sess *gsnet_msg.MsgSession, msg any) error {
 	ack, o := msg.(*game_proto.MsgErrorAck)
 	if !o {
-		Log().Warn("cant transfer to type *game_proto.MsgErrorAck")
+		log.Warn("cant transfer to type *game_proto.MsgErrorAck")
 		return nil
 	}
 
@@ -399,7 +399,7 @@ func (h *MsgHandler) onErrorAck(sess *gsnet_msg.MsgSession, msg any) error {
 		s = "error: invalid account"
 	}
 
-	Log().Error(s)
+	log.Error(s)
 
 	return nil
 }
@@ -442,7 +442,7 @@ func (h *MsgHandler) doPlayerExit(playerId uint64) {
 func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 	player := h.playerMgr.Get(playerId)
 	if player == nil {
-		Log().Error("not found player %v to change tank", playerId)
+		log.Error("not found player %v to change tank", playerId)
 		return false
 	}
 
@@ -459,7 +459,7 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 func (h *MsgHandler) doTankRestore(playerId uint64, tankId int32) bool {
 	player := h.playerMgr.Get(playerId)
 	if player == nil {
-		Log().Error("not found player %v to restore tank", playerId)
+		log.Error("not found player %v to restore tank", playerId)
 		return false
 	}
 

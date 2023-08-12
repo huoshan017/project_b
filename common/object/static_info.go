@@ -80,6 +80,7 @@ type ShellStaticInfo struct {
 	SteeringAngularVelocity int32 // 轉向角速度(分(1/60度)/秒)
 }
 
+// 坦克炮彈配置
 type TankShellConfig struct {
 	ShellId           int32 // 子彈配置ID
 	AmountFireOneTime int8  // 一次發射炮彈量
@@ -94,12 +95,11 @@ type TankStaticInfo struct {
 	SteeringAngularVelocity int32     // 轉向角速度(分(1/60度)/秒)
 	ShellLaunchPos          base.Vec2 // 炮彈發射點 坦克局部坐標系中相對於坦克中心位置的坐標
 	ShellConfig             TankShellConfig
+	ShieldConfig            TankShieldStaticInfo
 }
 
-// 效果靜態信息
-type EffectStaticInfo struct {
-	Id            int32      // 配置id
-	Et            EffectType // 效果類型
-	Param         int32      // 參數
-	Width, Height int32      // 寬高
+// 坦克護盾配置
+type TankShieldStaticInfo struct {
+	Width, Length int32         // 長寬
+	Duration      time.Duration // 持續時間，0表示無限
 }

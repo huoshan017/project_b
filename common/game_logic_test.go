@@ -10,7 +10,7 @@ func TestGameLogic_PlayerTankChange(t *testing.T) {
 	type fields struct {
 		eventMgr base.IEventManager
 		scene    *SceneLogic
-		state    int32
+		state    logicStateType
 		mapIndex int32
 	}
 	type args struct {

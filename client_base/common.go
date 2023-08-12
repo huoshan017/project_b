@@ -25,6 +25,8 @@ type IGame interface {
 	ScreenWidthHeight() (int32, int32)
 	EventMgr() base.IEventManager
 	CmdMgr() *client_core.CmdHandleManager
+	GameLogic() *client_core.GameLogic
+	Debug() *Debug
 }
 
 type IUIMgr interface {

@@ -7,7 +7,8 @@ const (
 	ObjTypeNone    = ObjectType(0) // 无物体
 	ObjTypeStatic  = ObjectType(1) // 静止物体
 	ObjTypeMovable = ObjectType(2) // 可移动物体
-	ObjTypeEnumMax = 3
+	ObjTypeItem    = ObjectType(3) // 物品
+	ObjTypeEnumMax = 4
 )
 
 // 静止物体类型
@@ -36,21 +37,40 @@ const (
 	MovableObjEnumMax     = 4
 )
 
+// 物品類型
+type ItemObjType int
+
+const (
+	ItemObjNone          ItemObjType = iota // 無
+	ItemObjRewardLife                       // 獎勵一條命
+	ItemObjFrozen                           // 凍結敵人
+	ItemObjReinforcement                    // 防禦加固
+	ItemObjBomb                             // 敵人自爆
+	ItemObjSelfUpgrade                      // 坦克升級
+	ItemObjShield                           // 護盾
+)
+
 // 物体子类型
 type ObjSubtype int
 
 const (
-	ObjSubtypeNone        = iota
-	ObjSubtypeBrick       = ObjSubtype(StaticObjBrick)
-	ObjSubtypeIron        = ObjSubtype(StaticObjIron)
-	ObjSubtypeTree        = ObjSubtype(StaticObjTree)
-	ObjSubtypeIce         = ObjSubtype(StaticObjIce)
-	ObjSubtypeWater       = ObjSubtype(StaticObjWater)
-	ObjSubtypeHome        = ObjSubtype(StaticObjHome)
-	ObjSubtypeRuins       = ObjSubtype(StaticObjRuins)
-	ObjSubtypeTank        = ObjSubtype(MovableObjTank)
-	ObjSubtypeShell       = ObjSubtype(MovableObjShell)
-	ObjSubtypeSurroundObj = ObjSubtype(MovableObjSurroundObj)
+	ObjSubtypeNone          = iota
+	ObjSubtypeBrick         = ObjSubtype(StaticObjBrick)
+	ObjSubtypeIron          = ObjSubtype(StaticObjIron)
+	ObjSubtypeTree          = ObjSubtype(StaticObjTree)
+	ObjSubtypeIce           = ObjSubtype(StaticObjIce)
+	ObjSubtypeWater         = ObjSubtype(StaticObjWater)
+	ObjSubtypeHome          = ObjSubtype(StaticObjHome)
+	ObjSubtypeRuins         = ObjSubtype(StaticObjRuins)
+	ObjSubtypeTank          = ObjSubtype(MovableObjTank)
+	ObjSubtypeShell         = ObjSubtype(MovableObjShell)
+	ObjSubtypeSurroundObj   = ObjSubtype(MovableObjSurroundObj)
+	ObjSubtypeRewardLife    = ObjSubtype(ItemObjRewardLife)
+	ObjSubtypeFrozen        = ObjSubtype(ItemObjFrozen)
+	ObjSubtypeReinforcement = ObjSubtype(ItemObjReinforcement)
+	ObjSubtypeBomb          = ObjSubtype(ItemObjBomb)
+	ObjSubtypeSelfUpgrade   = ObjSubtype(ItemObjSelfUpgrade)
+	ObjSubtypeShield        = ObjSubtype(ItemObjShield)
 )
 
 // 对象所有者类型
@@ -85,14 +105,6 @@ const (
 	DefaultMinMoveDistance = 1  // 默认最小移动距离
 	BotTileFlag            = -1 // bot瓦片位置標記
 	PlayerTileFlag         = -2 // 玩家瓦片位置標記
-)
-
-// 效果作用類型
-type EffectType int
-
-const (
-	EffectTypeTime     = iota // 時間
-	EffectTypeRequency = 1    // 次數
 )
 
 // 陣營類型

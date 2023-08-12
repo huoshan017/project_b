@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"project_b/client/ui"
 	"project_b/client_base"
-	"project_b/client_core"
 	core "project_b/client_core"
 	"project_b/common/base"
 	"project_b/common/time"
@@ -35,6 +34,7 @@ type Game struct {
 	eventHandles  *EventHandles         // 事件处理
 	inputMgr      *InputMgr             // 輸入管理器
 	gameData      client_base.GameData  // 其他游戏数据
+	debug         client_base.Debug     // 調試
 }
 
 // 创建游戏
@@ -49,7 +49,7 @@ func NewGame(conf *Config) *Game {
 	g.playerMgr = core.CreateCPlayerManager()
 	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
 	g.uiMgr = ui.NewImguiManager(g) //ui.NewUIMgr(g)
-	g.playableScene = CreatePlayableScene(g.viewport)
+	g.playableScene = CreatePlayableScene(g.viewport, &g.debug)
 	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
 	g.inputMgr = NewInputMgr(g.cmdMgr)
 	return g
@@ -91,8 +91,18 @@ func (g *Game) EventMgr() base.IEventManager {
 }
 
 // 命令管理器
-func (g *Game) CmdMgr() *client_core.CmdHandleManager {
+func (g *Game) CmdMgr() *core.CmdHandleManager {
 	return g.cmdMgr
+}
+
+// 游戲邏輯
+func (g *Game) GameLogic() *core.GameLogic {
+	return g.logic
+}
+
+// 調試
+func (g *Game) Debug() *client_base.Debug {
+	return &g.debug
 }
 
 // 布局
@@ -124,7 +134,7 @@ func (g *Game) Update() error {
 
 // 绘制
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.gameData.State == client_base.GameStateInWorld && g.logic.IsStart() {
+	if g.gameData.State == client_base.GameStateInWorld {
 		// 画场景
 		g.playableScene.Draw(screen)
 		// 显示帧数
@@ -141,11 +151,6 @@ func (g *Game) ScreenWidthHeight() (int32, int32) {
 
 // 更新
 func (g *Game) update() {
-	if !g.logic.IsStart() {
-		// g.loadMap()
-		g.logic.Start()
-		return
-	}
 	// 时间同步完成
 	if core.IsTimeSyncEnd() {
 		now := core.GetSyncServTime()

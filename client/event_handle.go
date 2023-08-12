@@ -7,7 +7,6 @@ import (
 	core "project_b/client_core"
 	"project_b/common"
 	"project_b/common/base"
-	"project_b/common/log"
 	"project_b/common/object"
 	"project_b/game_proto"
 )

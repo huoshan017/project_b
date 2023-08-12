@@ -51,7 +51,6 @@ func CreateGameLogicThread() *GameLogicThread {
 
 // 线程关闭
 func (t *GameLogicThread) Close() {
-	t.gameLogic.End()
 	t.MsgLogicProc.Close()
 }
 

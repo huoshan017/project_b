@@ -4,6 +4,7 @@ import (
 	"project_b/client_base"
 	core "project_b/client_core"
 	common_base "project_b/common/base"
+	"project_b/common/effect"
 	"project_b/common/object"
 	"project_b/common/time"
 
@@ -21,6 +22,9 @@ func NewTransform() Transform {
 		sx: 1,
 		sy: 1,
 	}
+}
+
+type debug struct {
 }
 
 // 可播放接口
@@ -87,10 +91,16 @@ func (po *PlayableObject) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions
 	po.anim.Update(screen, op)
 }
 
+// 插值
 func (po *PlayableObject) Interpolation(transform *Transform) {
 	x, y := po.obj.Pos()
 	transform.tx, transform.ty = float64(x), float64(y)
 	transform.sx, transform.sy = 1, 1
+}
+
+// 繪製包裝盒
+func (po *PlayableObject) drawBoundingbox(screen *ebiten.Image) {
+
 }
 
 // 可播放的静态对象
@@ -107,6 +117,20 @@ func NewPlayableStaticObject(sobj object.IStaticObject, animConfig *StaticObject
 	return playable
 }
 
+// 可播放的物品對象
+type PlayableItemObject struct {
+	PlayableObject
+}
+
+// 創建可播放的物品對象
+func NewPlayableItemObject(iobj object.IItemObject, animConfig *client_base.SpriteAnimConfig) *PlayableItemObject {
+	playable := &PlayableItemObject{
+		PlayableObject: *NewPlayableObject(iobj.(object.IObject), animConfig),
+	}
+	return playable
+}
+
+// 可移動物體播放對象接口
 type IPlayableMovableObject interface {
 	IPlayable
 	LastInterpolation() (float64, float64)
@@ -147,6 +171,8 @@ func (po *PlayableMoveObject) Init() {
 	// 注册移动停止更新事件
 	po.mobj.RegisterMoveEventHandle(po.onEventMove)
 	po.mobj.RegisterStopMoveEventHandle(po.onEventStopMove)
+	po.mobj.RegisterPauseEventHandle(po.onEventPause)
+	po.mobj.RegisterResumeEventHandle(po.onEventResume)
 }
 
 // 反初始化
@@ -154,6 +180,8 @@ func (po *PlayableMoveObject) Uninit() {
 	// 注销移动停止更新事件
 	po.mobj.UnregisterMoveEventHandle(po.onEventMove)
 	po.mobj.UnregisterStopMoveEventHandle(po.onEventStopMove)
+	po.mobj.UnregisterPauseEventHandle(po.onEventPause)
+	po.mobj.UnregisterResumeEventHandle(po.onEventResume)
 }
 
 // 播放
@@ -222,6 +250,17 @@ func (po *PlayableMoveObject) onEventStopMove(args ...any) {
 	po.interpolate = false
 }
 
+// 暫停事件處理
+func (po *PlayableMoveObject) onEventPause(args ...any) {
+	po.interpolate = false
+}
+
+// 恢復事件處理
+func (po *PlayableMoveObject) onEventResume(args ...any) {
+	po.interpolate = true
+	po.lastTime = time.Now()
+}
+
 // 炮彈播放對象
 type PlayableShell struct {
 	*PlayableMoveObject
@@ -243,11 +282,13 @@ func NewPlayableShell(shell object.IShell, animConfig *MovableObjectAnimConfig) 
 
 // 初始化
 func (ps *PlayableShell) Init() {
+	ps.PlayableMoveObject.Init()
 	ps.shell.RegisterLateUpdateEventHandle(ps.onEventLateUpdate)
 }
 
 // 反初始化
 func (ps *PlayableShell) Uninit() {
+	ps.PlayableMoveObject.Uninit()
 	ps.shell.UnregisterLateUpdateEventHandle(ps.onEventLateUpdate)
 }
 
@@ -261,19 +302,23 @@ func (ps *PlayableShell) Interpolation(transform *Transform) {
 	transform.rotation = ps.shell.WorldRotation()
 	transform.sx, transform.sy = 1, 1
 	nx, ny := ps.shell.Pos()
-	if !ps.interpolate || !ps.mobj.IsMoving() {
+	if !ps.interpolate {
 		transform.tx, transform.ty = float64(nx), float64(ny)
 		return
 	}
 
-	duration := time.Since(ps.lastTime)
-	//ps.lastTime = core.GetSyncServTime()
+	if !ps.mobj.IsMoving() {
+		transform.tx, transform.ty = float64(nx), float64(ny)
+		return
+	}
+
 	if ps.updated {
 		nx, ny = ps.tx, ps.ty
 		transform.rotation = ps.rotation
 		ps.updated = false
 	} else {
 		transform.rotation = ps.shell.WorldRotation()
+		duration := time.Since(ps.lastTime)
 		nx, ny = object.GetShellTrackMovedPos(ps.shell, duration, &transform.rotation)
 	}
 	transform.tx, transform.ty = float64(nx), float64(ny)
@@ -291,25 +336,58 @@ func (ps *PlayableShell) onEventLateUpdate(args ...any) {
 // 坦克播放对象
 type PlayableTank struct {
 	*PlayableMoveObject
+	shieldAnim *client_base.SpriteAnim
 }
 
 // 创建坦克播放对象
 func NewPlayableTank(tank object.ITank, animConfig *MovableObjectAnimConfig) *PlayableTank {
 	return &PlayableTank{
 		PlayableMoveObject: NewPlayableMoveObject(tank, animConfig),
+		shieldAnim:         client_base.NewSpriteAnim(getShieldAnimConfig()),
 	}
 }
 
 // 初始化
 func (pt *PlayableTank) Init() {
 	pt.PlayableMoveObject.Init()
-	pt.mobj.(object.ITank).RegisterChangeEventHandle(pt.onChange)
+	tank := pt.mobj.(object.ITank)
+	tank.RegisterChangeEventHandle(pt.onChange)
+	tank.RegisterAddShieldEventHandle(pt.onAddShield)
+	tank.RegisterCancelShieldEventHandle(pt.onCancelShield)
 }
 
 // 反初始化
 func (pt *PlayableTank) Uninit() {
 	pt.PlayableMoveObject.Uninit()
-	pt.mobj.(object.ITank).UnregisterChangeEventHandle(pt.onChange)
+	tank := pt.mobj.(object.ITank)
+	tank.UnregisterChangeEventHandle(pt.onChange)
+	tank.UnregisterAddShieldEventHandle(pt.onAddShield)
+	tank.UnregisterCancelShieldEventHandle(pt.onCancelShield)
+}
+
+// 播放
+func (pt *PlayableTank) Play() {
+	pt.PlayableMoveObject.Play()
+}
+
+// 停止播放
+func (pt *PlayableTank) Stop() {
+	pt.PlayableMoveObject.Stop()
+}
+
+// 更新
+func (pt *PlayableTank) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	// 顯示根據邏輯數據插值
+	op.GeoM.Concat(pt.op.GeoM)
+	pt.anim.Update(screen, op)
+	tank := pt.mobj.(object.ITank)
+	if tank.HasShield() {
+		var tmpOp ebiten.DrawImageOptions
+		tmpOp.GeoM.Translate(-2, -2)
+		tmpOp.GeoM.Concat(op.GeoM)
+		tmpOp.ColorScale.SetA(0)
+		pt.shieldAnim.Update(screen, &tmpOp)
+	}
 }
 
 // 变化事件
@@ -317,6 +395,16 @@ func (pt *PlayableTank) onChange(args ...any) {
 	info := args[0].(*object.ObjStaticInfo)
 	pt.currSpeed = (info.Speed())
 	pt.Play()
+}
+
+// 加護盾事件
+func (pt *PlayableTank) onAddShield(args ...any) {
+	pt.shieldAnim.Play()
+}
+
+// 取消護盾事件
+func (pt *PlayableTank) onCancelShield(args ...any) {
+
 }
 
 // 環繞物體播放對象
@@ -344,11 +432,13 @@ func NewPlayableSurroundObj(sobj object.ISurroundObject, animConfig *MovableObje
 
 // 初始化
 func (ps *PlayableSurroundObj) Init() {
+	ps.PlayableMoveObject.Init()
 	ps.sobj.RegisterLateUpdateEventHandle(ps.onEventLateUpdate)
 }
 
 // 反初始化
 func (ps *PlayableSurroundObj) Uninit() {
+	ps.PlayableMoveObject.Uninit()
 	ps.sobj.UnregisterLateUpdateEventHandle(ps.onEventLateUpdate)
 }
 
@@ -392,12 +482,12 @@ func (ps *PlayableSurroundObj) onEventLateUpdate(args ...any) {
 // 可播放效果
 type PlayableEffect struct {
 	op     ebiten.DrawImageOptions
-	effect object.IEffect
+	effect effect.IEffect
 	anim   *client_base.SpriteAnim
 }
 
 // 創建可播放效果
-func NewPlayableEffect(effect object.IEffect, animConfig *client_base.SpriteAnimConfig) *PlayableEffect {
+func NewPlayableEffect(effect effect.IEffect, animConfig *client_base.SpriteAnimConfig) *PlayableEffect {
 	return &PlayableEffect{
 		effect: effect,
 		anim:   client_base.NewSpriteAnim(animConfig),

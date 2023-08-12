@@ -18,6 +18,7 @@ const (
 	CMD_FIRE               CmdCode = 5   // 開炮
 	CMD_ROTATE             CmdCode = 6   // 旋轉
 	CMD_REVIVE             CmdCode = 7   // 復活
+	CMD_SHIELD             CmdCode = 8   // 添加或取消護盾
 	CMD_RESTART            CmdCode = 100 // 重新开始
 	CMD_RELEASE_SMALL_BALL CmdCode = 999 // 釋放小球 測試用
 )
@@ -44,6 +45,7 @@ func CreateCmdHandleManager(net *NetClient, logic *GameLogic) *CmdHandleManager 
 		CMD_ROTATE:             m.handleTankRotate,
 		CMD_REVIVE:             m.handleTankRevive,
 		CMD_RELEASE_SMALL_BALL: m.handleTankReleaseSurroundObj,
+		CMD_SHIELD:             m.handleTankShield,
 	}
 	m.handles = handles
 	return m
@@ -58,7 +60,7 @@ func (m *CmdHandleManager) Handle(cmd CmdCode, args ...any) {
 	if handle, o := m.handles[cmd]; o {
 		handle(args...)
 	} else {
-		Log().Warn("not found handle for cmd %v", cmd)
+		log.Warn("not found handle for cmd %v", cmd)
 	}
 }
 
@@ -112,4 +114,9 @@ func (m *CmdHandleManager) handleTankRotate(args ...any) {
 // 坦克復活
 func (m *CmdHandleManager) handleTankRevive(args ...any) {
 	m.logic.MyPlayerTankRevive()
+}
+
+// 坦克護盾
+func (m *CmdHandleManager) handleTankShield(args ...any) {
+	m.logic.MyPlayerTankShield()
 }
