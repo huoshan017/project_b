@@ -8,6 +8,7 @@ import (
 	"project_b/common/effect"
 	pmath "project_b/common/math"
 	"project_b/common/object"
+	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"

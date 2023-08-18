@@ -4,12 +4,12 @@ import (
 	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/effect"
-	"project_b/common/log"
 	"project_b/common/math"
 	"project_b/common/object"
 	"project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_map"
+	"project_b/log"
 
 	"github.com/huoshan017/ponu/heap"
 )
@@ -308,11 +308,11 @@ func (s *SceneLogic) AddTank(tank *object.Tank) {
 	s.gmap.AddObj(tank)
 }
 
-func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32, currSpeed int32) *object.Tank {
+func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32 /*, currSpeed int32*/) *object.Tank {
 	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
 	tank.SetPos(x, y)
 	tank.SetLevel(level)
-	tank.SetCurrentSpeed(currSpeed)
+	//tank.SetCurrentSpeed(currSpeed)
 	// 注冊檢測移動事件處理
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	// 設置碰撞處理

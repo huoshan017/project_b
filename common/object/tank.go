@@ -2,8 +2,8 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/log"
 	"project_b/common/time"
+	"project_b/log"
 	"unsafe"
 )
 
@@ -245,8 +245,10 @@ func (t *Tank) Update(tick time.Duration) {
 
 // 加護盾
 func (t *Tank) AddShield(staticInfo *TankShieldStaticInfo) {
-	t.shield = NewShield(t, staticInfo)
-	t.addShieldEvent.Call()
+	if t.shield == nil {
+		t.shield = NewShield(t, staticInfo)
+		t.addShieldEvent.Call()
+	}
 }
 
 // 取消護盾

@@ -30,7 +30,6 @@ require (
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/hajimehoshi/oto/v2 v2.4.1 // indirect
 	github.com/huoshan017/kcpgo v0.0.0-20230615185351-fa69383497ba // indirect
 	github.com/jezek/xgb v1.1.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect

@@ -4,11 +4,13 @@ import (
 	"reflect"
 
 	"project_b/client_base"
-	core "project_b/client_core"
+	"project_b/client_core"
 	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/object"
+	"project_b/core"
 	"project_b/game_proto"
+	"project_b/log"
 )
 
 type event2Handle struct {
@@ -17,8 +19,8 @@ type event2Handle struct {
 }
 
 type EventHandles struct {
-	net           *core.NetClient
-	logic         *core.GameLogic
+	net           *client_core.NetClient
+	inst          *core.Instance
 	playableScene *PlayableScene
 	gameData      *client_base.GameData
 	// --------------------------------------
@@ -28,10 +30,10 @@ type EventHandles struct {
 }
 
 // 创建EventHandles
-func CreateEventHandles(net *core.NetClient, logic *core.GameLogic, playableScene *PlayableScene, gameData *client_base.GameData) *EventHandles {
+func CreateEventHandles(net *client_core.NetClient, inst *core.Instance, playableScene *PlayableScene, gameData *client_base.GameData) *EventHandles {
 	eh := &EventHandles{
 		net:           net,
-		logic:         logic,
+		inst:          inst,
 		playableScene: playableScene,
 		gameData:      gameData,
 	}
@@ -53,17 +55,17 @@ func (g *EventHandles) Uninit() {
 func (g *EventHandles) registerEvents() {
 	// 玩家事件处理
 	g.playerEvent2Handles = []event2Handle{
-		{common.EventIdBeforeMapLoad, g.onEventBeforeMapLoad},                     // 地圖載入前
-		{common.EventIdMapLoaded, g.onEventMapLoaded},                             // 地圖載入完成
-		{common.EventIdBeforeMapUnload, g.onEventBeforeMapUnload},                 // 地圖卸載前
-		{common.EventIdMapUnloaded, g.onEventMapUnloaded},                         // 地圖卸載後
-		{core.EventIdOpLogin, g.onEventReqLogin},                                  // 请求登录
-		{core.EventIdOpEnterGame, g.onEventReqEnterGame},                          // 请求进入游戏
-		{core.EventIdTimeSync, g.onEventTimeSync},                                 // 同步时间
-		{core.EventIdTimeSyncEnd, g.onEventTimeSyncEnd},                           // 同步时间结束
-		{core.EventIdPlayerEnterGame, g.onEventPlayerEnterGame},                   // 进入游戏
-		{core.EventIdPlayerEnterGameCompleted, g.onEventPlayerEnterGameCompleted}, // 进入游戏完成
-		{core.EventIdPlayerExitGame, g.onEventPlayerExitGame},                     // 退出游戏
+		{common.EventIdBeforeMapLoad, g.onEventBeforeMapLoad},                            // 地圖載入前
+		{common.EventIdMapLoaded, g.onEventMapLoaded},                                    // 地圖載入完成
+		{common.EventIdBeforeMapUnload, g.onEventBeforeMapUnload},                        // 地圖卸載前
+		{common.EventIdMapUnloaded, g.onEventMapUnloaded},                                // 地圖卸載後
+		{client_core.EventIdOpLogin, g.onEventReqLogin},                                  // 请求登录
+		{client_core.EventIdOpEnterGame, g.onEventReqEnterGame},                          // 请求进入游戏
+		{client_core.EventIdTimeSync, g.onEventTimeSync},                                 // 同步时间
+		{client_core.EventIdTimeSyncEnd, g.onEventTimeSyncEnd},                           // 同步时间结束
+		{client_core.EventIdPlayerEnterGame, g.onEventPlayerEnterGame},                   // 进入游戏
+		{client_core.EventIdPlayerEnterGameCompleted, g.onEventPlayerEnterGameCompleted}, // 进入游戏完成
+		{client_core.EventIdPlayerExitGame, g.onEventPlayerExitGame},                     // 退出游戏
 	}
 
 	// 游戏事件处理
@@ -76,14 +78,14 @@ func (g *EventHandles) registerEvents() {
 	}
 
 	for _, e2h := range g.playerEvent2Handles {
-		g.logic.RegisterEvent(e2h.eid, e2h.handle)
+		g.inst.RegisterEvent(e2h.eid, e2h.handle)
 	}
 }
 
 // 注销事件
 func (g *EventHandles) unregisterEvents() {
 	for _, e2h := range g.playerEvent2Handles {
-		g.logic.UnregisterEvent(e2h.eid, e2h.handle)
+		g.inst.UnregisterEvent(e2h.eid, e2h.handle)
 	}
 }
 
@@ -158,7 +160,6 @@ func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
 
 	if g.gameData.MyAcc == account {
 		g.gameData.MyId = uid
-		g.logic.SetMyId(uid)
 		// 游戏状态
 		g.gameData.State = client_base.GameStateInWorld
 		log.Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
@@ -180,7 +181,7 @@ func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...any) {
 
 	// 注册本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
-		g.logic.RegisterPlayerSceneEvent(g.gameData.MyId, e2h.eid, e2h.handle)
+		g.inst.RegisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
 	log.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.gameData.MyAcc, g.gameData.MyId)
@@ -201,7 +202,7 @@ func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 
 	// 注销本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
-		g.logic.UnregisterPlayerSceneEvent(g.gameData.MyId, e2h.eid, e2h.handle)
+		g.inst.UnregisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
 	log.Info("handle event: player (uid: %v) exited game", uid)

@@ -5,8 +5,8 @@ import (
 	"flag"
 	"os"
 
-	"project_b/common/log"
 	"project_b/game_proto"
+	"project_b/log"
 
 	gsnet_common "github.com/huoshan017/gsnet/common"
 	gsnet_msg "github.com/huoshan017/gsnet/msg"

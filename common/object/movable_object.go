@@ -2,8 +2,8 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/log"
 	"project_b/common/time"
+	"project_b/log"
 	"unsafe"
 )
 
@@ -63,6 +63,7 @@ func (o *MovableObject) Uninit() {
 	o.stopEvent.Clear()
 	o.updateEvent.Clear()
 	o.object.Uninit()
+	o.collisionInfo.Clear()
 }
 
 func (o *MovableObject) MovableObjStaticInfo() *MovableObjStaticInfo {

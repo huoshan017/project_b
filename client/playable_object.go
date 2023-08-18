@@ -2,11 +2,11 @@ package main
 
 import (
 	"project_b/client_base"
-	core "project_b/client_core"
 	common_base "project_b/common/base"
 	"project_b/common/effect"
 	"project_b/common/object"
 	"project_b/common/time"
+	"project_b/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -22,9 +22,6 @@ func NewTransform() Transform {
 		sx: 1,
 		sy: 1,
 	}
-}
-
-type debug struct {
 }
 
 // 可播放接口
@@ -96,11 +93,6 @@ func (po *PlayableObject) Interpolation(transform *Transform) {
 	x, y := po.obj.Pos()
 	transform.tx, transform.ty = float64(x), float64(y)
 	transform.sx, transform.sy = 1, 1
-}
-
-// 繪製包裝盒
-func (po *PlayableObject) drawBoundingbox(screen *ebiten.Image) {
-
 }
 
 // 可播放的静态对象

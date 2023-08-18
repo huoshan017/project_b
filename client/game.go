@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"project_b/client/ui"
 	"project_b/client_base"
-	core "project_b/client_core"
+	"project_b/client_core"
 	"project_b/common/base"
 	"project_b/common/time"
-	"project_b/common_data"
+	"project_b/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -15,19 +15,17 @@ import (
 )
 
 type Game struct {
+	conf *Config
 	//---------------------------------------
 	// 逻辑
-	net           *core.NetClient        // 网络模块
-	msgHandler    *core.MsgHandler       // 消息处理器
-	logic         *core.GameLogic        // 游戏逻辑
-	cmdMgr        *core.CmdHandleManager // 命令处理管理器
-	playerMgr     *core.CPlayerManager   // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
-	eventMgr      *base.EventManager     // 游戏事件管理器，向上层逻辑传递事件
-	lastCheckTime time.CustomTime        // 上次检测时间
-
+	inst          *core.Instance              // 游戲實例
+	net           *client_core.NetClient      // 网络模块
+	msgHandler    *client_core.MsgHandler     // 消息处理器
+	playerMgr     *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
+	eventMgr      *base.EventManager          // 游戏事件管理器，向上层逻辑传递事件
+	lastCheckTime time.CustomTime             // 上次检测时间
 	//---------------------------------------
 	// 表现相关
-
 	viewport      *client_base.Viewport // 视口
 	playableScene *PlayableScene        // 場景圖繪製
 	uiMgr         client_base.IUIMgr    // UI管理
@@ -40,18 +38,18 @@ type Game struct {
 // 创建游戏
 func NewGame(conf *Config) *Game {
 	g := &Game{
+		conf:     conf,
 		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
-	g.net = core.CreateNetClient(conf.serverAddress, options.WithRunMode(options.RunModeOnlyUpdate), options.WithNoDelay(true))
 	g.eventMgr = base.NewEventManager()
-	g.logic = core.CreateGameLogic(g.eventMgr)
-	g.cmdMgr = core.CreateCmdHandleManager(g.net, g.logic)
-	g.playerMgr = core.CreateCPlayerManager()
-	g.msgHandler = core.CreateMsgHandler(g.net, g.logic, g.playerMgr, g.eventMgr)
-	g.uiMgr = ui.NewImguiManager(g) //ui.NewUIMgr(g)
+	g.inst = core.NewInstance(&core.InstanceArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerCount, UpdateTick: conf.updateTick})
+	g.net = client_core.CreateNetClient(conf.serverAddress, options.WithRunMode(options.RunModeOnlyUpdate), options.WithNoDelay(true))
+	g.playerMgr = client_core.CreateCPlayerManager()
+	g.msgHandler = client_core.CreateMsgHandler(g.net, g.inst, g.playerMgr, g.eventMgr)
+	g.uiMgr = ui.NewImguiManager(g)
 	g.playableScene = CreatePlayableScene(g.viewport, &g.debug)
-	g.eventHandles = CreateEventHandles(g.net, g.logic, g.playableScene, &g.gameData)
-	g.inputMgr = NewInputMgr(g.cmdMgr)
+	g.eventHandles = CreateEventHandles(g.net, g.inst, g.playableScene, &g.gameData)
+	g.inputMgr = NewInputMgr(g, g.inst)
 	return g
 }
 
@@ -90,14 +88,9 @@ func (g *Game) EventMgr() base.IEventManager {
 	return g.eventMgr
 }
 
-// 命令管理器
-func (g *Game) CmdMgr() *core.CmdHandleManager {
-	return g.cmdMgr
-}
-
-// 游戲邏輯
-func (g *Game) GameLogic() *core.GameLogic {
-	return g.logic
+// 游戲實例
+func (g *Game) Inst() *core.Instance {
+	return g.inst
 }
 
 // 調試
@@ -152,34 +145,38 @@ func (g *Game) ScreenWidthHeight() (int32, int32) {
 // 更新
 func (g *Game) update() {
 	// 时间同步完成
-	if core.IsTimeSyncEnd() {
-		now := core.GetSyncServTime()
-		if g.lastCheckTime.IsZero() {
-			g.lastCheckTime = now
-		} else {
-			tick := now.Sub(g.lastCheckTime)
-			for ; tick >= common_data.GameLogicTick; tick -= common_data.GameLogicTick {
-				g.logic.Update(common_data.GameLogicTick)
-				g.lastCheckTime = g.lastCheckTime.Add(common_data.GameLogicTick)
-			}
-		}
+	if !core.IsTimeSyncEnd() {
+		return
+	}
+	now := core.GetSyncServTime()
+	if g.lastCheckTime.IsZero() {
+		g.lastCheckTime = now
+	}
+	tick := now.Sub(g.lastCheckTime)
+	for ; tick >= g.conf.updateTick; tick -= g.conf.updateTick {
+		g.inst.UpdateFrame()
+		g.lastCheckTime = g.lastCheckTime.Add(g.conf.updateTick)
 	}
 }
 
 func (g *Game) initInputHandles() {
-	g.cmdMgr.Add(CMD_CAMERA_UP, func(...any) {
-		g.playableScene.CameraMove(0, 10)
+	g.inputMgr.AddHandle(CMD_CAMERA_UP, func(args ...any) {
+		delta := args[0].(int)
+		g.playableScene.CameraMove(0, int32(delta))
 	})
-	g.cmdMgr.Add(CMD_CAMERA_DOWN, func(...any) {
-		g.playableScene.CameraMove(0, -10)
+	g.inputMgr.AddHandle(CMD_CAMERA_DOWN, func(args ...any) {
+		delta := args[0].(int)
+		g.playableScene.CameraMove(0, int32(delta))
 	})
-	g.cmdMgr.Add(CMD_CAMERA_LEFT, func(...any) {
-		g.playableScene.CameraMove(-10, 0)
+	g.inputMgr.AddHandle(CMD_CAMERA_LEFT, func(args ...any) {
+		delta := args[0].(int)
+		g.playableScene.CameraMove(int32(delta), 0)
 	})
-	g.cmdMgr.Add(CMD_CAMERA_RIGHT, func(...any) {
-		g.playableScene.CameraMove(10, 0)
+	g.inputMgr.AddHandle(CMD_CAMERA_RIGHT, func(args ...any) {
+		delta := args[0].(int)
+		g.playableScene.CameraMove(int32(delta), 0)
 	})
-	g.cmdMgr.Add(CMD_CAMERA_HEIGHT, func(args ...any) {
+	g.inputMgr.AddHandle(CMD_CAMERA_HEIGHT, func(args ...any) {
 		delta := args[0].(int)
 		g.playableScene.CameraChangeHeight(int32(delta))
 	})

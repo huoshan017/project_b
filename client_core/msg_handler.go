@@ -2,12 +2,12 @@ package client_core
 
 import (
 	"fmt"
-	"project_b/common"
 	"project_b/common/base"
-	"project_b/common/log"
 	"project_b/common/object"
 	custom_time "project_b/common/time"
+	"project_b/core"
 	"project_b/game_map"
+	"project_b/log"
 
 	"time"
 
@@ -19,15 +19,15 @@ import (
 
 type MsgHandler struct {
 	net       *NetClient
-	logic     *GameLogic
+	inst      *core.Instance
 	playerMgr *CPlayerManager
 	invoker   base.IEventInvoker
 }
 
-func CreateMsgHandler(net *NetClient, logic *GameLogic, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
+func CreateMsgHandler(net *NetClient, inst *core.Instance, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
 	return &MsgHandler{
 		net:       net,
-		logic:     logic,
+		inst:      inst,
 		playerMgr: playerMgr,
 		invoker:   invoker,
 	}
@@ -114,7 +114,7 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) e
 
 	// 载入地图
 	config := game_map.MapConfigArray[ack.MapId]
-	if !h.logic.LoadScene(config) {
+	if !h.inst.LoadScene(config) {
 		log.Error("load map %v error", ack.MapId)
 		return fmt.Errorf("load map %v failed", ack.MapId)
 	}
@@ -173,15 +173,15 @@ func (h *MsgHandler) onTimeSyncAck(sess *gsnet_msg.MsgSession, msg any) error {
 	}
 
 	now := custom_time.Now()
-	SetSyncRecvAndServerTime(now, st)
+	core.SetSyncRecvAndServerTime(now, st)
 
-	if IsTimeSyncEnd() {
+	if core.IsTimeSyncEnd() {
 		h.invoker.InvokeEvent(EventIdTimeSyncEnd)
 	} else {
 		h.invoker.InvokeEvent(EventIdTimeSync)
 	}
 
-	log.Info("time sync client send time: %v, server time: %v, client recv time : %v, delay: %+v", GetSyncSendTime(), st, now, GetNetworkDelay())
+	log.Info("time sync client send time: %v, server time: %v, client recv time : %v, delay: %+v", core.GetSyncSendTime(), st, now, core.GetNetworkDelay())
 
 	return nil
 }
@@ -295,7 +295,7 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) e
 	}
 
 	orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
-	h.logic.PlayerTankMove(sync.PlayerId /*object.Direction(sync.MoveInfo.Direction)*/, orientation)
+	h.inst.PushFrame(0, sync.PlayerId, core.CMD_TANK_MOVE, []any{orientation})
 
 	log.Debug("Player %v move sync", sync.PlayerId)
 
@@ -320,7 +320,7 @@ func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg an
 		return nil
 	}
 
-	h.logic.PlayerTankStopMove(sync.PlayerId)
+	h.inst.PushFrame(0, sync.PlayerId, core.CMD_TANK_STOP, nil)
 
 	log.Debug("Player %v stop move sync", sync.PlayerId)
 
@@ -348,24 +348,6 @@ func (h *MsgHandler) onPlayerTankUpdatePosAck(sess *gsnet_msg.MsgSession, msg an
 
 // 其他玩家坦克位置更新同步
 func (h *MsgHandler) onPlayerTankUpdatePosSync(sess *gsnet_msg.MsgSession, msg any) error {
-	sync, o := msg.(*game_proto.MsgPlayerTankUpdatePosSync)
-	if !o {
-		log.Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosSync")
-		return nil
-	}
-
-	switch sync.State {
-	case game_proto.MovementState_StartMove:
-		orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
-		h.logic.PlayerTankMove(sync.PlayerId /*object.Direction(sync.MoveInfo.Direction)*/, orientation)
-	case game_proto.MovementState_Moving:
-
-	case game_proto.MovementState_ToStop:
-		h.logic.PlayerTankStopMove(sync.PlayerId)
-	}
-
-	log.Debug("Player %v update pos sync: %v", sync.PlayerId, &sync)
-
 	return nil
 }
 
@@ -420,7 +402,8 @@ func (h *MsgHandler) doPlayerEnter(p *game_proto.PlayerAccountTankInfo, isMe boo
 	}
 
 	// 玩家坦克进入主逻辑
-	h.logic.PlayerEnterWithTankInfo(cplayer, p.TankInfo)
+	//h.logic.PlayerEnterWithTankInfo(cplayer, p.TankInfo)
+	h.inst.CheckAndStart(h.playerMgr.GetPlayerList())
 
 	// 向上层传递事件
 	h.invoker.InvokeEvent(EventIdPlayerEnterGame, p.Account, p.PlayerId, cplayer.GetTank())
@@ -432,7 +415,7 @@ func (h *MsgHandler) doPlayerExit(playerId uint64) {
 	h.playerMgr.Remove(playerId)
 
 	// 坦克离开主逻辑
-	h.logic.PlayerLeave(playerId)
+	//h.logic.PlayerLeave(playerId)
 
 	// 向上传递事件
 	h.invoker.InvokeEvent(EventIdPlayerExitGame, playerId)
@@ -447,10 +430,10 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 	}
 
 	// 坦克改变
-	h.logic.PlayerTankChange(playerId, common_data.TankConfigData[changedTankId])
+	h.inst.PushFrame(0, playerId, core.CMD_TANK_CHANGE, []any{common_data.TankConfigData[changedTankId]})
 
 	// 向上传递事件
-	h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
+	//h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
 
 	return true
 }
@@ -464,10 +447,10 @@ func (h *MsgHandler) doTankRestore(playerId uint64, tankId int32) bool {
 	}
 
 	// 恢复坦克
-	h.logic.PlayerTankRestore(playerId)
+	h.inst.PushFrame(0, playerId, core.CMD_TANK_RESTORE, nil)
 
 	// 向上传递事件
-	h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
+	//h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
 
 	return true
 }

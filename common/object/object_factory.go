@@ -2,7 +2,7 @@ package object
 
 import (
 	"math"
-	"project_b/common/log"
+	"project_b/log"
 )
 
 type ObjectFactory struct {

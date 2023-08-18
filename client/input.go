@@ -1,8 +1,10 @@
 package main
 
 import (
-	core "project_b/client_core"
+	"project_b/client_base"
 	"project_b/common/object"
+	"project_b/core"
+	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -16,39 +18,32 @@ const (
 	CMD_CAMERA_HEIGHT = 1100
 )
 
-type KeyCmdData struct {
-	cmd  core.CmdCode
-	args []any
-}
-
 // 按下键位映射命令
-var keyPressed2CmdMap = map[ebiten.Key]*KeyCmdData{
-	ebiten.KeyA:        {cmd: core.CMD_MOVE, args: []any{object.DirLeft}},
-	ebiten.KeyD:        {cmd: core.CMD_MOVE, args: []any{object.DirRight}},
-	ebiten.KeyW:        {cmd: core.CMD_MOVE, args: []any{object.DirUp}},
-	ebiten.KeyS:        {cmd: core.CMD_MOVE, args: []any{object.DirDown}},
-	ebiten.KeyJ:        {cmd: core.CMD_FIRE, args: []any{1}},
-	ebiten.KeyI:        {cmd: core.CMD_FIRE, args: []any{2}},
-	ebiten.KeyK:        {cmd: core.CMD_ROTATE, args: []any{1}},
-	ebiten.KeyL:        {cmd: core.CMD_ROTATE, args: []any{-1}},
-	ebiten.KeyUp:       {cmd: CMD_CAMERA_UP, args: []any{}},
-	ebiten.KeyDown:     {cmd: CMD_CAMERA_DOWN, args: []any{}},
-	ebiten.KeyLeft:     {cmd: CMD_CAMERA_LEFT, args: []any{}},
-	ebiten.KeyRight:    {cmd: CMD_CAMERA_RIGHT, args: []any{}},
-	ebiten.KeyPageUp:   {cmd: CMD_CAMERA_HEIGHT, args: []any{10}},
-	ebiten.KeyPageDown: {cmd: CMD_CAMERA_HEIGHT, args: []any{-10}},
+var keyPressed2CmdMap = map[ebiten.Key]*core.CmdData{
+	ebiten.KeyA:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirLeft}),
+	ebiten.KeyD:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRight}),
+	ebiten.KeyW:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirUp}),
+	ebiten.KeyS:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirDown}),
+	ebiten.KeyJ:        core.NewCmdData(core.CMD_TANK_FIRE, []any{1}),
+	ebiten.KeyI:        core.NewCmdData(core.CMD_TANK_FIRE, []any{2}),
+	ebiten.KeyUp:       core.NewCmdData(CMD_CAMERA_UP, []any{10}),
+	ebiten.KeyDown:     core.NewCmdData(CMD_CAMERA_DOWN, []any{-10}),
+	ebiten.KeyLeft:     core.NewCmdData(CMD_CAMERA_LEFT, []any{-10}),
+	ebiten.KeyRight:    core.NewCmdData(CMD_CAMERA_RIGHT, []any{10}),
+	ebiten.KeyPageUp:   core.NewCmdData(CMD_CAMERA_HEIGHT, []any{10}),
+	ebiten.KeyPageDown: core.NewCmdData(CMD_CAMERA_HEIGHT, []any{-10}),
 }
 
 // 释放键位映射命令
 var keyReleased2CmdMap = map[ebiten.Key]core.CmdCode{
-	ebiten.KeyA: core.CMD_STOP_MOVE,
-	ebiten.KeyD: core.CMD_STOP_MOVE,
-	ebiten.KeyW: core.CMD_STOP_MOVE,
-	ebiten.KeyS: core.CMD_STOP_MOVE,
-	ebiten.KeyC: core.CMD_CHANGE_TANK,
-	ebiten.KeyR: core.CMD_RESTORE_TANK,
+	ebiten.KeyA: core.CMD_TANK_STOP,
+	ebiten.KeyD: core.CMD_TANK_STOP,
+	ebiten.KeyW: core.CMD_TANK_STOP,
+	ebiten.KeyS: core.CMD_TANK_STOP,
+	ebiten.KeyC: core.CMD_TANK_CHANGE,
+	ebiten.KeyR: core.CMD_TANK_RESTORE,
 	ebiten.Key1: core.CMD_RELEASE_SMALL_BALL,
-	ebiten.KeyU: core.CMD_SHIELD,
+	ebiten.KeyU: core.CMD_TANK_SHIELD,
 }
 
 type ComboKeyIndex struct {
@@ -75,26 +70,35 @@ var key2ComboKeyIndex = map[ebiten.Key][]ComboKeyIndex{
 	},
 }
 
-var keyIndex2CmdMap = map[int32]*KeyCmdData{
-	0: {cmd: core.CMD_MOVE, args: []any{object.DirLeftUp}},
-	1: {cmd: core.CMD_MOVE, args: []any{object.DirLeftDown}},
-	2: {cmd: core.CMD_MOVE, args: []any{object.DirRightUp}},
-	3: {cmd: core.CMD_MOVE, args: []any{object.DirRightDown}},
+var keyIndex2CmdMap = map[int32]*core.CmdData{
+	0: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirLeftUp}),
+	1: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirLeftDown}),
+	2: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRightUp}),
+	3: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRightDown}),
 }
 
 // 輸入管理器
 type InputMgr struct {
-	cmdMgr      *core.CmdHandleManager
+	game        client_base.IGame
+	inst        *core.Instance
 	pressedKeys []ebiten.Key
 	keyPressMap map[ebiten.Key]struct{}
+	cmd2Handle  map[core.CmdCode]func(...any)
 }
 
 // 創建輸入管理器
-func NewInputMgr(cmdMgr *core.CmdHandleManager) *InputMgr {
+func NewInputMgr(game client_base.IGame, inst *core.Instance) *InputMgr {
 	return &InputMgr{
-		cmdMgr:      cmdMgr,
+		game:        game,
+		inst:        inst,
 		keyPressMap: make(map[ebiten.Key]struct{}),
+		cmd2Handle:  make(map[core.CmdCode]func(...any)),
 	}
+}
+
+// 添加處理器
+func (im *InputMgr) AddHandle(cc core.CmdCode, handle func(...any)) {
+	im.cmd2Handle[cc] = handle
 }
 
 // 處理輸入
@@ -104,13 +108,13 @@ func (im *InputMgr) HandleInput() {
 		o   bool
 	)
 	// 處理鍵釋放
-	for k, _ := range im.keyPressMap {
+	for k := range im.keyPressMap {
 		if inpututil.IsKeyJustReleased(k) {
 			cmd, o = keyReleased2CmdMap[k]
 			if !o {
 				continue
 			}
-			im.cmdMgr.Handle(cmd)
+			im.inst.PushFrame(0, im.game.GetGameData().MyId, cmd, nil)
 			delete(im.keyPressMap, k)
 			log.Debug("key %v released", k)
 		}
@@ -129,8 +133,8 @@ func (im *InputMgr) HandleInput() {
 
 	var keyUsed []ebiten.Key
 	var kiList []ComboKeyIndex
-	var cmdData *KeyCmdData
-	for k, _ := range im.keyPressMap {
+	var cmdData *core.CmdData
+	for k := range im.keyPressMap {
 		var used bool
 		for i := 0; i < len(keyUsed); i++ {
 			if k == keyUsed[i] {
@@ -151,7 +155,7 @@ func (im *InputMgr) HandleInput() {
 				if _, o = im.keyPressMap[ki.otherKey]; o {
 					cmdData, o = keyIndex2CmdMap[ki.index]
 					if o && cmdData != nil {
-						im.cmdMgr.Handle(cmdData.cmd, cmdData.args...)
+						im.inst.PushFrame(0, im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
 					}
 					keyUsed = append(keyUsed, ki.otherKey)
 					hasCombo = true
@@ -165,7 +169,11 @@ func (im *InputMgr) HandleInput() {
 
 		cmdData, o = keyPressed2CmdMap[k]
 		if o && cmdData != nil {
-			im.cmdMgr.Handle(cmdData.cmd, cmdData.args...)
+			if handle := im.cmd2Handle[cmdData.Cmd()]; handle != nil {
+				handle(cmdData.Args()...)
+				continue
+			}
+			im.inst.PushFrame(0, im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
 		}
 	}
 }

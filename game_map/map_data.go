@@ -129,7 +129,8 @@ var MapConfigArray = map[int32]*Config{
 		TileHeight:         320,
 		PlayerTankInitData: *common_data.PlayerTankInitData,
 		PlayerTankInitRect: common_data.PlayerTankInitRect,
-		PlayerMaxCount:     100,
+		PlayerMaxCount:     1,
+		PlayerBornPosList:  []object.Pos{{X: 1000, Y: 1000}},
 		BotInfoList: []BotInfo{
 			{TankId: 1000, Camp: object.CampTypeTwo, Pos: object.Pos{X: 10000, Y: 500}, Level: 1},
 			{TankId: 1001, Camp: object.CampTypeTwo, Pos: object.Pos{X: 11100, Y: 900}, Level: 1},

@@ -45,6 +45,7 @@ func (e *Event) Size() int32 {
 }
 
 func (e *Event) Clear() {
+	clear(e.handles)
 	e.handles = e.handles[:0]
 }
 

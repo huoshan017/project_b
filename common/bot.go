@@ -3,10 +3,10 @@ package common
 import (
 	"project_b/common/base"
 	"project_b/common/ds"
-	"project_b/common/log"
 	"project_b/common/math"
 	"project_b/common/time"
 	"project_b/common_data"
+	"project_b/log"
 )
 
 type BotStateType int

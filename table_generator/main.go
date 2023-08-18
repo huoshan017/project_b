@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"project_b/common/log"
+	"project_b/log"
 )
 
 const (

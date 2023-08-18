@@ -6,6 +6,7 @@ import (
 	"project_b/client_base"
 	"project_b/client_core"
 	"project_b/common"
+	"project_b/core"
 
 	"github.com/gabstv/ebiten-imgui/renderer"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -128,7 +129,7 @@ func (ui *PopupReviveUI) Init(game client_base.IGame) {
 // PopupReviveUI.Update
 func (ui *PopupReviveUI) Update() {
 	if ui.toRevive {
-		ui.game.CmdMgr().Handle(client_core.CMD_REVIVE, common.TankTypePlayer, ui.game.GetGameData().MyId)
+		ui.game.Inst().PushFrame(0, ui.game.GetGameData().MyId, core.CMD_TANK_RESPAWN, []any{common.TankTypePlayer})
 		ui.toRevive = false
 		ui.pop(false)
 	} else if ui.toExit {
@@ -171,11 +172,11 @@ func (ui *PauseMenuUI) Init(game client_base.IGame) {
 func (ui *PauseMenuUI) Update() {
 	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) || ui.resume {
 		if ui.popup {
-			ui.game.GameLogic().Resume()
+			ui.game.Inst().Resume()
 			ui.pop(false)
 			ui.resume = false
 		} else {
-			ui.game.GameLogic().Pause()
+			ui.game.Inst().Pause()
 			ui.pop(true)
 		}
 	}

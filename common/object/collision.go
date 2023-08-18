@@ -24,7 +24,10 @@ type CollisionInfo struct {
 
 func (ci *CollisionInfo) Clear() {
 	ci.Result = CollisionNone
-	ci.ObjList = ci.ObjList[:0]
+	if len(ci.ObjList) > 0 {
+		clear(ci.ObjList)
+		ci.ObjList = ci.ObjList[:0]
+	}
 	ci.MovingObj = nil
 	ci.MovingObjPos.X = 0
 	ci.MovingObjPos.Y = 0

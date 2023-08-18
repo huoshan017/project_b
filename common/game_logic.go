@@ -4,11 +4,11 @@ import (
 	"math"
 	"project_b/common/base"
 	"project_b/common/ds"
-	"project_b/common/log"
 	"project_b/common/object"
 	"project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_map"
+	"project_b/log"
 )
 
 type TankType int32
@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	defaultLogicFrameMax = math.MaxInt32
+	defaultLogicFrameMax = math.MaxUint32
 )
 
 type logicStateType int32
@@ -35,8 +35,8 @@ type GameLogic struct {
 	eventMgr    base.IEventManager               // 事件管理
 	state       logicStateType                   // 0 未开始  1. 运行中
 	mapIndex    int32                            // 地图索引
-	frame       int32                            // 帧序号，每Update一次加1
-	maxFrame    int32                            // 最大帧序号
+	frame       uint32                           // 帧序号，每Update一次加1
+	maxFrame    uint32                           // 最大帧序号
 	scene       *SceneLogic                      // 場景圖
 	player2Tank *ds.MapListUnion[uint64, uint32] // 玩家與坦克之間對應關係
 	tank2Player *ds.MapListUnion[uint32, uint64] // 坦克到玩家的對應關係
@@ -98,12 +98,12 @@ func (g *GameLogic) MapIndex() int32 {
 }
 
 // 设置最大帧序号
-func (g *GameLogic) SetMaxFrame(maxFrame int32) {
+func (g *GameLogic) SetMaxFrame(maxFrame uint32) {
 	g.maxFrame = maxFrame
 }
 
 // 当前帧
-func (g *GameLogic) GetCurrFrame() int32 {
+func (g *GameLogic) GetCurrFrame() uint32 {
 	return g.frame
 }
 
@@ -151,8 +151,8 @@ func (g *GameLogic) UnregisterEvent(eid base.EventId, handle func(args ...interf
 	g.eventMgr.UnregisterEvent(eid, handle)
 }
 
-// 注册坦克事件
-func (g *GameLogic) RegisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...any)) {
+// 注册玩家事件
+func (g *GameLogic) RegisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...any)) {
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -160,8 +160,8 @@ func (g *GameLogic) RegisterPlayerSceneEvent(uid uint64, eid base.EventId, handl
 	g.scene.RegisterTankEvent(tankId, eid, handle)
 }
 
-// 注销坦克事件
-func (g *GameLogic) UnregisterPlayerSceneEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
+// 注销玩家事件
+func (g *GameLogic) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle func(args ...interface{})) {
 	tankId, o := g.player2Tank.Get(uid)
 	if !o {
 		return
@@ -209,8 +209,8 @@ func (g *GameLogic) NewPlayerEnterWithPos(pid uint64, x, y int32) *object.Tank {
 }
 
 // 玩家進入
-func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32, orientation int32, currentSpeed int32) uint32 {
-	tank := g.scene.NewTankWithStaticInfo(id, level, x, y /*dir, */, currentSpeed)
+func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32, orientation int32 /*, currentSpeed int32*/) uint32 {
+	tank := g.scene.NewTankWithStaticInfo(id, level, x, y /*, currentSpeed*/)
 	if tank == nil {
 		log.Error("player %v enter with static info to create tank failed", pid)
 		return 0
@@ -254,7 +254,7 @@ func (g *GameLogic) PlayerTankMove(uid uint64 /*moveDir object.Direction*/, orie
 	if !o {
 		return
 	}
-	g.scene.TankMove(tankId /*moveDir*/, orientation)
+	g.scene.TankMove(tankId, orientation)
 }
 
 // 玩家坦克停止
@@ -330,11 +330,11 @@ func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
 }
 
 // 坦克復活
-func (g *GameLogic) PlayerTankRevive(uid uint64, tankId int32, tankLevel int32, x, y int32, orientation int32, currSpeed int32) {
+func (g *GameLogic) PlayerTankRespawn(uid uint64, tankId int32, tankLevel int32, x, y int32, orientation int32 /*, currSpeed int32*/) {
 	if g.state == logicStatePause {
 		return
 	}
-	g.PlayerEnterWithStaticInfo(uid, tankId, tankLevel, x, y, orientation, currSpeed)
+	g.PlayerEnterWithStaticInfo(uid, tankId, tankLevel, x, y, orientation /*, currSpeed*/)
 }
 
 // 坦克護盾
@@ -373,7 +373,7 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 		x := tankBornPosList[index].x
 		y := tankBornPosList[index].y
 		// todo 等級從1開始
-		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1 /*b.Pos.X, b.Pos.Y*/, x, y, staticInfo.Speed())
+		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1, x, y /*, staticInfo.Speed()*/)
 		tank.SetCamp(b.Camp)
 		tank.SetLevel(b.Level)
 		bot := g.botMgr.NewBot(g.scene, tank.InstId())

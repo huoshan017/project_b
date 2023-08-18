@@ -1,10 +1,11 @@
 package client_core
 
 import (
-	"project_b/common/log"
 	"project_b/common/object"
 	custom_time "project_b/common/time"
+	"project_b/core"
 	"project_b/game_proto"
+	"project_b/log"
 	"time"
 
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
@@ -95,7 +96,7 @@ func (c *NetClient) SendTimeSyncReq() error {
 		return err
 	}
 	req.ClientTime = td
-	SetSyncSendTime(now)
+	core.SetSyncSendTime(now)
 	return c.msgClient.Send(gsnet_msg.MsgIdType(game_proto.MsgTimeSyncReq_Id), &req)
 }
 

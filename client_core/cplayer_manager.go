@@ -39,3 +39,11 @@ func (pm *CPlayerManager) AddMe(player *CPlayer) {
 func (pm *CPlayerManager) GetMe() *CPlayer {
 	return pm.Get(pm.myId)
 }
+
+func (pm *CPlayerManager) GetPlayerList() []uint64 {
+	var idList []uint64
+	for pid := range pm.players {
+		idList = append(idList, pid)
+	}
+	return idList
+}

@@ -3,10 +3,10 @@ package common
 import (
 	"fmt"
 	"project_b/common/ds"
-	"project_b/common/log"
 	"project_b/common/math"
 	"project_b/common/object"
 	"project_b/game_map"
+	"project_b/log"
 
 	"github.com/huoshan017/ponu/heap"
 )
@@ -377,15 +377,14 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 		}
 	}
 
-	if mobj.Type() == object.ObjTypeMovable && mobj.Subtype() == object.ObjSubtypeTank {
-		log.Debug("GridMap.CheckMovingObjCollision: movable object %v collision grids: %v", mobj.InstId(), nineSquared)
-	}
-
 	var (
 		obj object.IObject
 		o   bool
 	)
-	m.checkCollisionObjList = m.checkCollisionObjList[:0]
+	if len(m.checkCollisionObjList) > 0 {
+		clear(m.checkCollisionObjList)
+		m.checkCollisionObjList = m.checkCollisionObjList[:0]
+	}
 	for i := 0; i < len(nineSquared); i++ {
 		for j := 0; j < len(nineSquared[i]); j++ {
 			index = nineSquared[i][j]

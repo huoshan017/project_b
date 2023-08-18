@@ -19,5 +19,6 @@ type Config struct {
 	PlayerTankInitData object.TankStaticInfo // 玩家坦克配置信息
 	PlayerTankInitRect object.Rect           // 玩家坦克出现位置范围矩形
 	PlayerMaxCount     int32                 // 最大玩家数
+	PlayerBornPosList  []object.Pos          // 玩家出生點列表
 	BotInfoList        []BotInfo             // bot列表
 }

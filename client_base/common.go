@@ -1,8 +1,8 @@
 package client_base
 
 import (
-	"project_b/client_core"
 	"project_b/common/base"
+	"project_b/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -24,8 +24,7 @@ type IGame interface {
 	GetGameData() *GameData
 	ScreenWidthHeight() (int32, int32)
 	EventMgr() base.IEventManager
-	CmdMgr() *client_core.CmdHandleManager
-	GameLogic() *client_core.GameLogic
+	Inst() *core.Instance
 	Debug() *Debug
 }
 
