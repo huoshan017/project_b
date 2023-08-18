@@ -265,7 +265,6 @@ func (s *PlayableScene) drawMapGrid(dstImage *ebiten.Image) {
 	mw, mh := s.scene.GetMapWidthHeight()
 	left, bottom := s.scene.GetMapLeftBottom()
 	gw, gh := s.scene.GetGridMap().GetGridWidthHeight()
-	log.Debug("map width %v  map height %v,  map left %v  map bottom %v,  grid width %v  grid height %v", mw, mh, left, bottom, gw, gh)
 	var x, y int32
 	for x = left; x <= left+mw; x += gw {
 		sx0, sy0 := s.camera.World2Screen(x, bottom)
