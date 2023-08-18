@@ -111,38 +111,3 @@ func New(writer io.Writer, level Level) *Logger {
 	}
 	return logger
 }
-
-var clog = New(os.Stdout, zapcore.DebugLevel)
-
-func Debug(msg string, args ...interface{}) {
-	clog.Debug(msg, args...)
-}
-
-func Info(msg string, args ...interface{}) {
-	clog.Info(msg, args...)
-}
-
-func Warn(msg string, args ...interface{}) {
-	clog.Warn(msg, args...)
-}
-
-func Error(msg string, args ...interface{}) {
-	clog.Error(msg, args...)
-}
-
-func DPanic(msg string, args ...interface{}) {
-	clog.DPanic(msg, args...)
-}
-
-func Panic(msg string, args ...interface{}) {
-	clog.Panic(msg, args...)
-}
-
-func Fatal(msg string, args ...interface{}) {
-	clog.Fatal(msg, args...)
-}
-
-func Stack(err interface{}) {
-	er := errors.Errorf("%v", err)
-	clog.Error("%+v", er)
-}

@@ -2,6 +2,7 @@ package main
 
 import (
 	custom_time "project_b/common/time"
+	"project_b/log"
 	"time"
 
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
@@ -22,13 +23,13 @@ func CreateGameMsgHandler(owner *GameService) *GameMsgHandler {
 
 // 连接事件
 func (h *GameMsgHandler) OnConnected(sess *gsnet_msg.MsgSession) {
-	gslog.Info("new session %v connected", sess.GetId())
+	log.Info("new session %v connected", sess.GetId())
 }
 
 func (h *GameMsgHandler) OnReady(sess *gsnet_msg.MsgSession) {
 	// 连接后把会话缓存起来
 	h.sess = sess
-	gslog.Info("session %v ready", sess.GetId())
+	log.Info("session %v ready", sess.GetId())
 }
 
 // 断开事件
@@ -37,7 +38,7 @@ func (h *GameMsgHandler) OnDisconnected(sess *gsnet_msg.MsgSession, err error) {
 		panic("sess must same to OnConnect")
 	}
 	h.afterPlayerDisconnect(sess)
-	gslog.Info("session %v disconnected", sess.GetId())
+	log.Info("session %v disconnected", sess.GetId())
 	h.sess = nil
 }
 
@@ -63,7 +64,7 @@ func (h *GameMsgHandler) OnTick(sess *gsnet_msg.MsgSession, tick time.Duration) 
 
 // 错误事件
 func (h *GameMsgHandler) OnError(err error) {
-	gslog.Info("get error: %v", err)
+	log.Info("get error: %v", err)
 }
 
 func (h *GameMsgHandler) OnMsgHandle(sess *gsnet_msg.MsgSession, msgid gsnet_msg.MsgIdType, msgobj any) error {

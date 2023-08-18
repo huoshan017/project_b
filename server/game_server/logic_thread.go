@@ -7,6 +7,7 @@ import (
 	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/game_proto"
+	"project_b/log"
 	"project_b/utils"
 	"time"
 
@@ -123,7 +124,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 	// 同步其他玩家和敌人
 	var ack game_proto.MsgPlayerEnterGameAck
 	tankList := t.gameLogic.GetPlayerTankList()
-	gslog.Debug("!!!! tankList: %+v", tankList)
+	log.Debug("!!!! tankList: %+v", tankList)
 	for _, tank := range tankList {
 		if pd.pid == tank.PlayerId { // 自己
 			ack.SelfTankInfo = &game_proto.PlayerAccountTankInfo{}
@@ -135,7 +136,7 @@ func (t *GameLogicThread) onPlayerTankEnterReq(pd *playerData) error {
 			playerTankInfo := &game_proto.PlayerAccountTankInfo{}
 			p := t.getPlayerData(tank.PlayerId)
 			if p == nil {
-				gslog.Warn("not found player data by pid %v", tank.PlayerId)
+				log.Warn("not found player data by pid %v", tank.PlayerId)
 				continue
 			}
 			playerTankInfo.Account = p.account
@@ -195,7 +196,7 @@ func (t *GameLogicThread) onTick(tick time.Duration) {
 func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
 	if pd == nil {
-		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
+		log.Fatal("player %v not found in GameLogicThread", pd.pid)
 		return nil
 	}
 	m := msg.(*game_proto.MsgPlayerTankMoveReq)
@@ -222,7 +223,7 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
 	if pd == nil {
-		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
+		log.Fatal("player %v not found in GameLogicThread", pd.pid)
 		return nil
 	}
 
@@ -245,7 +246,7 @@ func (t *GameLogicThread) onPlayerTankStopMoveReq(key common.AgentKey, msg commo
 func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
 	if pd == nil {
-		gslog.Error("player %v not found in GameLogicThread", pd.pid)
+		log.Error("player %v not found in GameLogicThread", pd.pid)
 		return nil
 	}
 	m := msg.(*game_proto.MsgPlayerTankUpdatePosReq)
@@ -278,7 +279,7 @@ func (t *GameLogicThread) onPlayerTankUpdatePosReq(key common.AgentKey, msg comm
 func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.MsgData) error {
 	pd := t.getPlayerData(key)
 	if pd == nil {
-		gslog.Fatal("player %v not found in GameLogicThread", pd.pid)
+		log.Fatal("player %v not found in GameLogicThread", pd.pid)
 		return nil
 	}
 
@@ -286,14 +287,14 @@ func (t *GameLogicThread) onPlayerTankChange(key common.AgentKey, msg common.Msg
 	req := msg.(*game_proto.MsgPlayerChangeTankReq)
 	res := t.gameLogic.PlayerTankChange(pd.pid, common_data.TankConfigData[req.TankId])
 	if !res {
-		gslog.Error("player %v change tank error", pd.pid)
+		log.Error("player %v change tank error", pd.pid)
 		return pd.sendError(game_proto.ErrorId_PLAYER_CHANGE_TANK_FAILED)
 	}
 
 	tank := t.gameLogic.GetPlayerTank(pd.pid)
 	ack.ChangedTankInfo = &game_proto.TankInfo{}
 	utils.TankObj2ProtoInfo(tank, ack.ChangedTankInfo)
-	gslog.Info("player %v changed tank to %v", pd.pid, tank.Id())
+	log.Info("player %v changed tank to %v", pd.pid, tank.Id())
 	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerChangeTankAck_Id), &ack)
 	if err != nil {
 		return err
@@ -327,12 +328,12 @@ func (t *GameLogicThread) onPlayerTankRestore(key common.AgentKey, msg common.Ms
 	tankId := t.gameLogic.PlayerTankRestore(pd.pid)
 
 	if tankId <= 0 {
-		gslog.Info("player %v restore tank failed", pd.pid)
+		log.Info("player %v restore tank failed", pd.pid)
 		return pd.sendError(game_proto.ErrorId_PLAYER_RESTORE_TANK_FAILED)
 	}
 
 	ack.TankId = tankId
-	gslog.Info("player %v restored tank", pd.pid)
+	log.Info("player %v restored tank", pd.pid)
 	err := pd.send(gsnet_msg.MsgIdType(game_proto.MsgPlayerRestoreTankAck_Id), &ack)
 
 	if t.GetAgentCountNoLock() > 1 {

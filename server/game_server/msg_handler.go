@@ -4,6 +4,7 @@ import (
 	"errors"
 	custom_time "project_b/common/time"
 	"project_b/game_proto"
+	"project_b/log"
 
 	gsnet_msg "github.com/huoshan017/gsnet/msg"
 )
@@ -19,20 +20,20 @@ func (h *GameMsgHandler) SendError(err game_proto.ErrorId) error {
 func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg any) error {
 	req, o := msg.(*game_proto.MsgAccountLoginGameReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgAccountLoginGameReq")
+		log.Warn("cant transfer to type *game_proto.MsgAccountLoginGameReq")
 		return nil
 	}
 
 	var e game_proto.ErrorId
 	if req.Account == "" {
 		e = game_proto.ErrorId_INVALID_ACCOUNT
-		gslog.Warn("Invalid empty account")
+		log.Warn("Invalid empty account")
 	} else if h.service.loginCheckMgr.checkAndAdd(string(req.Account)) {
 		// todo 需要检测账号是否合法
 		h.service.loginCheckMgr.remove(string(req.Account))
 	} else {
 		e = game_proto.ErrorId_ACCOUNT_IS_LOGGIN
-		gslog.Warn("account %v is logining", req.Account)
+		log.Warn("account %v is logining", req.Account)
 	}
 
 	if e != game_proto.ErrorId_NONE {
@@ -41,7 +42,7 @@ func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg any) e
 
 	var ack game_proto.MsgAccountLoginGameAck
 	ack.Account = req.Account
-	gslog.Info("player (account: %v, session: %v) login", req.Account, sess.GetId())
+	log.Info("player (account: %v, session: %v) login", req.Account, sess.GetId())
 	return sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgAccountLoginGameAck_Id), &ack)
 }
 
@@ -49,7 +50,7 @@ func (h *GameMsgHandler) onPlayerLoginReq(sess *gsnet_msg.MsgSession, msg any) e
 func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg any) error {
 	req, o := msg.(*game_proto.MsgPlayerEnterGameReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgPlayerEnterGameReq")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerEnterGameReq")
 		return nil
 	}
 
@@ -58,10 +59,10 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg an
 
 	if req.Account == "" {
 		e = game_proto.ErrorId_INVALID_ACCOUNT
-		gslog.Warn("Invalid empty account")
+		log.Warn("Invalid empty account")
 	} else if !h.service.enterCheckMgr.checkAndAdd(req.Account) {
 		e = game_proto.ErrorId_PLAYER_ENTERING_GAME
-		gslog.Warn("already have same account entering")
+		log.Warn("already have same account entering")
 	} else {
 		// 检测请求的Account是否有其他goroutine在处理，保证同一时刻只有一个goroutine处理一个玩家进入
 		// 先判断session中有没保存的数据
@@ -72,15 +73,15 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg an
 			p, o = pd.(*SPlayer)
 			if !o {
 				e = game_proto.ErrorId_SESSION_INTERNAL_ERROR
-				gslog.Error("session %v data %v convert failed", sess.GetId(), pd)
+				log.Error("session %v data %v convert failed", sess.GetId(), pd)
 			}
 			// 同一个玩家，重复发送进入游戏的消息
 			if p.Account() == req.GetAccount() {
 				e = game_proto.ErrorId_PLAYER_ENTER_GAME_REPEATED
-				gslog.Warn("account %v send enter game repeated", req.Account)
+				log.Warn("account %v send enter game repeated", req.Account)
 			} else {
 				e = game_proto.ErrorId_DIFFERENT_PLAYER_ENTER_SAME_SESSION
-				gslog.Warn("different account enter with same session")
+				log.Warn("different account enter with same session")
 			}
 		} else {
 			var pid uint64
@@ -90,7 +91,7 @@ func (h *GameMsgHandler) onPlayerEnterGameReq(sess *gsnet_msg.MsgSession, msg an
 				pid = p.Id()
 				// 断连等待结束，该函数只在这里使用
 				p.WaitDisconnect()
-				gslog.Warn("duplicate account %v, kicked another", req.Account)
+				log.Warn("duplicate account %v, kicked another", req.Account)
 			} else {
 				pid = h.service.playerMgr.GetNextId()
 			}
@@ -127,7 +128,7 @@ func (h *GameMsgHandler) onPlayerExitGameReq(sess *gsnet_msg.MsgSession, msg any
 	}
 	h.service.gameLogicThread.PlayerLeave(p.Id())
 	h.service.playerMgr.Remove(p.Id())
-	gslog.Info("player (account: %v, player_id: %v, session: %v) exit game", p.Account(), p.Id(), sess.GetId())
+	log.Info("player (account: %v, player_id: %v, session: %v) exit game", p.Account(), p.Id(), sess.GetId())
 	var ack game_proto.MsgPlayerExitGameAck
 	return sess.SendMsg(gsnet_msg.MsgIdType(game_proto.MsgPlayerExitGameAck_Id), &ack)
 }
@@ -140,7 +141,7 @@ func (h *GameMsgHandler) onTimeSyncReq(sess *gsnet_msg.MsgSession, msg any) erro
 	}
 	req, o := msg.(*game_proto.MsgTimeSyncReq)
 	if !o {
-		gslog.Warn("cant transfer type to *game_proto.MsgTimeSyncReq")
+		log.Warn("cant transfer type to *game_proto.MsgTimeSyncReq")
 		return nil
 	}
 
@@ -165,7 +166,7 @@ func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg a
 
 	req, o := msg.(*game_proto.MsgPlayerChangeTankReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgPlayerChangeTankReq")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerChangeTankReq")
 		return nil
 	}
 
@@ -173,7 +174,7 @@ func (h *GameMsgHandler) onPlayerChangeTankReq(sess *gsnet_msg.MsgSession, msg a
 	req.TankId = tankId
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerChangeTankReq_Id), req)
 
-	gslog.Info("player (account: %v, player_id: %v, session: %v) pushed change tank msg to game logic thread", p.Account(), p.Id(), sess.GetId())
+	log.Info("player (account: %v, player_id: %v, session: %v) pushed change tank msg to game logic thread", p.Account(), p.Id(), sess.GetId())
 
 	return nil
 }
@@ -187,12 +188,12 @@ func (h *GameMsgHandler) onPlayerRestoreTankReq(sess *gsnet_msg.MsgSession, msg 
 
 	req, o := msg.(*game_proto.MsgPlayerRestoreTankReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankReq")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerRestoreTankReq")
 		return nil
 	}
 	h.service.gameLogicThread.PushMsg(p.Id(), uint32(game_proto.MsgPlayerRestoreTankReq_Id), req)
 
-	gslog.Info("player (account: %v, player_id: %v, session: %v) pushed restore tank msg to game logic threadv", p.Account(), p.Id(), sess.GetId())
+	log.Info("player (account: %v, player_id: %v, session: %v) pushed restore tank msg to game logic threadv", p.Account(), p.Id(), sess.GetId())
 
 	return nil
 }
@@ -206,7 +207,7 @@ func (h *GameMsgHandler) onPlayerTankMoveReq(sess *gsnet_msg.MsgSession, msg any
 
 	sync, o := msg.(*game_proto.MsgPlayerTankMoveReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgPlayerTankMoveReq")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankMoveReq")
 		return nil
 	}
 
@@ -224,7 +225,7 @@ func (h *GameMsgHandler) onPlayerTankStopMoveReq(sess *gsnet_msg.MsgSession, msg
 
 	req, o := msg.(*game_proto.MsgPlayerTankStopMoveReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgPlayerTankStopMoveReq")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankStopMoveReq")
 		return nil
 	}
 
@@ -242,7 +243,7 @@ func (h *GameMsgHandler) onPlayerTankUpdatePosReq(sess *gsnet_msg.MsgSession, ms
 
 	req, o := msg.(*game_proto.MsgPlayerTankUpdatePosReq)
 	if !o {
-		gslog.Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosReq")
+		log.Warn("cant transfer to type *game_proto.MsgPlayerTankUpdatePosReq")
 		return nil
 	}
 
@@ -297,6 +298,6 @@ func (h *GameMsgHandler) afterPlayerDisconnect(sess *gsnet_msg.MsgSession) {
 		if kicker != nil {
 			kicker.NotifyDisconnectEnd()
 		}
-		gslog.Info("player (account: %v, player_id: %v, session: %v) disconnect", p.Account(), pid, sess.GetId())
+		log.Info("player (account: %v, player_id: %v, session: %v) disconnect", p.Account(), pid, sess.GetId())
 	}
 }

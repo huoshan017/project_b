@@ -45,7 +45,7 @@ func (s *GameService) Init(conf *config) bool {
 	// 监听
 	err := net.Listen(conf.addr)
 	if err != nil {
-		gslog.Error("game service listen addr %v err: %v", conf.addr, err)
+		log.Error("game service listen addr %v err: %v", conf.addr, err)
 		return false
 	}
 	s.server = net
@@ -60,7 +60,7 @@ func (s *GameService) Start() {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				gslog.Stack(err)
+				log.Stack(err)
 			}
 		}()
 		s.gameLogicThread.Run()
@@ -73,21 +73,12 @@ func (s *GameService) End() {
 	s.server.End()
 }
 
-var gslog *log.Logger
-
 func main() {
-	gslog = log.NewWithConfig(&log.LogConfig{
-		Filename:      "./log/game_server.log",
-		MaxSize:       2,
-		MaxBackups:    100,
-		MaxAge:        30,
-		Compress:      false,
-		ConsoleOutput: true,
-	}, log.DebugLevel)
-	defer gslog.Sync()
+	logger := log.InitLog("./log/game_server.log", 2, 100, 30, false, true, -1)
+	defer logger.Sync()
 
 	if len(os.Args) < 2 {
-		gslog.Error("args num invalid")
+		log.Error("args num invalid")
 		return
 	}
 	ip_str := flag.String("ip", "", "ip set")
@@ -99,7 +90,7 @@ func main() {
 	}
 	defer gameService.End()
 
-	gslog.Info("game service started")
+	log.Info("game service started")
 
 	gameService.Start()
 }

@@ -34,7 +34,7 @@ func main() {
 
 	initResources()
 
-	logger := log.InitLog("./log/client.log", 2, 100, 30, false, true, 1)
+	logger := log.InitLog("./log/client.log", 2, 100, 30, false, true, -1)
 
 	game := NewGame(&Config{serverAddress: *ip_str, playerCount: 1, updateTick: common_data.GameLogicTick})
 	err := game.Init()
