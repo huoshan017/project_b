@@ -70,7 +70,7 @@ func (g *Game) Uninit() {
 
 // 重新开始
 func (g *Game) restart() {
-	g.gameData.State = client_base.GameStateBeforeLogin
+	g.gameData.State = client_base.GameStateMainMenu //client_base.GameStateBeforeLogin
 }
 
 // 当前模式
@@ -145,10 +145,11 @@ func (g *Game) ScreenWidthHeight() (int32, int32) {
 // 更新
 func (g *Game) update() {
 	// 时间同步完成
-	if !core.IsTimeSyncEnd() {
+	/*if !core.IsTimeSyncEnd() {
 		return
 	}
-	now := core.GetSyncServTime()
+	now := core.GetSyncServTime()*/
+	now := time.Now()
 	if g.lastCheckTime.IsZero() {
 		g.lastCheckTime = now
 	}

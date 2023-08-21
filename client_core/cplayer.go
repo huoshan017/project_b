@@ -7,6 +7,10 @@ import (
 	"project_b/utils"
 )
 
+const (
+	DefaultSinglePlayerId uint64 = 1
+)
+
 type CPlayer struct {
 	common.Player
 	net *NetClient

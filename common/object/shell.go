@@ -9,7 +9,7 @@ import (
 
 // 炮彈
 type Shell struct {
-	MovableObject
+	*MovableObject
 	trackTargetId    uint32               // 跟蹤目標id
 	searchTargetFunc func(*Shell) IObject // 搜索目標函數
 	fetchTargetFunc  func(uint32) IObject // 獲得目標函數
@@ -17,39 +17,49 @@ type Shell struct {
 }
 
 // 创建炮彈
-func NewShell(instId uint32, staticInfo *ShellStaticInfo) *Shell {
-	o := &Shell{}
-	o.Init(instId, &staticInfo.ObjStaticInfo)
-	return o
+func NewShell() *Shell {
+	s := &Shell{}
+	s.MovableObject = NewMovableObjectWithSuper(s)
+	return s
+}
+
+// 通過子類創建炮彈
+func NewShellWithSuper(super IMovableObject) *Shell {
+	s := &Shell{}
+	s.MovableObject = NewMovableObjectWithSuper(super)
+	return s
 }
 
 // 靜態配置
-func (b *Shell) ShellStaticInfo() *ShellStaticInfo {
-	return (*ShellStaticInfo)(unsafe.Pointer(b.staticInfo))
+func (s *Shell) ShellStaticInfo() *ShellStaticInfo {
+	return (*ShellStaticInfo)(unsafe.Pointer(s.staticInfo))
 }
 
 // 初始化
-func (b *Shell) Init(instId uint32, staticInfo *ObjStaticInfo) {
-	b.MovableObject.Init(instId, staticInfo)
-	b.setSuper(b)
+func (s *Shell) Init(instId uint32, staticInfo *ObjStaticInfo) {
+	s.MovableObject.Init(instId, staticInfo)
 }
 
 // 反初始化
-func (b *Shell) Uninit() {
-	b.trackTargetId = 0
-	b.searchTargetFunc = nil
-	b.fetchTargetFunc = nil
-	b.MovableObject.Uninit()
+func (s *Shell) Uninit() {
+	s.trackTargetId = 0
+	s.searchTargetFunc = nil
+	s.fetchTargetFunc = nil
+	s.MovableObject.Uninit()
 }
 
 // 設置搜索目標函數
-func (b *Shell) SetSearchTargetFunc(f func(*Shell) IObject) {
-	b.searchTargetFunc = f
+func (s *Shell) SetSearchTargetFunc(f func(*Shell) IObject) {
+	if s.ShellStaticInfo().TrackTarget {
+		s.searchTargetFunc = f
+	}
 }
 
 // 設置獲取目標函數
-func (b *Shell) SetFetchTargetFunc(f func(uint32) IObject) {
-	b.fetchTargetFunc = f
+func (s *Shell) SetFetchTargetFunc(f func(uint32) IObject) {
+	if s.ShellStaticInfo().TrackTarget {
+		s.fetchTargetFunc = f
+	}
 }
 
 // 立即移動

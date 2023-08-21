@@ -76,7 +76,7 @@ func (b *Bot) Update(tick time.Duration) {
 			break
 		}
 		if botTank.IsMoving() {
-			b.scene.TankFire(botTank.InstId(), 1)
+			b.scene.TankFire(botTank.InstId())
 			break
 		}
 		bx, by := botTank.Pos()

@@ -391,9 +391,6 @@ func (h *MsgHandler) doPlayerEnter(p *game_proto.PlayerAccountTankInfo, isMe boo
 	// 创建玩家
 	cplayer := NewCPlayer(p.Account, p.PlayerId, h.net)
 
-	// 初始化坦克
-	cplayer.InitTankFromProto(p.TankInfo)
-
 	// 加入玩家管理器
 	if isMe {
 		h.playerMgr.AddMe(cplayer)
@@ -402,11 +399,10 @@ func (h *MsgHandler) doPlayerEnter(p *game_proto.PlayerAccountTankInfo, isMe boo
 	}
 
 	// 玩家坦克进入主逻辑
-	//h.logic.PlayerEnterWithTankInfo(cplayer, p.TankInfo)
 	h.inst.CheckAndStart(h.playerMgr.GetPlayerList())
 
 	// 向上层传递事件
-	h.invoker.InvokeEvent(EventIdPlayerEnterGame, p.Account, p.PlayerId, cplayer.GetTank())
+	h.invoker.InvokeEvent(EventIdPlayerEnterGame, p.Account, p.PlayerId)
 }
 
 // 处理玩家退出

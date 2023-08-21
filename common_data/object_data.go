@@ -88,7 +88,7 @@ var (
 			Level:                   1,
 			SteeringAngularVelocity: 460 * 60,
 			ShellLaunchPos:          base.NewVec2(160, 0),
-			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 300},
+			ShellConfig:             object.TankShellConfig{ShellInfo: ShellConfigData[1], AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 300},
 			ShieldConfig:            object.TankShieldStaticInfo{},
 		},
 		2: {
@@ -98,7 +98,7 @@ var (
 			Level:                   1,
 			SteeringAngularVelocity: 220 * 60,
 			ShellLaunchPos:          base.NewVec2(160, 0),
-			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
+			ShellConfig:             object.TankShellConfig{ShellInfo: ShellConfigData[1], AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 2000},
 		},
 		1000: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
@@ -107,7 +107,7 @@ var (
 			Level:                   1,
 			SteeringAngularVelocity: 240 * 60,
 			ShellLaunchPos:          base.NewVec2(160, 0),
-			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 1500},
+			ShellConfig:             object.TankShellConfig{ShellInfo: ShellConfigData[1], AmountFireOneTime: 1, IntervalInFire: 0, Cooldown: 1500},
 		},
 		1001: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
@@ -116,7 +116,7 @@ var (
 			Level:                   1,
 			SteeringAngularVelocity: 250 * 60,
 			ShellLaunchPos:          base.NewVec2(165, 0),
-			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
+			ShellConfig:             object.TankShellConfig{ShellInfo: ShellConfigData[1], AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 		1002: {
 			MovableObjStaticInfo: object.MovableObjStaticInfo{
@@ -125,7 +125,7 @@ var (
 			Level:                   1,
 			SteeringAngularVelocity: 200 * 60,
 			ShellLaunchPos:          base.NewVec2(165, 0),
-			ShellConfig:             object.TankShellConfig{ShellId: 1, AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
+			ShellConfig:             object.TankShellConfig{ShellInfo: ShellConfigData[1], AmountFireOneTime: 2, IntervalInFire: 500, Cooldown: 1000},
 		},
 	}
 

@@ -129,25 +129,7 @@ func (inst *Instance) processFrameCmdList() {
 		playerData := fd.playerDataList[i]
 		for j := 0; j < len(playerData.frameCmdList); j++ {
 			fc := &playerData.frameCmdList[j]
-			switch fc.cmd.cmd {
-			case CMD_TANK_MOVE:
-				dir := fc.cmd.args[0].(object.Direction)
-				orientation := object.Dir2Orientation(dir)
-				inst.logic.PlayerTankMove(playerData.playerId, orientation)
-			case CMD_TANK_STOP:
-				inst.logic.PlayerTankStopMove(playerData.playerId)
-			case CMD_TANK_FIRE:
-				inst.logic.PlayerTankFire(playerData.playerId, 1)
-			case CMD_TANK_SHIELD:
-				inst.logic.PlayerTankShield(playerData.playerId)
-			case CMD_TANK_RESPAWN:
-				bornPos := &inst.logic.CurrentScene().GetMapConfig().PlayerBornPosList[i]
-				inst.logic.PlayerTankRespawn(playerData.playerId, 1, 1, bornPos.X, bornPos.Y, 0)
-			case CMD_TANK_CHANGE:
-				inst.logic.PlayerTankChange(playerData.playerId, nil)
-			case CMD_TANK_RESTORE:
-				inst.logic.PlayerTankRestore(playerData.playerId)
-			}
+			inst.execCmd(fc.cmd.cmd, fc.cmd.args, playerData.playerId, i)
 		}
 	}
 	inst.currFrameIndex += 1
@@ -157,4 +139,30 @@ func (inst *Instance) processFrameCmdList() {
 		playerDataList[i].playerId = inst.playerIdList[i]
 	}
 	inst.frameList = append(inst.frameList, &frameData{frameNum: 1, playerDataList: playerDataList})
+}
+
+func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, playerIndex int) {
+	switch cmdCode {
+	case CMD_TANK_MOVE:
+		dir := cmdArgs[0].(object.Direction)
+		orientation := object.Dir2Orientation(dir)
+		inst.logic.PlayerTankMove(playerId, orientation)
+	case CMD_TANK_STOP:
+		inst.logic.PlayerTankStopMove(playerId)
+	case CMD_TANK_FIRE:
+		inst.logic.PlayerTankFire(playerId)
+	case CMD_TANK_ADD_SHELL:
+		inst.logic.PlayerTankAddNewShell(playerId, int32(cmdArgs[0].(int)))
+	case CMD_TANK_SWITCH_SHELL:
+		inst.logic.PlayerTankSwitchShell(playerId)
+	case CMD_TANK_SHIELD:
+		inst.logic.PlayerTankShield(playerId)
+	case CMD_TANK_RESPAWN:
+		bornPos := &inst.logic.CurrentScene().GetMapConfig().PlayerBornPosList[playerIndex]
+		inst.logic.PlayerTankRespawn(playerId, 1, 1, bornPos.X, bornPos.Y, 0)
+	case CMD_TANK_CHANGE:
+		inst.logic.PlayerTankChange(playerId, nil)
+	case CMD_TANK_RESTORE:
+		inst.logic.PlayerTankRestore(playerId)
+	}
 }

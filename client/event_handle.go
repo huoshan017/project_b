@@ -149,22 +149,21 @@ args[0]: account(string)
 args[1]: uid(uint64)
 */
 func (g *EventHandles) onEventPlayerEnterGame(args ...any) {
-	if len(args) < 3 {
+	if len(args) < 2 {
 		log.Warn("onEventEnterGame event args length cant less than 3")
 		return
 	}
 
 	account := args[0].(string)
 	uid := args[1].(uint64)
-	tank := args[2].(*object.Tank)
 
 	if g.gameData.MyAcc == account {
 		g.gameData.MyId = uid
 		// 游戏状态
 		g.gameData.State = client_base.GameStateInWorld
-		log.Info("handle event: my player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
+		log.Info("handle event: my player (account: %v, uid: %v) entered game", account, uid)
 	} else {
-		log.Info("handle event: player (account: %v, uid: %v) entered game, tank %v", account, uid, *tank)
+		log.Info("handle event: player (account: %v, uid: %v) entered game", account, uid)
 	}
 }
 

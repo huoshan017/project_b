@@ -24,8 +24,7 @@ var keyPressed2CmdMap = map[ebiten.Key]*core.CmdData{
 	ebiten.KeyD:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRight}),
 	ebiten.KeyW:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirUp}),
 	ebiten.KeyS:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirDown}),
-	ebiten.KeyJ:        core.NewCmdData(core.CMD_TANK_FIRE, []any{1}),
-	ebiten.KeyI:        core.NewCmdData(core.CMD_TANK_FIRE, []any{2}),
+	ebiten.KeyJ:        core.NewCmdData(core.CMD_TANK_FIRE, []any{}),
 	ebiten.KeyUp:       core.NewCmdData(CMD_CAMERA_UP, []any{10}),
 	ebiten.KeyDown:     core.NewCmdData(CMD_CAMERA_DOWN, []any{-10}),
 	ebiten.KeyLeft:     core.NewCmdData(CMD_CAMERA_LEFT, []any{-10}),
@@ -35,15 +34,25 @@ var keyPressed2CmdMap = map[ebiten.Key]*core.CmdData{
 }
 
 // 释放键位映射命令
-var keyReleased2CmdMap = map[ebiten.Key]core.CmdCode{
-	ebiten.KeyA: core.CMD_TANK_STOP,
-	ebiten.KeyD: core.CMD_TANK_STOP,
-	ebiten.KeyW: core.CMD_TANK_STOP,
-	ebiten.KeyS: core.CMD_TANK_STOP,
-	ebiten.KeyC: core.CMD_TANK_CHANGE,
-	ebiten.KeyR: core.CMD_TANK_RESTORE,
-	ebiten.Key1: core.CMD_RELEASE_SMALL_BALL,
-	ebiten.KeyU: core.CMD_TANK_SHIELD,
+var keyReleased2CmdMap = map[ebiten.Key]*core.CmdData{
+	ebiten.KeyA:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
+	ebiten.KeyD:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
+	ebiten.KeyW:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
+	ebiten.KeyS:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
+	ebiten.Key1:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{1}),
+	ebiten.Key2:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{2}),
+	ebiten.Key3:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{3}),
+	ebiten.Key4:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{4}),
+	ebiten.Key5:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{5}),
+	ebiten.Key6:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{6}),
+	ebiten.Key7:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{7}),
+	ebiten.Key8:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{8}),
+	ebiten.Key9:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{9}),
+	ebiten.KeyQ:     core.NewCmdData(core.CMD_TANK_SWITCH_SHELL, []any{}),
+	ebiten.KeyC:     core.NewCmdData(core.CMD_TANK_CHANGE, []any{}),
+	ebiten.KeyR:     core.NewCmdData(core.CMD_TANK_RESTORE, []any{}),
+	ebiten.KeyEqual: core.NewCmdData(core.CMD_RELEASE_SMALL_BALL, []any{}),
+	ebiten.KeyU:     core.NewCmdData(core.CMD_TANK_SHIELD, []any{}),
 }
 
 type ComboKeyIndex struct {
@@ -104,17 +113,17 @@ func (im *InputMgr) AddHandle(cc core.CmdCode, handle func(...any)) {
 // 處理輸入
 func (im *InputMgr) HandleInput() {
 	var (
-		cmd core.CmdCode
-		o   bool
+		cmdData *core.CmdData
+		o       bool
 	)
 	// 處理鍵釋放
 	for k := range im.keyPressMap {
 		if inpututil.IsKeyJustReleased(k) {
-			cmd, o = keyReleased2CmdMap[k]
+			cmdData, o = keyReleased2CmdMap[k]
 			if !o {
 				continue
 			}
-			im.inst.PushFrame(0, im.game.GetGameData().MyId, cmd, nil)
+			im.inst.PushFrame(0, im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
 			delete(im.keyPressMap, k)
 			log.Debug("key %v released", k)
 		}
@@ -133,7 +142,6 @@ func (im *InputMgr) HandleInput() {
 
 	var keyUsed []ebiten.Key
 	var kiList []ComboKeyIndex
-	var cmdData *core.CmdData
 	for k := range im.keyPressMap {
 		var used bool
 		for i := 0; i < len(keyUsed); i++ {

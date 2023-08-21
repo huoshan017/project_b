@@ -38,7 +38,6 @@ type object struct {
 	components        []IComponent   // 組件
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
-	super             IObject        // 派生類對象
 	colliderComp      *ColliderComp  // 碰撞器組件
 }
 
@@ -73,7 +72,6 @@ func (o *object) Uninit() {
 	o.rotation.Clear()
 	o.components = o.components[:0]
 	o.changedStaticInfo = nil
-	o.super = nil
 	o.toRecycle = false
 }
 
@@ -325,7 +323,7 @@ func (o object) HasComp(name string) bool {
 }
 
 // 設置碰撞處理函數
-func (o *object) SetCollisionHandle(handle func(...any)) {
+func (o *object) SetCollisionHandle(handle func(IMovableObject, *CollisionInfo)) {
 	if o.colliderComp != nil {
 		o.colliderComp.SetCollisionHandle(handle)
 	}
@@ -336,27 +334,21 @@ func (o *object) GetColliderComp() *ColliderComp {
 	return o.colliderComp
 }
 
-// 設置派生類
-func (o *object) setSuper(super IObject) {
-	o.super = super
-}
-
 // 静态物体
 type StaticObject struct {
 	object
 }
 
 // 创建静态物体
-func NewStaticObject(instId uint32, info *ObjStaticInfo) *StaticObject {
+func NewStaticObject() *StaticObject {
 	obj := &StaticObject{}
-	obj.Init(instId, info)
+	//obj.Init(instId, info)
 	return obj
 }
 
 // 初始化
 func (o *StaticObject) Init(instId uint32, info *ObjStaticInfo) {
 	o.object.Init(instId, info)
-	o.object.setSuper(o)
 }
 
 // 反初始化

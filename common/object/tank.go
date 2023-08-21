@@ -9,20 +9,26 @@ import (
 
 // 车辆
 type Vehicle struct {
-	MovableObject
+	*MovableObject
 }
 
 // 创建车辆
-func NewVehicle(instId uint32, staticInfo *ObjStaticInfo) *Vehicle {
+func NewVehicle() *Vehicle {
 	o := &Vehicle{}
-	o.Init(instId, staticInfo)
+	o.MovableObject = NewMovableObjectWithSuper(o)
 	return o
+}
+
+// 通過子類創建車輛
+func NewVehicleWithSuper(super IMovableObject) *Vehicle {
+	v := &Vehicle{}
+	v.MovableObject = NewMovableObjectWithSuper(super)
+	return v
 }
 
 // 初始化
 func (v *Vehicle) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	v.MovableObject.Init(instId, staticInfo)
-	v.setSuper(v)
 }
 
 // 反初始化
@@ -80,20 +86,22 @@ func (s *Shield) IsEffective() bool {
 
 // 坦克
 type Tank struct {
-	Vehicle
+	*Vehicle
 	level                      int32
 	changeEvent                base.Event
 	fireTime, fireIntervalTime time.CustomTime
 	shellFireCount             int8
+	shellStaticInfoList        []*ShellStaticInfo
+	shellIndex                 int32
 	shield                     *Shield
 	addShieldEvent             base.Event
 	cancelShieldEvent          base.Event
 }
 
 // 创建坦克
-func NewTank(instId uint32, staticInfo *TankStaticInfo) *Tank {
+func NewTank() *Tank {
 	tank := &Tank{}
-	tank.Init(instId, &staticInfo.ObjStaticInfo)
+	tank.Vehicle = NewVehicleWithSuper(tank)
 	return tank
 }
 
@@ -106,11 +114,17 @@ func (t *Tank) TankStaticInfo() *TankStaticInfo {
 func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	t.Vehicle.Init(instId, staticInfo)
 	t.level = t.TankStaticInfo().Level
-	t.setSuper(t)
+	shellConfig := &t.TankStaticInfo().ShellConfig
+	if shellConfig.ShellInfo != nil {
+		t.shellStaticInfoList = []*ShellStaticInfo{shellConfig.ShellInfo}
+	}
 }
 
 // 反初始化
 func (t *Tank) Uninit() {
+	if len(t.shellStaticInfoList) > 0 {
+		t.shellStaticInfoList = t.shellStaticInfoList[:0]
+	}
 	t.shield = nil
 	t.Vehicle.Uninit()
 }
@@ -172,14 +186,17 @@ func (t *Tank) UnregisterCancelShieldEventHandle(handle func(args ...any)) {
 }
 
 // 檢測是否可以開炮
-func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell, shellInfo *ShellStaticInfo) *Shell {
+func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell) *Shell {
 	var (
 		shell      *Shell
 		staticInfo = t.TankStaticInfo()
 	)
+	if len(t.shellStaticInfoList) == 0 {
+		return nil
+	}
 	// 先檢測炮彈冷卻時間
 	if t.fireTime.IsZero() || time.Since(t.fireTime) >= time.Duration(staticInfo.ShellConfig.Cooldown)*time.Millisecond {
-		shell = newShellFunc(shellInfo)
+		shell = newShellFunc(t.shellStaticInfoList[t.shellIndex])
 		t.fireTime = time.Now()
 		t.shellFireCount = 1
 	}
@@ -187,7 +204,7 @@ func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell, shellInf
 	if t.TankStaticInfo().ShellConfig.AmountFireOneTime > 1 && t.shellFireCount < t.TankStaticInfo().ShellConfig.AmountFireOneTime {
 		if t.fireIntervalTime.IsZero() || time.Since(t.fireIntervalTime) >= time.Duration(t.TankStaticInfo().ShellConfig.IntervalInFire)*time.Millisecond {
 			if shell == nil {
-				shell = newShellFunc(shellInfo)
+				shell = newShellFunc(t.shellStaticInfoList[t.shellIndex])
 			}
 			t.fireIntervalTime = time.Now()
 			t.shellFireCount += 1
@@ -241,6 +258,25 @@ func (t *Tank) Update(tick time.Duration) {
 		return
 	}
 	t.MovableObject.Update(tick)
+}
+
+// 添加彈藥
+func (t *Tank) AppendShell(shellStaticInfo *ShellStaticInfo) bool {
+	for i := 0; i < len(t.shellStaticInfoList); i++ {
+		if t.shellStaticInfoList[i].Id() == shellStaticInfo.Id() {
+			return false
+		}
+	}
+	t.shellStaticInfoList = append(t.shellStaticInfoList, shellStaticInfo)
+	t.shellIndex = int32(len(t.shellStaticInfoList)) - 1
+	return true
+}
+
+// 切換彈藥
+func (t *Tank) SwitchShell() {
+	if len(t.shellStaticInfoList) > 0 {
+		t.shellIndex = (t.shellIndex + 1) % int32(len(t.shellStaticInfoList))
+	}
 }
 
 // 加護盾

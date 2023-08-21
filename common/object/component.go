@@ -21,7 +21,7 @@ func (ab *AABB) MoveIntersect(dx, dy int32, aabb *AABB) bool {
 
 // 碰撞組件
 type ColliderComp struct {
-	collisionHandle func(...any)
+	collisionHandle func(IMovableObject, *CollisionInfo)
 	obj             IObject
 }
 
@@ -52,13 +52,13 @@ func (c ColliderComp) GetAABB() AABB {
 }
 
 // 注冊碰撞事件處理
-func (c *ColliderComp) SetCollisionHandle(handle func(...any)) {
+func (c *ColliderComp) SetCollisionHandle(handle func(IMovableObject, *CollisionInfo)) {
 	c.collisionHandle = handle
 }
 
 // 執行
-func (c *ColliderComp) CallCollisionEventHandle(args ...any) {
+func (c *ColliderComp) CallCollisionEventHandle(mobj IMovableObject, ci *CollisionInfo) {
 	if c.collisionHandle != nil {
-		c.collisionHandle(args...)
+		c.collisionHandle(mobj, ci)
 	}
 }

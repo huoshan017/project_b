@@ -183,11 +183,14 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				var x, y int32
 				if aabb.Right <= aabb2.Left && aabb.Top > aabb2.Bottom {
 					x = aabb2.Left - aabb.Right
+					// y方向上的移動距離與x方向成正比
+					y = x * dy / dx
 				} else if aabb.Right <= aabb2.Left && aabb.Top <= aabb2.Bottom {
 					x = aabb2.Left - aabb.Right
 					y = aabb2.Bottom - aabb.Top
 				} else if aabb.Right > aabb2.Left && aabb.Top <= aabb2.Bottom {
 					y = aabb2.Bottom - aabb.Top
+					x = y * dx / dy
 				} else {
 					panic(fmt.Sprintf("dx(%v)>0 dy(%v)>0  aabb.Right(%v) > aabb2.Left(%v) && aabb.Top(%v) > aabb2.Bottom(%v)", dx, dy, aabb.Right, aabb2.Left, aabb.Top, aabb2.Bottom))
 				}
@@ -216,11 +219,13 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				var x, y int32
 				if aabb.Right <= aabb2.Left && aabb.Bottom < aabb2.Top {
 					x = aabb2.Left - aabb.Right
+					y = x * -dy / dx
 				} else if aabb.Right <= aabb2.Left && aabb.Bottom >= aabb2.Top {
 					x = aabb2.Left - aabb.Right
 					y = aabb.Bottom - aabb2.Top
 				} else if aabb.Right > aabb2.Left && aabb.Bottom >= aabb2.Top {
 					y = aabb.Bottom - aabb2.Top
+					x = y * dx / -dy
 				} else {
 					panic(fmt.Sprintf("dx(%v)>0 dy(%v)<0  aabb.Right(%v) > aabb2.Left(%v) && aabb.Bottom(%v) < aabb2.Top(%v)", dx, dy, aabb.Right, aabb2.Left, aabb.Bottom, aabb2.Top))
 				}
@@ -248,11 +253,13 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				var x, y int32
 				if aabb.Left >= aabb2.Right && aabb.Top > aabb2.Bottom {
 					x = aabb.Left - aabb2.Right
+					y = x * dy / -dx
 				} else if aabb.Left >= aabb2.Right && aabb.Top <= aabb2.Bottom {
 					x = aabb.Left - aabb2.Right
 					y = aabb2.Bottom - aabb.Top
 				} else if aabb.Left < aabb2.Right && aabb.Top <= aabb2.Bottom {
 					y = aabb2.Bottom - aabb.Top
+					x = y * -dx / dy
 				} else {
 					panic(fmt.Sprintf("dx(%v)<0 dy(%v)>0  aabb.Left(%v) < aabb2.Right(%v) && aabb.Top(%v) > aabb2.Bottom(%v)", dx, dy, aabb.Left, aabb2.Right, aabb.Top, aabb2.Bottom))
 				}
@@ -280,11 +287,13 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				var x, y int32
 				if aabb.Left >= aabb2.Right && aabb.Top < aabb2.Bottom {
 					x = aabb.Left - aabb2.Right
+					y = x * -dy / -dx
 				} else if aabb.Left >= aabb2.Right && aabb.Top >= aabb2.Bottom {
 					x = aabb.Left - aabb2.Right
 					y = aabb.Top - aabb2.Bottom
 				} else if aabb.Left < aabb2.Right && aabb.Top >= aabb2.Bottom {
 					y = aabb.Top - aabb2.Bottom
+					x = y * -dx / -dy
 				} else {
 					panic(fmt.Sprintf("dx(%v)<0 dy(%v)<0  aabb.Left(%v) < aabb2.Right(%v) && aabb.Top(%v) >= aabb2.Bottom(%v)", dx, dy, aabb.Left, aabb2.Right, aabb.Top, aabb2.Bottom))
 				}

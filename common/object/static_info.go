@@ -82,10 +82,10 @@ type ShellStaticInfo struct {
 
 // 坦克炮彈配置
 type TankShellConfig struct {
-	ShellId           int32 // 子彈配置ID
-	AmountFireOneTime int8  // 一次發射炮彈量
-	IntervalInFire    int32 // 一次發射的幾發炮彈之間的間隔時間(毫秒)
-	Cooldown          int32 // 每次發射冷卻時間(毫秒)
+	ShellInfo         *ShellStaticInfo // 子彈配置ID
+	AmountFireOneTime int8             // 一次發射炮彈量
+	IntervalInFire    int32            // 一次發射的幾發炮彈之間的間隔時間(毫秒)
+	Cooldown          int32            // 每次發射冷卻時間(毫秒)
 }
 
 // 坦克靜態配置

@@ -352,19 +352,18 @@ func (s *SceneLogic) TankStopMove(instId uint32) {
 	tank.Stop()
 }
 
-func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
+func (s *SceneLogic) TankFire(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
 		return
 	}
-	shellConfig := common_data.ShellConfigData[shellId]
-	shell := tank.CheckAndFire(s.objFactory.NewShell, shellConfig)
+	shell := tank.CheckAndFire(s.objFactory.NewShell)
 	if shell != nil {
 		s.shellList.Add(shell.InstId(), shell)
 		shell.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 		shell.SetCollisionHandle(s.onShellCollision)
-		if shellConfig.TrackTarget {
+		if shell.ShellStaticInfo().TrackTarget {
 			shell.SetSearchTargetFunc(s.searchShellTarget)
 			shell.SetFetchTargetFunc(s.GetObj)
 		}
@@ -376,6 +375,24 @@ func (s *SceneLogic) TankFire(instId uint32, shellId int32) {
 			shell.Move(tank.Rotation())
 		}
 	}
+}
+
+func (s *SceneLogic) TankAddNewShell(instId uint32, shellConfigId int32) bool {
+	tank, o := s.tankList.Get(instId)
+	if !o {
+		log.Error("SceneLogic: tank %v not found", instId)
+		return false
+	}
+	return tank.AppendShell(common_data.ShellConfigData[shellConfigId])
+}
+
+func (s *SceneLogic) TankSwitchShell(instId uint32) {
+	tank, o := s.tankList.Get(instId)
+	if !o {
+		log.Error("SceneLogic: tank %v not found while switch shell", instId)
+		return
+	}
+	tank.SwitchShell()
 }
 
 func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
@@ -640,12 +657,11 @@ func (s *SceneLogic) onMovableObjReachMapBorder(mobj object.IMovableObject) {
 	}
 }
 
-func (s *SceneLogic) onTankCollision(args ...any) {
-	tank, o := args[0].(*object.Tank)
+func (s *SceneLogic) onTankCollision(mobj object.IMovableObject, ci *object.CollisionInfo) {
+	tank, o := mobj.(*object.Tank)
 	if !o {
 		return
 	}
-	ci := args[1].(*object.CollisionInfo)
 	for i := 0; i < len(ci.ObjList); i++ {
 		obj := ci.ObjList[i]
 		objType := obj.Type()
@@ -668,9 +684,8 @@ func (s *SceneLogic) onTankCollision(args ...any) {
 	}
 }
 
-func (s *SceneLogic) onShellCollision(args ...any) {
-	shell := args[0].(*object.Shell)
-	ci := args[1].(*object.CollisionInfo)
+func (s *SceneLogic) onShellCollision(mobj object.IMovableObject, ci *object.CollisionInfo) {
+	shell := mobj.(*object.Shell)
 	for i := 0; i < len(ci.ObjList); i++ {
 		obj := ci.ObjList[i]
 		s.shellEffect(shell, obj)

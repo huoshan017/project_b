@@ -8,7 +8,7 @@ import (
 
 // 環繞運動物體
 type SurroundObj struct {
-	MovableObject
+	*MovableObject
 	aroundCenterObjInstId  uint32               // 環繞物體實例id
 	getAroundCenterObjFunc func(uint32) IObject // 獲得環繞物體函數
 	turnAngle              int32                // 轉過角度
@@ -16,15 +16,14 @@ type SurroundObj struct {
 	lateUpdateEvent        base.Event           // 后更新事件
 }
 
-func NewSurroundObj(instId uint32, staticInfo *SurroundObjStaticInfo) *SurroundObj {
+func NewSurroundObj() *SurroundObj {
 	obj := &SurroundObj{}
-	obj.Init(instId, &staticInfo.ObjStaticInfo)
+	obj.MovableObject = NewMovableObjectWithSuper(obj)
 	return obj
 }
 
 func (b *SurroundObj) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	b.MovableObject.Init(instId, staticInfo)
-	b.setSuper(b)
 }
 
 func (b *SurroundObj) Uninit() {

@@ -220,7 +220,7 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 	if po.lastX != cx || po.lastY != cy {
 		po.lastX = cx
 		po.lastY = cy
-		po.lastTime = core.GetSyncServTime()
+		po.lastTime = time.Now() //core.GetSyncServTime()
 	}
 	duration := time.Since(po.lastTime)
 	nx, ny := object.DefaultMove(po.mobj, duration)
@@ -232,7 +232,7 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 func (po *PlayableMoveObject) onEventMove(args ...any) {
 	po.Play()
 	po.lastX, po.lastY = po.mobj.Pos()
-	po.lastTime = core.GetSyncServTime()
+	po.lastTime = time.Now() //core.GetSyncServTime()
 	po.interpolate = true
 }
 
@@ -268,7 +268,7 @@ func NewPlayableShell(shell object.IShell, animConfig *MovableObjectAnimConfig) 
 		PlayableMoveObject: NewPlayableMoveObject(shell, animConfig),
 		shell:              shell,
 	}
-	playable.lastTime = core.GetSyncServTime()
+	playable.lastTime = time.Now() //core.GetSyncServTime()
 	return playable
 }
 
@@ -322,7 +322,7 @@ func (ps *PlayableShell) onEventLateUpdate(args ...any) {
 	ps.tx, ps.ty = args[0].(int32), args[1].(int32)
 	ps.rotation = args[2].(common_base.Angle)
 	ps.updated = true
-	ps.lastTime = core.GetSyncServTime()
+	ps.lastTime = time.Now() //core.GetSyncServTime()
 }
 
 // 坦克播放对象
@@ -449,7 +449,7 @@ func (ps *PlayableSurroundObj) Interpolation(transform *Transform) {
 		return
 	}
 	duration := time.Since(ps.lastTime)
-	ps.lastTime = core.GetSyncServTime()
+	ps.lastTime = time.Now() //core.GetSyncServTime()
 	var interpolateX, interpolateY float64
 	if pobj, o := ps.playableAroundCenterObj.(IPlayableMovableObject); !o {
 		var t Transform
@@ -466,7 +466,7 @@ func (ps *PlayableSurroundObj) Interpolation(transform *Transform) {
 
 // 更新事件處理
 func (ps *PlayableSurroundObj) onEventLateUpdate(args ...any) {
-	ps.lastTime = core.GetSyncServTime()
+	ps.lastTime = time.Now() //core.GetSyncServTime()
 	ps.lastMoveInfo.TurnAngle = args[0].(int32)
 	ps.lastMoveInfo.AccumulateTime = args[1].(time.Duration)
 }

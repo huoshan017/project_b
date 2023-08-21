@@ -38,17 +38,22 @@ type MovableObject struct {
 }
 
 // 创建可移动物体
-func NewMovableObject(instId uint32, staticInfo *ObjStaticInfo) *MovableObject {
+func NewMovableObject() *MovableObject {
 	o := &MovableObject{}
-	o.Init(instId, staticInfo)
 	return o
+}
+
+// 在子類中創建可移動物體
+func NewMovableObjectWithSuper(super IMovableObject) *MovableObject {
+	mobj := NewMovableObject()
+	mobj.mySuper = super
+	return mobj
 }
 
 // 初始化
 func (o *MovableObject) Init(instId uint32, staticInfo *ObjStaticInfo) {
 	o.object.Init(instId, staticInfo)
 	o.speed = staticInfo.speed
-	o.setSuper(o)
 }
 
 // 反初始化
@@ -244,12 +249,9 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	var x, y int32
 	if o.MovableObjStaticInfo().MoveFunc != nil {
-		if o.mySuper == nil {
-			o.mySuper = o.super.(IMovableObject)
-		}
 		x, y = o.MovableObjStaticInfo().MoveFunc(o.mySuper, tick)
 	} else {
-		x, y = DefaultMove(o, tick)
+		x, y = DefaultMove(o.mySuper, tick)
 	}
 
 	ox, oy := o.Pos()
@@ -278,7 +280,7 @@ func (o *MovableObject) checkMove(dx, dy int32, update bool) bool {
 			}
 		}
 		if o.colliderComp != nil {
-			o.colliderComp.CallCollisionEventHandle(o.super, &o.collisionInfo)
+			o.colliderComp.CallCollisionEventHandle(o.mySuper, &o.collisionInfo)
 		}
 	}
 	return o.collisionInfo.Result != CollisionAndBlock

@@ -52,12 +52,12 @@ func (f *ObjectFactory) NewStaticObject(info *ObjStaticInfo) IStaticObject {
 	l := len(f.freeStaticObjs)
 	var obj IStaticObject
 	if l == 0 {
-		obj = NewStaticObject(id, info)
+		obj = NewStaticObject( /*id, info*/ )
 	} else {
 		obj = f.freeStaticObjs[l-1]
-		obj.Init(id, info)
 		f.freeStaticObjs = f.freeStaticObjs[:l-1]
 	}
+	obj.Init(id, info)
 	f.objMap[id] = obj
 	return obj
 }
@@ -89,12 +89,12 @@ func (f *ObjectFactory) NewTank(info *TankStaticInfo) *Tank {
 	l := len(f.freeMovableObjs[MovableObjTank])
 	var obj *Tank
 	if l == 0 {
-		obj = NewTank(id, info)
+		obj = NewTank()
 	} else {
 		obj = f.freeMovableObjs[MovableObjTank][l-1].(*Tank)
-		obj.Init(id, &info.ObjStaticInfo)
 		f.freeMovableObjs[MovableObjTank] = f.freeMovableObjs[MovableObjTank][:l-1]
 	}
+	obj.Init(id, &info.ObjStaticInfo)
 	f.objMap[id] = obj
 	return obj
 }
@@ -116,12 +116,12 @@ func (f *ObjectFactory) NewShell(info *ShellStaticInfo) *Shell {
 	l := len(f.freeMovableObjs[MovableObjShell])
 	var obj *Shell
 	if l == 0 {
-		obj = NewShell(id, info)
+		obj = NewShell()
 	} else {
 		obj = f.freeMovableObjs[MovableObjShell][l-1].(*Shell)
-		obj.Init(id, &info.ObjStaticInfo)
 		f.freeMovableObjs[MovableObjShell] = f.freeMovableObjs[MovableObjShell][:l-1]
 	}
+	obj.Init(id, &info.ObjStaticInfo)
 	f.objMap[id] = obj
 	return obj
 }
@@ -143,12 +143,12 @@ func (f *ObjectFactory) NewSurroundObj(info *SurroundObjStaticInfo) *SurroundObj
 	l := len(f.freeMovableObjs[MovableObjSurroundObj])
 	var obj *SurroundObj
 	if l == 0 {
-		obj = NewSurroundObj(id, info)
+		obj = NewSurroundObj()
 	} else {
 		obj = f.freeMovableObjs[MovableObjSurroundObj][l-1].(*SurroundObj)
-		obj.Init(id, &info.ObjStaticInfo)
 		f.freeMovableObjs[MovableObjSurroundObj] = f.freeMovableObjs[MovableObjSurroundObj][:l-1]
 	}
+	obj.Init(id, &info.ObjStaticInfo)
 	f.objMap[id] = obj
 	return obj
 }

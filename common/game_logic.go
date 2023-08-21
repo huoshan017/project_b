@@ -294,7 +294,7 @@ func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
 }
 
 // 玩家坦克開炮
-func (g *GameLogic) PlayerTankFire(uid uint64, shellId int32) {
+func (g *GameLogic) PlayerTankFire(uid uint64) {
 	if g.state == logicStatePause {
 		return
 	}
@@ -302,7 +302,29 @@ func (g *GameLogic) PlayerTankFire(uid uint64, shellId int32) {
 	if !o {
 		return
 	}
-	g.scene.TankFire(tankId, shellId)
+	g.scene.TankFire(tankId)
+}
+
+// 坦克增加新炮彈
+func (g *GameLogic) PlayerTankAddNewShell(uid uint64, shellConfigId int32) {
+	if g.state == logicStatePause {
+		return
+	}
+	tankId, o := g.player2Tank.Get(uid)
+	if o {
+		g.scene.TankAddNewShell(tankId, shellConfigId)
+	}
+}
+
+// 坦克切換炮彈
+func (g *GameLogic) PlayerTankSwitchShell(uid uint64) {
+	if g.state == logicStatePause {
+		return
+	}
+	tankId, o := g.player2Tank.Get(uid)
+	if o {
+		g.scene.TankSwitchShell(tankId)
+	}
 }
 
 // 坦克釋放環繞物體

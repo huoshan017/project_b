@@ -51,7 +51,7 @@ func (ui *loginUI) Update() {
 	}
 }
 
-// loginUI.GenFrame
+// loginUI.DrawFrame
 func (ui *loginUI) DrawFrame() {
 	w, h := ui.game.ScreenWidthHeight()
 	imgui.SetNextWindowPos(imgui.Vec2{X: 0, Y: 0})
@@ -87,7 +87,7 @@ type InWorldUI struct {
 // InWorld.Init
 func (ui *InWorldUI) Init(game client_base.IGame) {
 	ui.revive.Init(game)
-	ui.pauseMenu.Init(game)
+	ui.pauseMenu.Init(game, getPauseMenuIdNodeTree(&ui.pauseMenu))
 	ui.debug.Init(game)
 }
 
@@ -139,7 +139,7 @@ func (ui *PopupReviveUI) Update() {
 	}
 }
 
-// PopupReviveUI.GenFrame
+// PopupReviveUI.DrawFrame
 func (ui *PopupReviveUI) DrawFrame() {
 	if !ui.popup {
 		return
@@ -147,57 +147,12 @@ func (ui *PopupReviveUI) DrawFrame() {
 	cx, cy := ui.GetScreenCenterPos()
 	imgui.SetNextWindowPos(imgui.Vec2{X: float32(cx) - ui.s.X/2, Y: float32(cy) - ui.s.Y/2})
 	imgui.BeginV("revive", nil, imgui.WindowFlagsNoDecoration|imgui.WindowFlagsNoMove)
-	imgui.Text("Revive/Exit")
+	imgui.Text("Revive/Exit?")
 	if imgui.Button("Revive") {
 		ui.toRevive = true
-	} else if imgui.Button("Exit") {
+	} else if imgui.Button("Cancel") {
 		ui.toExit = true
 	}
-	ui.s = imgui.WindowSize()
-	imgui.End()
-}
-
-// PauseMenuUI
-type PauseMenuUI struct {
-	PopupBase
-	resume bool
-}
-
-// PauseMenuUI.Init
-func (ui *PauseMenuUI) Init(game client_base.IGame) {
-	ui.uiBase.Init(game)
-}
-
-// PauseMenuUI.Update
-func (ui *PauseMenuUI) Update() {
-	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) || ui.resume {
-		if ui.popup {
-			ui.game.Inst().Resume()
-			ui.pop(false)
-			ui.resume = false
-		} else {
-			ui.game.Inst().Pause()
-			ui.pop(true)
-		}
-	}
-}
-
-// PauseMenuUI.GenFrame
-func (ui *PauseMenuUI) DrawFrame() {
-	if !ui.popup {
-		return
-	}
-	cx, cy := ui.GetScreenCenterPos()
-	imgui.SetNextWindowPos(imgui.Vec2{X: float32(cx) - ui.s.X/2, Y: float32(cy) - ui.s.Y/2})
-	imgui.BeginV("popup_menu", nil, imgui.WindowFlagsNoDecoration|imgui.WindowFlagsNoMove)
-	imgui.SameLine()
-	imgui.Text("Pause")
-	if imgui.Button("Resume") {
-		ui.resume = true
-	}
-	imgui.Button("Options")
-	imgui.Button("Restart")
-	imgui.Button("Exit")
 	ui.s = imgui.WindowSize()
 	imgui.End()
 }
@@ -303,6 +258,7 @@ type ImguiManager struct {
 	game      client_base.IGame
 	renderMgr *renderer.Manager
 	login     loginUI
+	mainMenu  MainMenuUI
 	inWorld   InWorldUI
 }
 
@@ -318,13 +274,20 @@ func (ui *ImguiManager) Init() {
 	ui.renderMgr.SetDisplaySize(float32(w), float32(h))
 	ui.initTextures()
 	ui.login.Init(ui.game)
+	ui.mainMenu.Init(ui.game, getMainMenuIdNodeTree(&ui.mainMenu))
 	ui.inWorld.Init(ui.game)
 }
 
 func (ui *ImguiManager) Update() {
 	ui.renderMgr.Update(1.0 / 60.0)
-	ui.login.Update()
-	ui.inWorld.Update()
+	switch ui.game.GetState() {
+	case client_base.GameStateBeforeLogin:
+		ui.login.Update()
+	case client_base.GameStateMainMenu:
+		ui.mainMenu.Update()
+	case client_base.GameStateInWorld:
+		ui.inWorld.Update()
+	}
 }
 
 func (ui *ImguiManager) Draw(screen *ebiten.Image) {
@@ -333,6 +296,8 @@ func (ui *ImguiManager) Draw(screen *ebiten.Image) {
 	switch ui.game.GetState() {
 	case client_base.GameStateBeforeLogin:
 		ui.login.DrawFrame()
+	case client_base.GameStateMainMenu:
+		ui.mainMenu.DrawFrame()
 	case client_base.GameStateInWorld:
 		ui.inWorld.DrawFrame()
 	default:
