@@ -197,6 +197,12 @@ func (bm *BotManager) RemoveBot(id int32) bool {
 	if !o {
 		return false
 	}
+	bm.removeBot(bot)
+	bm.botList.Remove(id)
+	return true
+}
+
+func (bm *BotManager) removeBot(bot *Bot) {
 	bot.unregisterEnemyGetHandle(bm.onEmenyTankGet)
 	bots, o := bm.enemyId2Bot.Get(bot.enemyId)
 	if o {
@@ -208,9 +214,7 @@ func (bm *BotManager) RemoveBot(id int32) bool {
 			}
 		}
 	}
-	bm.botList.Remove(id)
 	bm.botPool.Put(bot)
-	return true
 }
 
 func (bm *BotManager) Update(tick time.Duration) {
@@ -228,6 +232,10 @@ func (bm *BotManager) Update(tick time.Duration) {
 }
 
 func (bm *BotManager) Clear() {
+	for i := int32(0); i < bm.botList.Count(); i++ {
+		_, bot := bm.botList.GetByIndex(i)
+		bm.removeBot(bot)
+	}
 	bm.botList.Clear()
 	bm.idCounter = 0
 	bm.enemyId2Bot.Clear()

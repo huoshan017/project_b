@@ -70,10 +70,22 @@ func (s *SceneLogic) GetMapId() int32 {
 func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	// 载入地图
 	s.gmap.Load(m)
+	s.loadMap(m, false)
+	s.mapConfig = m
+	s.mapWidth = int32(len(m.Layers[0])) * m.TileWidth
+	s.mapHeight = int32(len(m.Layers)) * m.TileHeight
+	log.Info("Load map %v done, map width %v, map height %v", m.Id, s.mapWidth, s.mapHeight)
+	return true
+}
+
+func (s *SceneLogic) loadMap(m *game_map.Config, reload bool) {
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
 			st := object.StaticObjType(m.Layers[line][col])
 			if common_data.StaticObjectConfigData[st] == nil {
+				if reload {
+					continue
+				}
 				s.tankBornPosList = append(s.tankBornPosList, TankBornPosInfo{
 					x:    m.TileWidth*int32(col) + m.TileWidth/2,
 					y:    m.TileHeight*int32(len(m.Layers)-1-line) + m.TileHeight/2,
@@ -89,16 +101,17 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 			s.gmap.AddTile(int16(len(m.Layers)-1-line), int16(col), tileObj)
 		}
 	}
-	s.mapConfig = m
-	s.mapWidth = int32(len(m.Layers[0])) * m.TileWidth
-	s.mapHeight = int32(len(m.Layers)) * m.TileHeight
-	log.Info("Load map %v done, map width %v, map height %v", m.Id, s.mapWidth, s.mapHeight)
-	return true
 }
 
 func (s *SceneLogic) UnloadMap() {
 	s.mapWidth = 0
 	s.mapHeight = 0
+	s.mapConfig = nil
+	s.gmap.Unload()
+	s.clearObjsData()
+}
+
+func (s *SceneLogic) clearObjsData() {
 	for i := int32(0); i < s.staticObjList.Count(); i++ {
 		_, v := s.staticObjList.GetByIndex(i)
 		if v != nil {
@@ -133,7 +146,6 @@ func (s *SceneLogic) UnloadMap() {
 	s.tankList.Clear()
 	s.shellList.Clear()
 	s.surroundObjList.Clear()
-	s.gmap.Unload()
 	s.objFactory.Clear()
 	s.effectList.Clear()
 	s.effectPool.Clear()
@@ -143,6 +155,12 @@ func (s *SceneLogic) UnloadMap() {
 	s.staticObjRecycleList = s.staticObjRecycleList[:0]
 	s.effectRecycleList = s.effectRecycleList[:0]
 	s.effectSearchedList = s.effectSearchedList[:0]
+}
+
+func (s *SceneLogic) ReloadMap() {
+	s.gmap.ClearObjsData()
+	s.clearObjsData()
+	s.loadMap(s.mapConfig, true)
 }
 
 func (s *SceneLogic) GetGridMap() *GridMap {

@@ -88,9 +88,6 @@ func (m *GridMap) Load(config *game_map.Config) {
 	// 創建網格
 	gridColNum, gridLineNum := (colNum+gridTileWidth-1)/gridTileWidth, (lineNum+gridTileHeight-1)/gridTileHeight
 	m.grids = make([]gridObjList, gridLineNum*gridColNum)
-	for i := 0; i < int(gridLineNum*gridColNum); i++ {
-		m.grids[i] = gridObjList{}
-	}
 	m.gridLineNum = gridLineNum
 	m.gridColNum = gridColNum
 
@@ -105,20 +102,34 @@ func (m *GridMap) Load(config *game_map.Config) {
 }
 
 func (m *GridMap) Unload() {
+	m.ClearObjsData()
 	m.config = nil
-	for i := 0; i < len(m.grids); i++ {
-		m.grids[i].clear()
-	}
-	m.grids = m.grids[:0]
-	m.sobjs.Clear()
-	m.mobjs.Clear()
-	m.mobj2GridIndex.Clear()
 	m.grids = nil
 	m.minGridTileSize = 0
 	m.gridLineNum = 0
 	m.gridColNum = 0
 	m.gridWidth = 0
 	m.gridHeight = 0
+}
+
+func (m *GridMap) ClearObjsData() {
+	for i := 0; i < len(m.grids); i++ {
+		m.grids[i].clear()
+	}
+	m.sobjs.Clear()
+	m.mobjs.Clear()
+	m.mobj2GridIndex.Clear()
+	for i := 0; i < len(m.resultLayerObjs); i++ {
+		m.resultLayerObjs[i].Clear()
+	}
+	if len(m.resultMovableObjList) > 0 {
+		clear(m.resultMovableObjList)
+		m.resultMovableObjList = m.resultMovableObjList[:0]
+	}
+	if len(m.checkCollisionObjList) > 0 {
+		clear(m.checkCollisionObjList)
+		m.checkCollisionObjList = m.checkCollisionObjList[:0]
+	}
 }
 
 func (m *GridMap) GetGridWidthHeight() (int32, int32) {

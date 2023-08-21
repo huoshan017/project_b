@@ -8,6 +8,8 @@ import (
 	"project_b/common/time"
 	"project_b/game_map"
 	"project_b/log"
+
+	"github.com/huoshan017/ponu/list"
 )
 
 type InstanceArgs struct {
@@ -29,18 +31,31 @@ type frameData struct {
 	playerDataList []*playerData
 }
 
+func (fd *frameData) clear() {
+	fd.frameNum = 0
+	for _, pd := range fd.playerDataList {
+		if len(pd.frameCmdList) == 0 {
+			continue
+		}
+		clear(pd.frameCmdList)
+		pd.frameCmdList = pd.frameCmdList[:0]
+	}
+}
+
 type Instance struct {
-	args           *InstanceArgs     // 參數
-	frameList      []*frameData      // 幀列表
-	currFrameIndex uint32            // 當前幀索引
-	playerIdList   []uint64          // 玩家列表
-	logic          *common.GameLogic // 游戲邏輯
+	args              *InstanceArgs     // 參數
+	frameList         []*frameData      // 幀列表
+	currFrameIndex    uint32            // 當前幀索引
+	playerIdList      []uint64          // 玩家列表
+	logic             *common.GameLogic // 游戲邏輯
+	frameDataFreeList *list.ListT[*frameData]
 }
 
 func NewInstance(args *InstanceArgs) *Instance {
 	return &Instance{
-		args:  args,
-		logic: common.NewGameLogic(args.EventMgr),
+		args:              args,
+		logic:             common.NewGameLogic(args.EventMgr),
+		frameDataFreeList: list.NewListT[*frameData](),
 	}
 }
 
@@ -50,6 +65,11 @@ func (inst *Instance) LoadScene(config *game_map.Config) bool {
 
 func (inst *Instance) UnloadScene() {
 	inst.logic.UnloadScene()
+	for _, f := range inst.frameList {
+		f.clear()
+		inst.frameDataFreeList.PushBack(f)
+	}
+	inst.currFrameIndex = 0
 }
 
 func (inst *Instance) RegisterEvent(eid base.EventId, handle func(...any)) {
@@ -78,15 +98,32 @@ func (inst *Instance) CheckAndStart(playerList []uint64) bool {
 		}
 	}
 	inst.playerIdList = playerList
-	playerDataList := make([]*playerData, len(playerList))
-	for i := 0; i < len(playerDataList); i++ {
-		playerDataList[i] = &playerData{}
-		playerDataList[i].playerId = playerList[i]
-		bornPos := &inst.logic.CurrentScene().GetMapConfig().PlayerBornPosList[i]
-		inst.logic.PlayerEnterWithStaticInfo(playerList[i], 1, 1, bornPos.X, bornPos.Y, 0)
+	fd, o := inst.frameDataFreeList.PopFront()
+	if o {
+		fd.frameNum = 1
+		inst.frameList = []*frameData{fd}
+	} else {
+		playerDataList := make([]*playerData, len(playerList))
+		for i := 0; i < len(playerDataList); i++ {
+			playerDataList[i] = &playerData{}
+			playerDataList[i].playerId = playerList[i]
+			bornPos := &inst.logic.CurrentScene().GetMapConfig().PlayerBornPosList[i]
+			inst.logic.PlayerEnterWithStaticInfo(playerList[i], 1, 1, bornPos.X, bornPos.Y, 0)
+		}
+		inst.frameList = []*frameData{{frameNum: 1, playerDataList: playerDataList}}
 	}
-	inst.frameList = []*frameData{{frameNum: 1, playerDataList: playerDataList}}
+
 	return true
+}
+
+func (inst *Instance) Restart() bool {
+	if len(inst.playerIdList) == 0 {
+		return false
+	}
+	inst.currFrameIndex = 0
+	inst.frameList = nil
+	inst.logic.ReloadScene()
+	return inst.CheckAndStart(inst.playerIdList)
 }
 
 func (inst *Instance) Pause() {

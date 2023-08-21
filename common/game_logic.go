@@ -87,6 +87,15 @@ func (g *GameLogic) UnloadScene() {
 	g.eventMgr.InvokeEvent(EventIdMapUnloaded)
 }
 
+// 重載場景
+func (g *GameLogic) ReloadScene() {
+	g.clearBots()
+	g.player2Tank.Clear()
+	g.tank2Player.Clear()
+	g.scene.ReloadMap()
+	g.createBots(g.CurrentScene().mapConfig)
+}
+
 // 場景圖
 func (g *GameLogic) CurrentScene() *SceneLogic {
 	return g.scene
@@ -407,6 +416,16 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 
 		index += 1
 	}
+}
+
+func (g *GameLogic) clearBots() {
+	for i := int32(0); i < g.tank2Bot.Count(); i++ {
+		k, v := g.tank2Bot.GetByIndex(i)
+		g.botMgr.RemoveBot(v)
+		g.scene.RemoveTank(k)
+	}
+	g.tank2Bot.Clear()
+	g.botMgr.Clear()
 }
 
 // 坦克創建事件

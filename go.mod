@@ -16,7 +16,7 @@ require (
 	github.com/ebitenui/ebitenui v0.5.4
 	github.com/gabstv/ebiten-imgui v0.5.0
 	github.com/golang/protobuf v1.5.3
-	github.com/huoshan017/ponu v0.0.0-20230705160850-37cacf1f8fb9
+	github.com/huoshan017/ponu v0.0.0-20230821081055-635b3d306468
 	github.com/inkyblackness/imgui-go/v4 v4.4.0
 	github.com/natefinch/lumberjack v2.0.0+incompatible
 	github.com/pkg/errors v0.9.1

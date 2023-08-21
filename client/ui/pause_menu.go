@@ -2,6 +2,7 @@ package ui
 
 import (
 	"project_b/client_base"
+	"project_b/client_core"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -17,7 +18,7 @@ var getPauseMenuIdNodeTree = func(ui *PauseMenuUI) []menuIdNode {
 			{id: menuSettings_gameplay, name: "Gameplay", itemList: nil},
 			{id: menuNone, name: "Back", itemList: nil, exec: ui.back},
 		}},
-		{id: menuNone, name: "Restart", exec: nil},
+		{id: menuNone, name: "Restart", exec: ui.restart},
 		{id: menuNone, name: "Quit To MainMenu", exec: nil},
 	}
 }
@@ -35,6 +36,7 @@ func (ui *PauseMenuUI) Init(game client_base.IGame, menuIdNodeList []menuIdNode)
 
 // PauseMenuUI.Update
 func (ui *PauseMenuUI) Update() {
+	ui.Menu.update()
 	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
 		if ui.isPaused {
 			ui.resume()
@@ -80,4 +82,10 @@ func (ui *PauseMenuUI) resume() {
 func (ui *PauseMenuUI) pause() {
 	ui.game.Inst().Pause()
 	ui.isPaused = true
+}
+
+func (ui *PauseMenuUI) restart() {
+	ui.game.Inst().Restart()
+	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
+	ui.resume()
 }
