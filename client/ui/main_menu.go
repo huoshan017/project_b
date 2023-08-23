@@ -74,13 +74,15 @@ func (ui *MainMenuUI) Update() {
 func (ui *MainMenuUI) DrawFrame() {
 	w, h := ui.game.ScreenWidthHeight()
 	imgui.SetNextWindowPos(imgui.Vec2{X: 0, Y: 0})
-	imgui.SetNextWindowSize(imgui.Vec2{X: float32(w), Y: float32(h)})
-	ui.s = imgui.WindowSize()
+	ui.s = imgui.Vec2{X: float32(w), Y: float32(h)}
+	imgui.SetNextWindowSize(ui.s)
 	imgui.BeginV("Main Menu", nil, imgui.WindowFlagsNoDecoration|imgui.WindowFlagsNoMove)
+	// background image
+	bounds := images.GetTitleImg().Bounds()
+	var left = float32(w/2 - int32(bounds.Dx())/2)
+	var top = float32(h/2 - int32(bounds.Dy()))
 	if ui.currSelected == menuNone {
-		// background image
-		bounds := images.GetTitleImg().Bounds()
-		imgui.SetCursorPos(imgui.Vec2{X: float32(w/2 - int32(bounds.Dx())/2), Y: float32(h/2 - int32(bounds.Dy()))})
+		imgui.SetCursorPos(imgui.Vec2{X: left, Y: top})
 		imgui.Image(titleImgId, imgui.Vec2{X: float32(bounds.Dx()), Y: float32(bounds.Dy())})
 		localPos := imgui.Vec2{X: float32(w/2 - int32(bounds.Dx())/4), Y: float32(h/2 + int32(bounds.Dy()/5))}
 		posInterval := imgui.Vec2{X: 0, Y: float32(int32(bounds.Dy() / 5))}
@@ -89,8 +91,7 @@ func (ui *MainMenuUI) DrawFrame() {
 	} else {
 		switch ui.currSelected {
 		case menuSingleplay_missions:
-			ui.missionsSubUI.SetWidthHight(ui.s.X/2, ui.s.Y/2)
-			imgui.SetCursorPos(imgui.Vec2{X: float32(w/2) - ui.s.X/4, Y: float32(h/2) - ui.s.Y/4})
+			ui.missionsSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
 			ui.missionsSubUI.DrawFrame()
 		case menuSingleplay_replays:
 		case menuMultiplay_local:

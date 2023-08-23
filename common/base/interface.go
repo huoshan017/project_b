@@ -25,11 +25,17 @@ type IEventDispatcher interface {
 	Update()
 }
 
+// 事件清空器
+type IEventClearer interface {
+	Clear()
+}
+
 // 事件管理器
 type IEventManager interface {
 	IEventRegistrar
 	IEventInvoker
 	IEventDispatcher
+	IEventClearer
 }
 
 // 場景

@@ -11,6 +11,15 @@ func NewObjectPool[T any]() *ObjectPool[T] {
 	}
 }
 
+func (op *ObjectPool[T]) Clear() {
+	for i := 0; i < len(op.pool); i++ {
+		op.pool[i] = nil
+	}
+	clear(op.pool)
+	op.pool = op.pool[:0]
+	clear(op.ptMap)
+}
+
 func (op *ObjectPool[T]) Get() *T {
 	var pt *T
 	l := len(op.pool)

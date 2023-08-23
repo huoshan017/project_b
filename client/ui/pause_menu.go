@@ -18,15 +18,16 @@ var getPauseMenuIdNodeTree = func(ui *PauseMenuUI) []menuIdNode {
 			{id: menuSettings_gameplay, name: "Gameplay", itemList: nil},
 			{id: menuNone, name: "Back", itemList: nil, exec: ui.back},
 		}},
-		{id: menuNone, name: "Restart", exec: ui.restart},
-		{id: menuNone, name: "Quit To MainMenu", exec: nil},
+		{id: menuNone, name: "Restart", exec: ui.popQueryRestartDialog},
+		{id: menuNone, name: "Quit To MainMenu", exec: ui.popQueryQuit2MainMenuDialog},
 	}
 }
 
 // PauseMenuUI
 type PauseMenuUI struct {
 	Menu
-	isPaused bool
+	isPaused    bool
+	queryDialog *QueryDialog
 }
 
 // PauseMenuUI.Init
@@ -36,7 +37,6 @@ func (ui *PauseMenuUI) Init(game client_base.IGame, menuIdNodeList []menuIdNode)
 
 // PauseMenuUI.Update
 func (ui *PauseMenuUI) Update() {
-	ui.Menu.update()
 	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
 		if ui.isPaused {
 			ui.resume()
@@ -46,6 +46,9 @@ func (ui *PauseMenuUI) Update() {
 	}
 	if ui.isPaused {
 		ui.Menu.update()
+	}
+	if ui.queryDialog != nil {
+		ui.queryDialog.Update()
 	}
 }
 
@@ -72,6 +75,9 @@ func (ui *PauseMenuUI) DrawFrame() {
 		}
 	}
 	imgui.End()
+	if ui.queryDialog != nil {
+		ui.queryDialog.DrawFrame()
+	}
 }
 
 func (ui *PauseMenuUI) resume() {
@@ -84,8 +90,34 @@ func (ui *PauseMenuUI) pause() {
 	ui.isPaused = true
 }
 
+func (ui *PauseMenuUI) popQueryRestartDialog() {
+	if ui.queryDialog == nil {
+		ui.queryDialog = NewQueryDialog()
+		ui.queryDialog.Init(ui.game)
+	}
+	ui.queryDialog.SetExec(ui.restart)
+	ui.queryDialog.SetQueryString("Is Restart?")
+	ui.queryDialog.Show()
+}
+
+func (ui *PauseMenuUI) popQueryQuit2MainMenuDialog() {
+	if ui.queryDialog == nil {
+		ui.queryDialog = NewQueryDialog()
+		ui.queryDialog.Init(ui.game)
+	}
+	ui.queryDialog.SetExec(ui.quit2MainMenu)
+	ui.queryDialog.SetQueryString("Quit To MainMenu?")
+	ui.queryDialog.Show()
+}
+
 func (ui *PauseMenuUI) restart() {
 	ui.game.Inst().Restart()
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
+	ui.resume()
+}
+
+func (ui *PauseMenuUI) quit2MainMenu() {
+	ui.game.Inst().Unload()
+	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerExitGame, ui.game.GetGameData().MyId)
 	ui.resume()
 }

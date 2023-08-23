@@ -257,8 +257,7 @@ func (po *PlayableMoveObject) onEventResume(args ...any) {
 type PlayableShell struct {
 	*PlayableMoveObject
 	shell    object.IShell
-	tx, ty   int32
-	rotation common_base.Angle
+	moveInfo object.TrackMoveInfo
 	updated  bool
 }
 
@@ -305,22 +304,22 @@ func (ps *PlayableShell) Interpolation(transform *Transform) {
 	}
 
 	if ps.updated {
-		nx, ny = ps.tx, ps.ty
-		transform.rotation = ps.rotation
+		nx, ny = ps.moveInfo.X, ps.moveInfo.Y
 		ps.updated = false
 	} else {
-		transform.rotation = ps.shell.WorldRotation()
+		ps.moveInfo.Rotation = ps.shell.WorldRotation()
 		duration := time.Since(ps.lastTime)
-		nx, ny = object.GetShellTrackMovedPos(ps.shell, duration, &transform.rotation)
+		nx, ny = object.GetShellTrackMovedPos(ps.shell, duration, &ps.moveInfo)
 	}
 	transform.tx, transform.ty = float64(nx), float64(ny)
+	transform.rotation = ps.moveInfo.Rotation
 	ps.lastInterpolation = *transform
 }
 
 // 后更新事件處理
 func (ps *PlayableShell) onEventLateUpdate(args ...any) {
-	ps.tx, ps.ty = args[0].(int32), args[1].(int32)
-	ps.rotation = args[2].(common_base.Angle)
+	ps.moveInfo.X, ps.moveInfo.Y = args[0].(int32), args[1].(int32)
+	ps.moveInfo.Rotation = args[2].(common_base.Angle)
 	ps.updated = true
 	ps.lastTime = time.Now() //core.GetSyncServTime()
 }

@@ -114,7 +114,7 @@ func (h *MsgHandler) onPlayerEnterGameAck(sess *gsnet_msg.MsgSession, msg any) e
 
 	// 载入地图
 	config := game_map.MapConfigArray[ack.MapId]
-	if !h.inst.LoadScene(config) {
+	if !h.inst.Load(config) {
 		log.Error("load map %v error", ack.MapId)
 		return fmt.Errorf("load map %v failed", ack.MapId)
 	}

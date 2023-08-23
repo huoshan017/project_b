@@ -107,10 +107,9 @@ var (
 
 // 地图配置数组
 var MapConfigArray = map[int32]*Config{
-	// map1
-	1: {
-		Id:                 1,
-		Name:               "Mission1",
+	2: {
+		Id:                 2,
+		Name:               "Mission2",
 		Layers:             mapData1,
 		X:                  0,
 		Y:                  0,
@@ -120,10 +119,9 @@ var MapConfigArray = map[int32]*Config{
 		PlayerTankInitRect: common_data.PlayerTankInitRect,
 		PlayerMaxCount:     10,
 	},
-	// map2
-	2: {
-		Id:                 2,
-		Name:               "Mission2",
+	1: {
+		Id:                 1,
+		Name:               "Mission1",
 		Layers:             mapData2,
 		X:                  0,
 		Y:                  0,
@@ -175,7 +173,6 @@ var MapConfigArray = map[int32]*Config{
 			{TankId: 1002, Camp: object.CampTypeTwo, Pos: object.Pos{X: 11500, Y: 1500}, Level: 1},
 		},
 	},
-	// map3
 	3: {
 		Id:                 3,
 		Name:               "Mission3",

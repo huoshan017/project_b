@@ -44,6 +44,7 @@ func (gl *gridObjList) clear() {
 // 網格地圖
 type GridMap struct {
 	config                  *game_map.Config
+	gridTileSize            int16                                           // 網格瓦片數
 	minGridTileSize         int16                                           // 最小网格中的瓦片数
 	gridLineNum, gridColNum int16                                           // 網格行數和列數
 	gridWidth, gridHeight   int32                                           // 網格寬度高度
@@ -57,12 +58,14 @@ type GridMap struct {
 }
 
 func NewGridMap(gridTileSize int16) *GridMap {
-	return &GridMap{
+	gmap := &GridMap{
+		gridTileSize:    gridTileSize,
 		minGridTileSize: gridTileSize,
 		sobjs:           ds.NewMapListUnion[uint32, object.IStaticObject](),
 		mobjs:           ds.NewMapListUnion[uint32, object.IMovableObject](),
 		mobj2GridIndex:  ds.NewMapListUnion[uint32, int32](),
 	}
+	return gmap
 }
 
 func (m *GridMap) Load(config *game_map.Config) {
@@ -105,7 +108,7 @@ func (m *GridMap) Unload() {
 	m.ClearObjsData()
 	m.config = nil
 	m.grids = nil
-	m.minGridTileSize = 0
+	m.minGridTileSize = m.gridTileSize
 	m.gridLineNum = 0
 	m.gridColNum = 0
 	m.gridWidth = 0

@@ -8,6 +8,7 @@ import (
 type SubUI struct {
 	uiBase
 	w, h      float32
+	left, top float32
 	backEvent base.Event
 }
 
@@ -15,7 +16,9 @@ func (ui *SubUI) Init(game client_base.IGame) {
 	ui.uiBase.Init(game)
 }
 
-func (ui *SubUI) SetWidthHight(w, h float32) {
+func (ui *SubUI) SetRect(left, top, w, h float32) {
+	ui.left = left
+	ui.top = top
 	ui.w, ui.h = w, h
 }
 

@@ -26,7 +26,7 @@ type TankBornPosInfo struct {
 
 // 场景圖，沒有玩家(Player)概念的游戲邏輯
 // 必须在单个goroutine中执行
-type SceneLogic struct {
+type World struct {
 	mapConfig                            *game_map.Config                               // 地圖配置
 	mapWidth, mapHeight                  int32                                          // 地圖寬高
 	gmap                                 *GridMap                                       // 網格地圖
@@ -49,8 +49,8 @@ type SceneLogic struct {
 	effectSearchedList                   []uint32                                       // 效果搜索結果列表
 }
 
-func NewSceneLogic(eventMgr base.IEventManager) *SceneLogic {
-	return &SceneLogic{
+func NewWorld(eventMgr base.IEventManager) *World {
+	return &World{
 		eventMgr:        eventMgr,
 		staticObjList:   ds.NewMapListUnion[uint32, *object.StaticObject](),
 		tankList:        ds.NewMapListUnion[uint32, *object.Tank](),
@@ -63,11 +63,11 @@ func NewSceneLogic(eventMgr base.IEventManager) *SceneLogic {
 	}
 }
 
-func (s *SceneLogic) GetMapId() int32 {
+func (s *World) GetMapId() int32 {
 	return s.mapConfig.Id
 }
 
-func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
+func (s *World) LoadMap(m *game_map.Config) bool {
 	// 载入地图
 	s.gmap.Load(m)
 	s.loadMap(m, false)
@@ -78,7 +78,7 @@ func (s *SceneLogic) LoadMap(m *game_map.Config) bool {
 	return true
 }
 
-func (s *SceneLogic) loadMap(m *game_map.Config, reload bool) {
+func (s *World) loadMap(m *game_map.Config, reload bool) {
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
 			st := object.StaticObjType(m.Layers[line][col])
@@ -103,15 +103,26 @@ func (s *SceneLogic) loadMap(m *game_map.Config, reload bool) {
 	}
 }
 
-func (s *SceneLogic) UnloadMap() {
+func (s *World) UnloadMap() {
 	s.mapWidth = 0
 	s.mapHeight = 0
 	s.mapConfig = nil
+	if len(s.tankBornPosList) > 0 {
+		s.tankBornPosList = s.tankBornPosList[:0]
+	}
+	s.clearEvents()
 	s.gmap.Unload()
 	s.clearObjsData()
 }
 
-func (s *SceneLogic) clearObjsData() {
+func (s *World) clearEvents() {
+	s.objAddedEvent.Clear()
+	s.objRemovedEvent.Clear()
+	s.effectAddedEvent.Clear()
+	s.effectRemovedEvent.Clear()
+}
+
+func (s *World) clearObjsData() {
 	for i := int32(0); i < s.staticObjList.Count(); i++ {
 		_, v := s.staticObjList.GetByIndex(i)
 		if v != nil {
@@ -157,74 +168,74 @@ func (s *SceneLogic) clearObjsData() {
 	s.effectSearchedList = s.effectSearchedList[:0]
 }
 
-func (s *SceneLogic) ReloadMap() {
+func (s *World) ReloadMap() {
 	s.gmap.ClearObjsData()
 	s.clearObjsData()
 	s.loadMap(s.mapConfig, true)
 }
 
-func (s *SceneLogic) GetGridMap() *GridMap {
+func (s *World) GetGridMap() *GridMap {
 	return s.gmap
 }
 
-func (s *SceneLogic) GetMapLeftBottom() (int32, int32) {
+func (s *World) GetMapLeftBottom() (int32, int32) {
 	return s.mapConfig.X, s.mapConfig.Y
 }
 
-func (s *SceneLogic) GetMapWidthHeight() (int32, int32) {
+func (s *World) GetMapWidthHeight() (int32, int32) {
 	return s.mapWidth, s.mapHeight
 }
 
-func (s *SceneLogic) Center() (int32, int32) {
+func (s *World) Center() (int32, int32) {
 	return s.mapConfig.X + s.mapWidth/2, s.mapConfig.Y + s.mapHeight/2
 }
 
-func (s *SceneLogic) GetTankBornPosList() []TankBornPosInfo {
+func (s *World) GetTankBornPosList() []TankBornPosInfo {
 	return s.tankBornPosList
 }
 
-func (s *SceneLogic) RegisterEventHandle(id base.EventId, handle func(...any)) {
+func (s *World) RegisterEventHandle(id base.EventId, handle func(...any)) {
 	s.eventMgr.RegisterEvent(id, handle)
 }
 
-func (s *SceneLogic) UnregisterEventHandle(id base.EventId, handle func(...any)) {
+func (s *World) UnregisterEventHandle(id base.EventId, handle func(...any)) {
 	s.eventMgr.UnregisterEvent(id, handle)
 }
 
-func (s *SceneLogic) RegisterEffectAddedHandle(handle func(...any)) {
+func (s *World) RegisterEffectAddedHandle(handle func(...any)) {
 	s.effectAddedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterEffectAddedHandle(handle func(...any)) {
+func (s *World) UnregisterEffectAddedHandle(handle func(...any)) {
 	s.effectAddedEvent.Unregister(handle)
 }
 
-func (s *SceneLogic) RegisterEffectRemovedHandle(handle func(...any)) {
+func (s *World) RegisterEffectRemovedHandle(handle func(...any)) {
 	s.effectRemovedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterEffectRemovedHandle(handle func(...any)) {
+func (s *World) UnregisterEffectRemovedHandle(handle func(...any)) {
 	s.effectRemovedEvent.Unregister(handle)
 }
 
-func (s *SceneLogic) RegisterObjectAddedHandle(handle func(...any)) {
+func (s *World) RegisterObjectAddedHandle(handle func(...any)) {
 	s.objAddedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterObjectAddedHandle(handle func(...any)) {
+func (s *World) UnregisterObjectAddedHandle(handle func(...any)) {
 	s.objAddedEvent.Unregister(handle)
 }
 
-func (s *SceneLogic) RegisterObjectRemovedHandle(handle func(...any)) {
+func (s *World) RegisterObjectRemovedHandle(handle func(...any)) {
 	s.objRemovedEvent.Register(handle)
 }
 
-func (s *SceneLogic) UnregisterObjectRemovedHandle(handle func(...any)) {
+func (s *World) UnregisterObjectRemovedHandle(handle func(...any)) {
 	s.objRemovedEvent.Unregister(handle)
 }
 
 // 注册坦克事件
-func (s *SceneLogic) RegisterTankEvent(instId uint32, eid base.EventId, handle func(args ...any)) {
+func (s *World) RegisterTankEvent(instId uint32, eid base.EventId, handle func(args ...any)) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		return
@@ -240,7 +251,7 @@ func (s *SceneLogic) RegisterTankEvent(instId uint32, eid base.EventId, handle f
 }
 
 // 注銷坦克事件
-func (s *SceneLogic) UnregisterTankEvent(instId uint32, eid base.EventId, handle func(args ...any)) {
+func (s *World) UnregisterTankEvent(instId uint32, eid base.EventId, handle func(args ...any)) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		return
@@ -255,23 +266,23 @@ func (s *SceneLogic) UnregisterTankEvent(instId uint32, eid base.EventId, handle
 	}
 }
 
-func (s *SceneLogic) GetMapConfig() *game_map.Config {
+func (s *World) GetMapConfig() *game_map.Config {
 	return s.mapConfig
 }
 
-func (s *SceneLogic) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
+func (s *World) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32] {
 	return s.gmap.GetLayerObjsWithRange(rect)
 }
 
-func (s *SceneLogic) GetObj(instId uint32) object.IObject {
+func (s *World) GetObj(instId uint32) object.IObject {
 	return s.objFactory.GetObj(instId)
 }
 
-func (s *SceneLogic) GetTankListWithRange(rect *math.Rect) []uint32 {
+func (s *World) GetTankListWithRange(rect *math.Rect) []uint32 {
 	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeTank)
 }
 
-func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
+func (s *World) GetEffectListWithRange(rect *math.Rect) []uint32 {
 	s.effectSearchedList = s.effectSearchedList[:0]
 	count := s.effectList.Count()
 	for i := int32(0); i < count; i++ {
@@ -288,7 +299,7 @@ func (s *SceneLogic) GetEffectListWithRange(rect *math.Rect) []uint32 {
 	return s.effectSearchedList
 }
 
-func (s *SceneLogic) GetEffect(instId uint32) effect.IEffect {
+func (s *World) GetEffect(instId uint32) effect.IEffect {
 	effect, o := s.effectList.Get(instId)
 	if !o {
 		return nil
@@ -296,7 +307,7 @@ func (s *SceneLogic) GetEffect(instId uint32) effect.IEffect {
 	return effect
 }
 
-func (s *SceneLogic) GetTank(instId uint32) *object.Tank {
+func (s *World) GetTank(instId uint32) *object.Tank {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		return nil
@@ -304,7 +315,7 @@ func (s *SceneLogic) GetTank(instId uint32) *object.Tank {
 	return tank
 }
 
-func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
+func (s *World) NewTankWithPos(x, y int32) *object.Tank {
 	tank := s.objFactory.NewTank(&s.mapConfig.PlayerTankInitData)
 	// 注冊檢測移動事件處理
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
@@ -320,13 +331,13 @@ func (s *SceneLogic) NewTankWithPos(x, y int32) *object.Tank {
 	return tank
 }
 
-func (s *SceneLogic) AddTank(tank *object.Tank) {
+func (s *World) AddTank(tank *object.Tank) {
 	tank.RegisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	s.tankList.Add(tank.InstId(), tank)
 	s.gmap.AddObj(tank)
 }
 
-func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32 /*, currSpeed int32*/) *object.Tank {
+func (s *World) NewTankWithStaticInfo(id int32, level int32, x, y int32 /*, currSpeed int32*/) *object.Tank {
 	tank := s.objFactory.NewTank(common_data.TankConfigData[id])
 	tank.SetPos(x, y)
 	tank.SetLevel(level)
@@ -343,7 +354,7 @@ func (s *SceneLogic) NewTankWithStaticInfo(id int32, level int32, x, y int32 /*,
 	return tank
 }
 
-func (s *SceneLogic) RemoveTank(instId uint32) {
+func (s *World) RemoveTank(instId uint32) {
 	tank := s.tankList.Remove(instId)
 	tank.UnregisterCheckMoveEventHandle(s.checkObjMoveEventHandle)
 	s.gmap.RemoveObj(tank.InstId())
@@ -351,7 +362,7 @@ func (s *SceneLogic) RemoveTank(instId uint32) {
 	s.objFactory.RecycleTank(tank)
 }
 
-func (s *SceneLogic) TankMove(instId uint32, orientation int32) {
+func (s *World) TankMove(instId uint32, orientation int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
@@ -361,7 +372,7 @@ func (s *SceneLogic) TankMove(instId uint32, orientation int32) {
 	tank.Move(angle)
 }
 
-func (s *SceneLogic) TankStopMove(instId uint32) {
+func (s *World) TankStopMove(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
@@ -370,7 +381,7 @@ func (s *SceneLogic) TankStopMove(instId uint32) {
 	tank.Stop()
 }
 
-func (s *SceneLogic) TankFire(instId uint32) {
+func (s *World) TankFire(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
@@ -395,25 +406,25 @@ func (s *SceneLogic) TankFire(instId uint32) {
 	}
 }
 
-func (s *SceneLogic) TankAddNewShell(instId uint32, shellConfigId int32) bool {
+func (s *World) TankAddNewShell(instId uint32, shellConfigId int32) bool {
 	tank, o := s.tankList.Get(instId)
 	if !o {
-		log.Error("SceneLogic: tank %v not found", instId)
+		log.Error("World: tank %v not found", instId)
 		return false
 	}
 	return tank.AppendShell(common_data.ShellConfigData[shellConfigId])
 }
 
-func (s *SceneLogic) TankSwitchShell(instId uint32) {
+func (s *World) TankSwitchShell(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
-		log.Error("SceneLogic: tank %v not found while switch shell", instId)
+		log.Error("World: tank %v not found while switch shell", instId)
 		return
 	}
 	tank.SwitchShell()
 }
 
-func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
+func (s *World) TankReleaseSurroundObj(instId uint32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
@@ -427,7 +438,7 @@ func (s *SceneLogic) TankReleaseSurroundObj(instId uint32) {
 	ball.Move(base.NewAngle(0, 0))
 }
 
-func (s *SceneLogic) TankRotate(instId uint32, degree int32) {
+func (s *World) TankRotate(instId uint32, degree int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		log.Error("tank %v not found", instId)
@@ -438,7 +449,7 @@ func (s *SceneLogic) TankRotate(instId uint32, degree int32) {
 	tank.Rotate(angle)
 }
 
-func (s *SceneLogic) TankChange(instId uint32, staticInfo *object.TankStaticInfo) bool {
+func (s *World) TankChange(instId uint32, staticInfo *object.TankStaticInfo) bool {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		return false
@@ -447,7 +458,7 @@ func (s *SceneLogic) TankChange(instId uint32, staticInfo *object.TankStaticInfo
 	return true
 }
 
-func (s *SceneLogic) TankRestore(instId uint32) int32 {
+func (s *World) TankRestore(instId uint32) int32 {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		return 0
@@ -456,7 +467,7 @@ func (s *SceneLogic) TankRestore(instId uint32) int32 {
 	return tank.Id()
 }
 
-func (s *SceneLogic) TankShield(instId uint32, shieldId int32) {
+func (s *World) TankShield(instId uint32, shieldId int32) {
 	tank, o := s.tankList.Get(instId)
 	if !o {
 		return
@@ -468,11 +479,11 @@ func (s *SceneLogic) TankShield(instId uint32, shieldId int32) {
 	}
 }
 
-func (s *SceneLogic) TankUnlimitedShield(instId uint32) {
+func (s *World) TankUnlimitedShield(instId uint32) {
 	s.TankShield(instId, 1)
 }
 
-func (s *SceneLogic) Update(tick time.Duration) {
+func (s *World) Update(tick time.Duration) {
 	count := s.tankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.tankList.GetByIndex(i)
@@ -563,7 +574,7 @@ func (s *SceneLogic) Update(tick time.Duration) {
 	}
 }
 
-func (s *SceneLogic) Pause() {
+func (s *World) Pause() {
 	for i := int32(0); i < s.tankList.Count(); i++ {
 		_, tank := s.tankList.GetByIndex(i)
 		tank.Pause()
@@ -578,7 +589,7 @@ func (s *SceneLogic) Pause() {
 	}
 }
 
-func (s *SceneLogic) Resume() {
+func (s *World) Resume() {
 	for i := int32(0); i < s.tankList.Count(); i++ {
 		_, tank := s.tankList.GetByIndex(i)
 		tank.Resume()
@@ -593,7 +604,7 @@ func (s *SceneLogic) Resume() {
 	}
 }
 
-func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
+func (s *World) checkObjMoveEventHandle(args ...any) {
 	instId := args[0].(uint32)
 	dx := args[1].(int32)
 	dy := args[2].(int32)
@@ -601,7 +612,7 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 
 	obj := s.objFactory.GetObj(instId)
 	if obj.Type() != object.ObjTypeMovable {
-		log.Error("SceneLogic.checkObjMoveEventHandle object %v must be movable", instId)
+		log.Error("World.checkObjMoveEventHandle object %v must be movable", instId)
 		return
 	}
 
@@ -615,7 +626,7 @@ func (s *SceneLogic) checkObjMoveEventHandle(args ...any) {
 	}
 }
 
-func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dx, dy int32, ci *object.CollisionInfo) bool {
+func (s *World) checkObjMoveRange(obj object.IMovableObject, dx, dy int32, ci *object.CollisionInfo) bool {
 	x, y := obj.Pos()
 	colliderComp := obj.GetColliderComp()
 	if dx != 0 {
@@ -669,13 +680,13 @@ func (s *SceneLogic) checkObjMoveRange(obj object.IMovableObject, dx, dy int32, 
 	return ci.Result != object.CollisionAndBlock
 }
 
-func (s *SceneLogic) onMovableObjReachMapBorder(mobj object.IMovableObject) {
+func (s *World) onMovableObjReachMapBorder(mobj object.IMovableObject) {
 	if mobj.Subtype() == object.ObjSubtypeShell {
 		mobj.ToRecycle()
 	}
 }
 
-func (s *SceneLogic) onTankCollision(mobj object.IMovableObject, ci *object.CollisionInfo) {
+func (s *World) onTankCollision(mobj object.IMovableObject, ci *object.CollisionInfo) {
 	tank, o := mobj.(*object.Tank)
 	if !o {
 		return
@@ -702,7 +713,7 @@ func (s *SceneLogic) onTankCollision(mobj object.IMovableObject, ci *object.Coll
 	}
 }
 
-func (s *SceneLogic) onShellCollision(mobj object.IMovableObject, ci *object.CollisionInfo) {
+func (s *World) onShellCollision(mobj object.IMovableObject, ci *object.CollisionInfo) {
 	shell := mobj.(*object.Shell)
 	for i := 0; i < len(ci.ObjList); i++ {
 		obj := ci.ObjList[i]
@@ -710,7 +721,7 @@ func (s *SceneLogic) onShellCollision(mobj object.IMovableObject, ci *object.Col
 	}
 }
 
-func (s *SceneLogic) shellEffect(shell *object.Shell, obj object.IObject) {
+func (s *World) shellEffect(shell *object.Shell, obj object.IObject) {
 	var (
 		objType      = obj.Type()
 		effectParams = [2]struct {
@@ -750,7 +761,7 @@ func (s *SceneLogic) shellEffect(shell *object.Shell, obj object.IObject) {
 	}
 }
 
-func (s *SceneLogic) searchShellTarget(shell *object.Shell) object.IObject {
+func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 	staticInfo := shell.ShellStaticInfo()
 	cx, cy := shell.Pos()
 	rect := math.NewRect(cx-staticInfo.SearchTargetRadius, cy-staticInfo.SearchTargetRadius, cx+staticInfo.SearchTargetRadius, cy+staticInfo.SearchTargetRadius)

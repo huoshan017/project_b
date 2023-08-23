@@ -37,7 +37,7 @@ type GameLogic struct {
 	mapIndex    int32                            // 地图索引
 	frame       uint32                           // 帧序号，每Update一次加1
 	maxFrame    uint32                           // 最大帧序号
-	scene       *SceneLogic                      // 場景圖
+	world       *World                           // 世界
 	player2Tank *ds.MapListUnion[uint64, uint32] // 玩家與坦克之間對應關係
 	tank2Player *ds.MapListUnion[uint32, uint64] // 坦克到玩家的對應關係
 	botMgr      *BotManager                      // bot管理器
@@ -51,7 +51,7 @@ func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
 		eventMgr = base.NewEventManager()
 	}
 	gl.eventMgr = eventMgr
-	gl.scene = NewSceneLogic(gl.eventMgr)
+	gl.world = NewWorld(gl.eventMgr)
 	gl.player2Tank = ds.NewMapListUnion[uint64, uint32]()
 	gl.tank2Player = ds.NewMapListUnion[uint32, uint64]()
 	gl.botMgr = NewBotManager()
@@ -62,24 +62,24 @@ func NewGameLogic(eventMgr base.IEventManager) *GameLogic {
 // 載入場景地圖
 func (g *GameLogic) LoadScene(config *game_map.Config) bool {
 	g.eventMgr.InvokeEvent(EventIdBeforeMapLoad)
-	loaded := g.scene.LoadMap(config)
+	loaded := g.world.LoadMap(config)
 	if !loaded {
 		log.Error("GameLogic.LoadScene mapid(%v) failed", config.Id)
 		return false
 	}
 	g.createBots(config)
-	g.scene.RegisterObjectAddedHandle(g.onTankCreated)
-	g.scene.RegisterObjectRemovedHandle(g.onTankDestroyed)
-	g.eventMgr.InvokeEvent(EventIdMapLoaded, g.scene)
+	g.world.RegisterObjectAddedHandle(g.onTankCreated)
+	g.world.RegisterObjectRemovedHandle(g.onTankDestroyed)
+	g.eventMgr.InvokeEvent(EventIdMapLoaded, g.world)
 	return loaded
 }
 
 // 卸載場景圖
 func (g *GameLogic) UnloadScene() {
 	g.eventMgr.InvokeEvent(EventIdBeforeMapUnload)
-	g.scene.UnregisterObjectAddedHandle(g.onTankCreated)
-	g.scene.UnregisterObjectRemovedHandle(g.onTankDestroyed)
-	g.scene.UnloadMap()
+	g.world.UnregisterObjectAddedHandle(g.onTankCreated)
+	g.world.UnregisterObjectRemovedHandle(g.onTankDestroyed)
+	g.world.UnloadMap()
 	g.player2Tank.Clear()
 	g.tank2Player.Clear()
 	g.botMgr.Clear()
@@ -92,13 +92,13 @@ func (g *GameLogic) ReloadScene() {
 	g.clearBots()
 	g.player2Tank.Clear()
 	g.tank2Player.Clear()
-	g.scene.ReloadMap()
-	g.createBots(g.CurrentScene().mapConfig)
+	g.world.ReloadMap()
+	g.createBots(g.World().mapConfig)
 }
 
 // 場景圖
-func (g *GameLogic) CurrentScene() *SceneLogic {
-	return g.scene
+func (g *GameLogic) World() *World {
+	return g.world
 }
 
 // 地图索引
@@ -125,7 +125,7 @@ func (g *GameLogic) Update(tick time.Duration) {
 		return
 	}
 	g.botMgr.Update(tick)
-	g.scene.Update(tick)
+	g.world.Update(tick)
 	g.frame += 1
 	if g.maxFrame > 0 {
 		if g.frame >= g.maxFrame {
@@ -139,14 +139,14 @@ func (g *GameLogic) Update(tick time.Duration) {
 // 暫停
 func (g *GameLogic) Pause() {
 	g.state = logicStatePause
-	g.scene.Pause()
+	g.world.Pause()
 	g.botMgr.Pause()
 }
 
 // 繼續
 func (g *GameLogic) Resume() {
 	g.state = logicStateRunning
-	g.scene.Resume()
+	g.world.Resume()
 	g.botMgr.Resume()
 }
 
@@ -166,7 +166,7 @@ func (g *GameLogic) RegisterPlayerEvent(uid uint64, eid base.EventId, handle fun
 	if !o {
 		return
 	}
-	g.scene.RegisterTankEvent(tankId, eid, handle)
+	g.world.RegisterTankEvent(tankId, eid, handle)
 }
 
 // 注销玩家事件
@@ -175,7 +175,7 @@ func (g *GameLogic) UnregisterPlayerEvent(uid uint64, eid base.EventId, handle f
 	if !o {
 		return
 	}
-	g.scene.UnregisterTankEvent(tankId, eid, handle)
+	g.world.UnregisterTankEvent(tankId, eid, handle)
 }
 
 // 获得玩家坦克
@@ -184,7 +184,7 @@ func (g *GameLogic) GetPlayerTank(uid uint64) *object.Tank {
 	if !o {
 		return nil
 	}
-	return g.scene.GetTank(tankId)
+	return g.world.GetTank(tankId)
 }
 
 // 获得玩家坦克列表
@@ -196,7 +196,7 @@ func (g *GameLogic) GetPlayerTankList() []PlayerTankKV {
 		if !o {
 			continue
 		}
-		tank := g.scene.GetTank(tankId)
+		tank := g.world.GetTank(tankId)
 		if tank == nil {
 			continue
 		}
@@ -207,7 +207,7 @@ func (g *GameLogic) GetPlayerTankList() []PlayerTankKV {
 
 // 新玩家进入
 func (g *GameLogic) NewPlayerEnterWithPos(pid uint64, x, y int32) *object.Tank {
-	tank := g.scene.NewTankWithPos(x, y)
+	tank := g.world.NewTankWithPos(x, y)
 	if tank == nil {
 		log.Error("player %v enter with pos (%v, %v) to tank failed", pid, x, y)
 		return nil
@@ -219,7 +219,7 @@ func (g *GameLogic) NewPlayerEnterWithPos(pid uint64, x, y int32) *object.Tank {
 
 // 玩家進入
 func (g *GameLogic) PlayerEnterWithStaticInfo(pid uint64, id int32, level int32, x, y int32, orientation int32 /*, currentSpeed int32*/) uint32 {
-	tank := g.scene.NewTankWithStaticInfo(id, level, x, y /*, currentSpeed*/)
+	tank := g.world.NewTankWithStaticInfo(id, level, x, y /*, currentSpeed*/)
 	if tank == nil {
 		log.Error("player %v enter with static info to create tank failed", pid)
 		return 0
@@ -238,7 +238,7 @@ func (g *GameLogic) PlayerEnterWithTank(uid uint64, tank *object.Tank) {
 		log.Warn("player %v already entered with tank %v", tankId)
 		return
 	}
-	g.scene.AddTank(tank)
+	g.world.AddTank(tank)
 	g.player2Tank.Add(uid, tank.InstId())
 	g.tank2Player.Add(tank.InstId(), uid)
 }
@@ -249,7 +249,7 @@ func (g *GameLogic) PlayerLeave(pid uint64) {
 	if !o {
 		return
 	}
-	g.scene.RemoveTank(tankId)
+	g.world.RemoveTank(tankId)
 	g.player2Tank.Remove(pid)
 	g.tank2Player.Remove(tankId)
 }
@@ -263,7 +263,7 @@ func (g *GameLogic) PlayerTankMove(uid uint64 /*moveDir object.Direction*/, orie
 	if !o {
 		return
 	}
-	g.scene.TankMove(tankId, orientation)
+	g.world.TankMove(tankId, orientation)
 }
 
 // 玩家坦克停止
@@ -275,7 +275,7 @@ func (g *GameLogic) PlayerTankStopMove(uid uint64) {
 	if !o {
 		return
 	}
-	g.scene.TankStopMove(tankId)
+	g.world.TankStopMove(tankId)
 }
 
 // 玩家坦克改变
@@ -287,7 +287,7 @@ func (g *GameLogic) PlayerTankChange(uid uint64, staticInfo *object.TankStaticIn
 	if !o {
 		return false
 	}
-	return g.scene.TankChange(tankId, staticInfo)
+	return g.world.TankChange(tankId, staticInfo)
 }
 
 // 玩家坦克恢复
@@ -299,7 +299,7 @@ func (g *GameLogic) PlayerTankRestore(uid uint64) int32 {
 	if !o {
 		return 0
 	}
-	return g.scene.TankRestore(tankId)
+	return g.world.TankRestore(tankId)
 }
 
 // 玩家坦克開炮
@@ -311,7 +311,7 @@ func (g *GameLogic) PlayerTankFire(uid uint64) {
 	if !o {
 		return
 	}
-	g.scene.TankFire(tankId)
+	g.world.TankFire(tankId)
 }
 
 // 坦克增加新炮彈
@@ -321,7 +321,7 @@ func (g *GameLogic) PlayerTankAddNewShell(uid uint64, shellConfigId int32) {
 	}
 	tankId, o := g.player2Tank.Get(uid)
 	if o {
-		g.scene.TankAddNewShell(tankId, shellConfigId)
+		g.world.TankAddNewShell(tankId, shellConfigId)
 	}
 }
 
@@ -332,7 +332,7 @@ func (g *GameLogic) PlayerTankSwitchShell(uid uint64) {
 	}
 	tankId, o := g.player2Tank.Get(uid)
 	if o {
-		g.scene.TankSwitchShell(tankId)
+		g.world.TankSwitchShell(tankId)
 	}
 }
 
@@ -345,7 +345,7 @@ func (g *GameLogic) PlayerTankReleaseSurroundObj(uid uint64) {
 	if !o {
 		return
 	}
-	g.scene.TankReleaseSurroundObj(tankId)
+	g.world.TankReleaseSurroundObj(tankId)
 }
 
 // 坦克旋轉
@@ -357,7 +357,7 @@ func (g *GameLogic) PlayerTankRotate(uid uint64, angle int32) {
 	if !o {
 		return
 	}
-	g.scene.TankRotate(tankId, angle)
+	g.world.TankRotate(tankId, angle)
 }
 
 // 坦克復活
@@ -377,13 +377,13 @@ func (g *GameLogic) PlayerTankShield(uid uint64) {
 	if !o {
 		return
 	}
-	g.scene.TankUnlimitedShield(tankId)
+	g.world.TankUnlimitedShield(tankId)
 }
 
 // 創建bot列表
 func (g *GameLogic) createBots(config *game_map.Config) {
 	var (
-		tankBornPosList = g.scene.GetTankBornPosList()
+		tankBornPosList = g.world.GetTankBornPosList()
 		index           int32
 	)
 	for _, b := range config.BotInfoList {
@@ -404,10 +404,10 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 		x := tankBornPosList[index].x
 		y := tankBornPosList[index].y
 		// todo 等級從1開始
-		tank := g.scene.NewTankWithStaticInfo(staticInfo.Id(), 1, x, y /*, staticInfo.Speed()*/)
+		tank := g.world.NewTankWithStaticInfo(staticInfo.Id(), 1, x, y /*, staticInfo.Speed()*/)
 		tank.SetCamp(b.Camp)
 		tank.SetLevel(b.Level)
-		bot := g.botMgr.NewBot(g.scene, tank.InstId())
+		bot := g.botMgr.NewBot(g.world, tank.InstId())
 		if bot == nil {
 			log.Error("GameLogic.createBots NewBot failed")
 			continue
@@ -422,7 +422,7 @@ func (g *GameLogic) clearBots() {
 	for i := int32(0); i < g.tank2Bot.Count(); i++ {
 		k, v := g.tank2Bot.GetByIndex(i)
 		g.botMgr.RemoveBot(v)
-		g.scene.RemoveTank(k)
+		g.world.RemoveTank(k)
 	}
 	g.tank2Bot.Clear()
 	g.botMgr.Clear()

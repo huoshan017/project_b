@@ -128,15 +128,6 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 		for i := 0; i < len(idxList); i++ {
 			collisionInfo.ObjList = append(collisionInfo.ObjList, collisionObjList[idxList[i]])
 		}
-		/*if md < 0 {
-			if mobj.Type() == ObjTypeMovable && mobj.Subtype() == ObjSubtypeTank {
-				var str string
-				for i := 0; i < len(collisionObjList); i++ {
-					str += fmt.Sprintf("%v ", collisionObjList[i].InstId())
-				}
-				panic(fmt.Sprintf("dx(%v) dy(%v)  md(%v)  collisionObjList(%s), mobj(%+v)", dx, dy, md, str, *mobj.(*Tank)))
-			}
-		}*/
 	} else {
 		var (
 			mx, my       = int32(math.MaxInt32), int32(math.MaxInt32)
@@ -285,14 +276,14 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				//   +             +
 				//   + + + + + + + +
 				var x, y int32
-				if aabb.Left >= aabb2.Right && aabb.Top < aabb2.Bottom {
+				if aabb.Left >= aabb2.Right && aabb.Bottom < aabb2.Top {
 					x = aabb.Left - aabb2.Right
 					y = x * -dy / -dx
-				} else if aabb.Left >= aabb2.Right && aabb.Top >= aabb2.Bottom {
+				} else if aabb.Left >= aabb2.Right && aabb.Bottom >= aabb2.Top {
 					x = aabb.Left - aabb2.Right
-					y = aabb.Top - aabb2.Bottom
-				} else if aabb.Left < aabb2.Right && aabb.Top >= aabb2.Bottom {
-					y = aabb.Top - aabb2.Bottom
+					y = aabb.Bottom - aabb2.Top
+				} else if aabb.Left < aabb2.Right && aabb.Bottom >= aabb2.Top {
+					y = aabb.Bottom - aabb2.Top
 					x = y * -dx / -dy
 				} else {
 					panic(fmt.Sprintf("dx(%v)<0 dy(%v)<0  aabb.Left(%v) < aabb2.Right(%v) && aabb.Top(%v) >= aabb2.Bottom(%v)", dx, dy, aabb.Left, aabb2.Right, aabb.Top, aabb2.Bottom))
@@ -351,28 +342,6 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 		collisionInfo.MovingObjPos.X = px + mx
 		collisionInfo.MovingObjPos.Y = py + my
 	}
-	// 測試用
-	/*{
-		var _aabb AABB
-		if mobj.Subtype() == ObjSubtypeTank {
-			var tank Tank = *(mobj.(*Tank))
-			tank.SetPos(collisionInfo.MovingObjPos.X, collisionInfo.MovingObjPos.Y)
-			_aabb = tank.colliderComp.GetAABB()
-		} else if mobj.Subtype() == ObjSubtypeShell {
-			var shell Shell = *(mobj.(*Shell))
-			shell.SetPos(collisionInfo.MovingObjPos.X, collisionInfo.MovingObjPos.Y)
-			_aabb = shell.colliderComp.GetAABB()
-		} else {
-			panic(fmt.Sprintf("mobj 子類型(%v)錯誤", mobj.Subtype()))
-		}
-		for i := 0; i < len(collisionObjList); i++ {
-			obj := collisionObjList[i]
-			_aabb2 := obj.GetColliderComp().GetAABB()
-			if _aabb.Intersect(&_aabb2) {
-				panic(fmt.Sprintf("!!! 測試失敗 aabb %v intersect aabb %v, when dx(%v) dy(%v)", _aabb, _aabb2, dx, dy))
-			}
-		}
-	}*/
 	return collisionInfo.Result
 }
 

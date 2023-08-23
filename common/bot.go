@@ -20,7 +20,7 @@ const (
 // Bot
 type Bot struct {
 	id                            int32
-	scene                         *SceneLogic
+	world                         *World
 	tankInstId                    uint32
 	searchRadius                  int32
 	state                         BotStateType
@@ -30,15 +30,15 @@ type Bot struct {
 	enemyGetEvent, enemyLostEvent base.Event
 }
 
-func NewBot(id int32, scene *SceneLogic, tankId uint32) *Bot {
+func NewBot(id int32, world *World, tankId uint32) *Bot {
 	bot := &Bot{}
-	bot.init(id, scene, tankId)
+	bot.init(id, world, tankId)
 	return bot
 }
 
-func (b *Bot) init(id int32, scene *SceneLogic, tankInstId uint32) {
+func (b *Bot) init(id int32, world *World, tankInstId uint32) {
 	b.id = id
-	b.scene = scene
+	b.world = world
 	b.tankInstId = tankInstId
 	b.searchRadius = common_data.DefaultSearchRadius
 	b.state = BotStateIdle
@@ -48,7 +48,7 @@ func (b *Bot) init(id int32, scene *SceneLogic, tankInstId uint32) {
 }
 
 func (b *Bot) Update(tick time.Duration) {
-	botTank := b.scene.GetTank(b.tankInstId)
+	botTank := b.world.GetTank(b.tankInstId)
 	if botTank == nil {
 		b.state = BotStateIdle
 		log.Error("bot cant get tank by id %v", b.tankInstId)
@@ -69,14 +69,14 @@ func (b *Bot) Update(tick time.Duration) {
 		b.enemyGetEvent.Call(b.id, b.enemyId)
 		b.state = BotStateAttacking
 	case BotStateAttacking:
-		enemyTank := b.scene.GetTank(b.enemyId)
+		enemyTank := b.world.GetTank(b.enemyId)
 		if enemyTank == nil {
 			b.state = BotStateIdle
 			log.Debug("bot cant get enemy tank by id %v", b.enemyId)
 			break
 		}
 		if botTank.IsMoving() {
-			b.scene.TankFire(botTank.InstId())
+			b.world.TankFire(botTank.InstId())
 			break
 		}
 		bx, by := botTank.Pos()
@@ -120,7 +120,7 @@ func (b *Bot) Update(tick time.Duration) {
 }
 
 func (b *Bot) searchEnemyTank() uint32 {
-	botTank := b.scene.GetTank(b.tankInstId)
+	botTank := b.world.GetTank(b.tankInstId)
 	if botTank == nil {
 		return 0
 	}
@@ -131,9 +131,9 @@ func (b *Bot) searchEnemyTank() uint32 {
 		tcx, tcy = botTank.Pos()
 	)
 	var rect = math.NewRectObj(tcx-b.searchRadius, tcy-b.searchRadius, 2*b.searchRadius, 2*b.searchRadius)
-	tankList := b.scene.GetTankListWithRange(&rect)
+	tankList := b.world.GetTankListWithRange(&rect)
 	for i := 0; i < len(tankList); i++ {
-		searchTank := b.scene.GetTank(tankList[i])
+		searchTank := b.world.GetTank(tankList[i])
 		if tankList[i] == b.tankInstId || searchTank == nil {
 			continue
 		}
@@ -183,10 +183,10 @@ func NewBotManager() *BotManager {
 	}
 }
 
-func (bm *BotManager) NewBot(scene *SceneLogic, tankId uint32) *Bot {
+func (bm *BotManager) NewBot(world *World, tankId uint32) *Bot {
 	bm.idCounter++
 	bot := bm.botPool.Get()
-	bot.init(bm.idCounter, scene, tankId)
+	bot.init(bm.idCounter, world, tankId)
 	bot.registerEnemyGetHandle(bm.onEmenyTankGet)
 	bm.botList.Add(bm.idCounter, bot)
 	return bot

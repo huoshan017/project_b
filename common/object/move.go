@@ -22,6 +22,16 @@ func DefaultMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	return x + dx, y + dy
 }
 
+// 計算移動位置
+func movePos(x, y int32, moveDir base.Angle, speed int32, duration time.Duration) (int32, int32) {
+	distance := int32(int64(speed) * int64(duration) / int64(time.Second))
+	sn, sd := base.Sine(moveDir)
+	cn, cd := base.Cosine(moveDir)
+	dx := distance * cn / cd
+	dy := distance * sn / sd
+	return x + dx, y + dy
+}
+
 // 環繞物移動
 func SurroundObjMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	var sobj = mobj.(*SurroundObj)
@@ -96,18 +106,23 @@ func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 	}
 
 	shell := mobj.(*Shell)
-	rotation := shell.Rotation()
-	return getShellTrackMovedPos(shell, tick, false, &rotation)
+	return getShellTrackMovedPos(shell, tick, nil)
+}
+
+// 追蹤移動信息
+type TrackMoveInfo struct {
+	X, Y     int32
+	Rotation base.Angle
 }
 
 // 獲得炮彈追蹤移動位置
-func GetShellTrackMovedPos(shell IShell, tick time.Duration, rotation *base.Angle) (int32, int32) {
+func GetShellTrackMovedPos(shell IShell, tick time.Duration, moveInfo *TrackMoveInfo) (int32, int32) {
 	s := shell.(*Shell)
-	return getShellTrackMovedPos(s, tick, true, rotation)
+	return getShellTrackMovedPos(s, tick, moveInfo)
 }
 
 // 炮彈追蹤移動位置
-func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rotation *base.Angle) (int32, int32) {
+func getShellTrackMovedPos(shell *Shell, tick time.Duration, moveInfo *TrackMoveInfo) (int32, int32) {
 	staticInfo := shell.ShellStaticInfo()
 	if !staticInfo.TrackTarget || staticInfo.SteeringAngularVelocity <= 0 {
 		return DefaultMove(shell, tick)
@@ -115,22 +130,17 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rota
 
 	var target IObject
 	if shell.trackTargetId == 0 {
-		target = shell.searchTargetFunc(shell)
-		if target == nil {
-			if !onlyRead {
-				shell.trackTargetId = 0
-			}
+		if moveInfo == nil {
 			return DefaultMove(shell, tick)
 		}
-		if !onlyRead {
-			shell.trackTargetId = target.InstId()
+		target = shell.searchTargetFunc(shell)
+		if target == nil {
+			return DefaultMove(shell, tick)
 		}
+		shell.trackTargetId = target.InstId()
 	} else {
 		target = shell.fetchTargetFunc(shell.trackTargetId)
 		if target == nil {
-			if !onlyRead {
-				shell.trackTargetId = 0
-			}
 			return DefaultMove(shell, tick)
 		}
 	}
@@ -149,10 +159,6 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rota
 		return DefaultMove(shell, tick)
 	}
 
-	//if !onlyRead {
-	//	log.Debug("@@@@@@@@ target dir %v, shell current dir %v", targetDir, shellDir)
-	//}
-
 	// tick時間轉向角度
 	deltaMinutes := int16(time.Duration(shell.ShellStaticInfo().SteeringAngularVelocity) * tick / time.Second)
 	if deltaMinutes == 0 {
@@ -165,26 +171,27 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rota
 	thetaMinutes := theta.ToMinutes()
 
 	var angle base.Angle
+	rotation := shell.Rotation()
 	if cross > 0 { // 逆時針轉
 		// tick時間内的轉向角度超過了需要的角度差
 		if deltaMinutes >= thetaMinutes {
-			angle = base.AngleAdd(*rotation, theta)
+			angle = base.AngleAdd(rotation, theta)
 		} else {
 			var deltaAngle base.Angle
 			deltaAngle.Set(deltaMinutes)
-			angle = base.AngleAdd(*rotation, deltaAngle)
+			angle = base.AngleAdd(rotation, deltaAngle)
 		}
 	} else { // 順時針轉
 		if deltaMinutes >= thetaMinutes {
-			angle = base.AngleSub(*rotation, theta)
+			angle = base.AngleSub(rotation, theta)
 		} else {
 			var deltaAngle base.Angle
 			deltaAngle.Set(deltaMinutes)
-			angle = base.AngleSub(*rotation, deltaAngle)
+			angle = base.AngleSub(rotation, deltaAngle)
 		}
 	}
 
-	if !onlyRead {
+	if moveInfo == nil {
 		shell.Move(angle)
 		shell.RotateTo(angle)
 		/*if cross > 0 {
@@ -192,13 +199,14 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, onlyRead bool, rota
 		} else {
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, previous angle %v, track target %v, tick %v", angle, *rotation, target.InstId(), tick)
 		}*/
+		return DefaultMove(shell, tick)
 	} else {
-		*rotation = angle
 		/*if cross > 0 {
 			log.Debug("< 逆時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
 		} else {
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
 		}*/
+		x, y := shell.Pos()
+		return movePos(x, y, angle, shell.CurrentSpeed(), tick)
 	}
-	return DefaultMove(shell, tick)
 }

@@ -16,6 +16,7 @@ type InstanceArgs struct {
 	EventMgr   base.IEventManager
 	PlayerNum  int32
 	UpdateTick time.Duration
+	SavePath   string
 }
 
 type playerData struct {
@@ -59,16 +60,18 @@ func NewInstance(args *InstanceArgs) *Instance {
 	}
 }
 
-func (inst *Instance) LoadScene(config *game_map.Config) bool {
+func (inst *Instance) Load(config *game_map.Config) bool {
 	return inst.logic.LoadScene(config)
 }
 
-func (inst *Instance) UnloadScene() {
+func (inst *Instance) Unload() {
 	inst.logic.UnloadScene()
 	for _, f := range inst.frameList {
 		f.clear()
 		inst.frameDataFreeList.PushBack(f)
 	}
+	clear(inst.frameList)
+	inst.frameList = inst.frameList[:0]
 	inst.currFrameIndex = 0
 }
 
@@ -101,18 +104,17 @@ func (inst *Instance) CheckAndStart(playerList []uint64) bool {
 	fd, o := inst.frameDataFreeList.PopFront()
 	if o {
 		fd.frameNum = 1
-		inst.frameList = []*frameData{fd}
 	} else {
 		playerDataList := make([]*playerData, len(playerList))
-		for i := 0; i < len(playerDataList); i++ {
-			playerDataList[i] = &playerData{}
-			playerDataList[i].playerId = playerList[i]
-			bornPos := &inst.logic.CurrentScene().GetMapConfig().PlayerBornPosList[i]
-			inst.logic.PlayerEnterWithStaticInfo(playerList[i], 1, 1, bornPos.X, bornPos.Y, 0)
-		}
-		inst.frameList = []*frameData{{frameNum: 1, playerDataList: playerDataList}}
+		fd = &frameData{frameNum: 1, playerDataList: playerDataList}
 	}
-
+	inst.frameList = []*frameData{fd}
+	for i := 0; i < len(fd.playerDataList); i++ {
+		fd.playerDataList[i] = &playerData{}
+		fd.playerDataList[i].playerId = playerList[i]
+		bornPos := &inst.logic.World().GetMapConfig().PlayerBornPosList[i]
+		inst.logic.PlayerEnterWithStaticInfo(playerList[i], 1, 1, bornPos.X, bornPos.Y, 0)
+	}
 	return true
 }
 
@@ -195,7 +197,7 @@ func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, p
 	case CMD_TANK_SHIELD:
 		inst.logic.PlayerTankShield(playerId)
 	case CMD_TANK_RESPAWN:
-		bornPos := &inst.logic.CurrentScene().GetMapConfig().PlayerBornPosList[playerIndex]
+		bornPos := &inst.logic.World().GetMapConfig().PlayerBornPosList[playerIndex]
 		inst.logic.PlayerTankRespawn(playerId, 1, 1, bornPos.X, bornPos.Y, 0)
 	case CMD_TANK_CHANGE:
 		inst.logic.PlayerTankChange(playerId, nil)

@@ -10,10 +10,6 @@ type Event struct {
 	handles []EventHandle
 }
 
-func NewEvent() *Event {
-	return &Event{}
-}
-
 func (e *Event) Register(eh EventHandle) {
 	for _, h := range e.handles {
 		if reflect.DeepEqual(h, eh) {
@@ -56,20 +52,30 @@ type eventData struct {
 
 type EventManager struct {
 	id2EventHandles map[EventId]*Event
-	edList          []*eventData
+	edList          []eventData
+	eventPool       *ObjectPool[Event]
 }
 
 func NewEventManager() *EventManager {
 	return &EventManager{
 		id2EventHandles: make(map[EventId]*Event),
-		edList:          make([]*eventData, 0),
+		edList:          make([]eventData, 0),
+		eventPool:       NewObjectPool[Event](),
+	}
+}
+
+func (e *EventManager) Clear() {
+	clear(e.id2EventHandles)
+	if len(e.edList) > 0 {
+		clear(e.edList)
+		e.edList = nil
 	}
 }
 
 func (e *EventManager) RegisterEvent(id EventId, handle EventHandle) {
 	handles, o := e.id2EventHandles[id]
 	if !o {
-		handles = NewEvent()
+		handles = e.eventPool.Get()
 		e.id2EventHandles[id] = handles
 	}
 	handles.Register(handle)
@@ -81,6 +87,10 @@ func (e *EventManager) UnregisterEvent(id EventId, handle EventHandle) {
 		return
 	}
 	handles.Unregister(handle)
+	if handles.Size() == 0 {
+		delete(e.id2EventHandles, id)
+		e.eventPool.Put(handles)
+	}
 }
 
 func (e *EventManager) InvokeEvent(id EventId, args ...any) {
@@ -91,7 +101,7 @@ func (e *EventManager) InvokeEvent(id EventId, args ...any) {
 }
 
 func (e *EventManager) DispatchEvent(id EventId, args ...any) {
-	e.edList = append(e.edList, &eventData{eid: id, args: args})
+	e.edList = append(e.edList, eventData{eid: id, args: args})
 }
 
 func (e *EventManager) Update() {

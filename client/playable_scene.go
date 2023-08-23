@@ -24,7 +24,7 @@ type objOpCache struct {
  * 可绘制场景，实现base.IPlayableScene接口
  */
 type PlayableScene struct {
-	scene           *common.SceneLogic
+	scene           *common.World
 	camera          *client_base.Camera
 	viewport        *client_base.Viewport
 	playableObjs    map[uint32]*objOpCache
@@ -47,12 +47,12 @@ func CreatePlayableScene(viewport *client_base.Viewport, debug *client_base.Debu
 /**
  * 载入地图
  */
-func (s *PlayableScene) SetScene(scene *common.SceneLogic) {
-	mapInfo := mapInfoArray[scene.GetMapId()]
+func (s *PlayableScene) SetScene(world *common.World) {
+	mapInfo := mapInfoArray[world.GetMapId()]
 	s.camera = client_base.CreateCamera(s.viewport, mapInfo.cameraFov, defaultNearPlane)
-	s.CameraMoveTo(scene.Center() /*mapInfo.cameraPos.X, mapInfo.cameraPos.Y*/)
+	s.CameraMoveTo(world.Center() /*mapInfo.cameraPos.X, mapInfo.cameraPos.Y*/)
 	s.CameraSetHeight(mapInfo.cameraHeight)
-	s.scene = scene
+	s.scene = world
 	s.scene.RegisterObjectRemovedHandle(s.onObjRemovedHandle)
 	s.scene.RegisterEffectRemovedHandle(s.onEffectRemovedHandle)
 }

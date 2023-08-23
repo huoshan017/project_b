@@ -204,6 +204,8 @@ func (g *EventHandles) onEventPlayerExitGame(args ...any) {
 		g.inst.UnregisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
+	g.gameData.State = client_base.GameStateMainMenu
+
 	log.Info("handle event: player (uid: %v) exited game", uid)
 }
 
@@ -236,7 +238,7 @@ func (g *EventHandles) onEventBeforeMapLoad(args ...any) {
  * 处理地图载入完成事件
  */
 func (eh *EventHandles) onEventMapLoaded(args ...any) {
-	currentScene := args[0].(*common.SceneLogic)
+	currentScene := args[0].(*common.World)
 	eh.playableScene.SetScene(currentScene)
 }
 

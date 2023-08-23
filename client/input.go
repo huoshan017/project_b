@@ -4,7 +4,6 @@ import (
 	"project_b/client_base"
 	"project_b/common/object"
 	"project_b/core"
-	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -125,7 +124,6 @@ func (im *InputMgr) HandleInput() {
 			}
 			im.inst.PushFrame(0, im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
 			delete(im.keyPressMap, k)
-			log.Debug("key %v released", k)
 		}
 	}
 
@@ -133,9 +131,6 @@ func (im *InputMgr) HandleInput() {
 
 	// 處理鍵按下
 	im.pressedKeys = inpututil.AppendPressedKeys(im.pressedKeys[:0])
-	if len(im.pressedKeys) > 0 {
-		log.Debug("pressed key list %v", im.pressedKeys)
-	}
 	for _, pk := range im.pressedKeys {
 		im.keyPressMap[pk] = struct{}{}
 	}
