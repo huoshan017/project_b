@@ -15,6 +15,7 @@ const (
 	GameStateMainMenu                       // 已登陸進入主菜單
 	GameStateEnteringWorld                  // 正進入游戲世界
 	GameStateInWorld                        // 在游戲世界中
+	GameStateInReplay                       // 重播中
 	GameStatePopupInWorld                   // 在游戲中彈出事件
 	GameStateExitingWorld                   // 正在退出游戲世界
 )
@@ -23,8 +24,10 @@ type IGame interface {
 	GetState() GameState
 	GetGameData() *GameData
 	ScreenWidthHeight() (int32, int32)
-	EventMgr() base.IEventManager
 	Inst() *core.Instance
+	EventMgr() base.IEventManager
+	ReplayMgr() *core.ReplayManager
+	ToReplay()
 	Debug() *Debug
 }
 

@@ -12,6 +12,13 @@ import (
 	"github.com/huoshan017/ponu/list"
 )
 
+type instanceMode int
+
+const (
+	instanceModePlay   instanceMode = iota
+	instanceModeReplay instanceMode = 1
+)
+
 type InstanceArgs struct {
 	EventMgr   base.IEventManager
 	PlayerNum  int32
@@ -44,12 +51,15 @@ func (fd *frameData) clear() {
 }
 
 type Instance struct {
-	args              *InstanceArgs     // 參數
-	frameList         []*frameData      // 幀列表
-	currFrameIndex    uint32            // 當前幀索引
-	playerIdList      []uint64          // 玩家列表
-	logic             *common.GameLogic // 游戲邏輯
-	frameDataFreeList *list.ListT[*frameData]
+	args              *InstanceArgs                        // 參數
+	mode              instanceMode                         // 模式
+	replay            Replay                               // 重播數據，只有在重播模式下才有用
+	frameList         []*frameData                         // 幀列表
+	playerIdList      []uint64                             // 玩家列表
+	logic             *common.GameLogic                    // 游戲邏輯
+	frameIndexInList  uint32                               // 幀列表frameList或者replay.frameList的當前索引
+	frameDataFreeList *list.ListT[*frameData]              // 幀數據freelist
+	recordHandle      func(*game_map.Config, []*frameData) // 錄像處理
 }
 
 func NewInstance(args *InstanceArgs) *Instance {
@@ -61,18 +71,31 @@ func NewInstance(args *InstanceArgs) *Instance {
 }
 
 func (inst *Instance) Load(config *game_map.Config) bool {
-	return inst.logic.LoadScene(config)
+	res := inst.logic.LoadScene(config)
+	if res {
+		inst.mode = instanceModePlay
+	}
+	return res
 }
 
 func (inst *Instance) Unload() {
+	mapConfig := inst.logic.World().GetMapConfig()
 	inst.logic.UnloadScene()
-	for _, f := range inst.frameList {
-		f.clear()
-		inst.frameDataFreeList.PushBack(f)
+	if inst.recordHandle != nil {
+		inst.recordHandle(mapConfig, inst.frameList)
+	} else {
+		inst.recycleFrameList()
 	}
-	clear(inst.frameList)
-	inst.frameList = inst.frameList[:0]
-	inst.currFrameIndex = 0
+	inst.frameIndexInList = 0
+}
+
+func (inst *Instance) LoadReplay(replay Replay) bool {
+	res := inst.logic.LoadScene(replay.mapConfig)
+	if res {
+		inst.mode = instanceModeReplay
+		inst.replay = replay
+	}
+	return res
 }
 
 func (inst *Instance) RegisterEvent(eid base.EventId, handle func(...any)) {
@@ -100,21 +123,12 @@ func (inst *Instance) CheckAndStart(playerList []uint64) bool {
 			panic(fmt.Sprintf("Instance Start with %v", pid))
 		}
 	}
-	inst.playerIdList = playerList
-	fd, o := inst.frameDataFreeList.PopFront()
-	if o {
-		fd.frameNum = 1
-	} else {
-		playerDataList := make([]*playerData, len(playerList))
-		fd = &frameData{frameNum: 1, playerDataList: playerDataList}
-	}
-	inst.frameList = []*frameData{fd}
-	for i := 0; i < len(fd.playerDataList); i++ {
-		fd.playerDataList[i] = &playerData{}
-		fd.playerDataList[i].playerId = playerList[i]
+	for i := 0; i < len(playerList); i++ {
 		bornPos := &inst.logic.World().GetMapConfig().PlayerBornPosList[i]
 		inst.logic.PlayerEnterWithStaticInfo(playerList[i], 1, 1, bornPos.X, bornPos.Y, 0)
 	}
+	inst.playerIdList = playerList
+	inst.frameIndexInList = 0
 	return true
 }
 
@@ -122,8 +136,11 @@ func (inst *Instance) Restart() bool {
 	if len(inst.playerIdList) == 0 {
 		return false
 	}
-	inst.currFrameIndex = 0
-	inst.frameList = nil
+	if inst.recordHandle != nil {
+		inst.recordHandle(inst.logic.World().GetMapConfig(), inst.frameList)
+	} else {
+		inst.recycleFrameList()
+	}
 	inst.logic.ReloadScene()
 	return inst.CheckAndStart(inst.playerIdList)
 }
@@ -137,15 +154,46 @@ func (inst *Instance) Resume() {
 }
 
 func (inst *Instance) PushFrame(frameNum uint32, playerId uint64, cmd CmdCode, args []any) bool {
-	if frameNum == 0 {
-		frameNum = inst.currFrameIndex + 1
-	}
-	if frameNum > inst.currFrameIndex+1 {
-		log.Error("core.Instance.PushFrame: push frame %v can not greater to current frame %v", frameNum, inst.currFrameIndex+1)
+	if inst.mode != instanceModePlay {
 		return false
 	}
-	fd := inst.frameList[inst.currFrameIndex]
+	if frameNum == 0 {
+		frameNum = inst.logic.GetCurrFrame() + 1
+	}
+	if frameNum > inst.logic.GetCurrFrame()+1 {
+		log.Error("core.Instance.PushFrame: push frame %v can not greater to current frame %v", frameNum, inst.logic.GetCurrFrame()+1)
+		return false
+	}
+
+	var (
+		fd *frameData
+		l  = len(inst.frameList)
+		i  int32
+	)
+	if l > 0 {
+		for i = int32(l) - 1; i >= 0; i-- {
+			if inst.frameList[i].frameNum == frameNum {
+				fd = inst.frameList[i]
+				break
+			}
+			if inst.frameList[i].frameNum < frameNum {
+				break
+			}
+		}
+	}
+	if fd == nil {
+		fd = inst.getAvailableFrameData()
+		fd.frameNum = frameNum
+		if i >= int32(l)-1 {
+			inst.frameList = append(inst.frameList, fd)
+		} else {
+			inst.frameList = append(inst.frameList[:i+1], append([]*frameData{fd}, inst.frameList[i+1:]...)...)
+		}
+	}
 	for i := 0; i < len(fd.playerDataList); i++ {
+		if fd.playerDataList[i].playerId == 0 {
+			fd.playerDataList[i].playerId = inst.playerIdList[i]
+		}
 		if playerId == fd.playerDataList[i].playerId {
 			playerData := fd.playerDataList[i]
 			playerData.frameCmdList = append(playerData.frameCmdList, struct {
@@ -162,8 +210,40 @@ func (inst *Instance) UpdateFrame() {
 	inst.logic.Update(inst.args.UpdateTick)
 }
 
+func (inst *Instance) GetFrame() uint32 {
+	return inst.logic.GetCurrFrame()
+}
+
+func (inst *Instance) getAvailableFrameData() *frameData {
+	fd, o := inst.frameDataFreeList.PopFront()
+	if !o {
+		playerDataList := make([]*playerData, len(inst.playerIdList))
+		fd = &frameData{frameNum: 1, playerDataList: playerDataList}
+		for i := 0; i < len(playerDataList); i++ {
+			playerDataList[i] = &playerData{}
+			playerDataList[i].playerId = inst.playerIdList[i]
+		}
+	}
+	return fd
+}
+
 func (inst *Instance) processFrameCmdList() {
-	fd := inst.frameList[inst.currFrameIndex]
+	var frameList []*frameData
+	if inst.mode == instanceModePlay {
+		frameList = inst.frameList
+	} else if inst.mode == instanceModeReplay {
+		frameList = inst.replay.frameList
+	}
+
+	if int(inst.frameIndexInList)+1 > len(frameList) {
+		return
+	}
+
+	fd := frameList[inst.frameIndexInList]
+	logicFrame := inst.logic.GetCurrFrame()
+	if logicFrame > fd.frameNum {
+		return
+	}
 	for i := 0; i < len(fd.playerDataList); i++ {
 		playerData := fd.playerDataList[i]
 		for j := 0; j < len(playerData.frameCmdList); j++ {
@@ -171,13 +251,7 @@ func (inst *Instance) processFrameCmdList() {
 			inst.execCmd(fc.cmd.cmd, fc.cmd.args, playerData.playerId, i)
 		}
 	}
-	inst.currFrameIndex += 1
-	playerDataList := make([]*playerData, len(inst.playerIdList))
-	for i := 0; i < len(playerDataList); i++ {
-		playerDataList[i] = &playerData{}
-		playerDataList[i].playerId = inst.playerIdList[i]
-	}
-	inst.frameList = append(inst.frameList, &frameData{frameNum: 1, playerDataList: playerDataList})
+	inst.frameIndexInList += 1
 }
 
 func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, playerIndex int) {
@@ -204,4 +278,17 @@ func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, p
 	case CMD_TANK_RESTORE:
 		inst.logic.PlayerTankRestore(playerId)
 	}
+}
+
+func (inst *Instance) setRecordHandle(handle func(*game_map.Config, []*frameData)) {
+	inst.recordHandle = handle
+}
+
+func (inst *Instance) recycleFrameList() {
+	for _, f := range inst.frameList {
+		f.clear()
+		inst.frameDataFreeList.PushBack(f)
+	}
+	clear(inst.frameList)
+	inst.frameList = inst.frameList[:0]
 }

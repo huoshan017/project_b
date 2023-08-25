@@ -153,7 +153,7 @@ func (o *MovableObject) Move(dir base.Angle) {
 		}
 		d := GetDefaultLinearDistance(o, tick)
 		v := dir.DistanceToVec2(d)
-		if !o.checkMove(v.X(), v.Y(), false) {
+		if !o.checkMove(v.X(), v.Y(), false, nil, nil) {
 			return
 		}
 		o.state = toMove
@@ -255,10 +255,14 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 
 	ox, oy := o.Pos()
-	if o.checkMove(x-ox, y-oy, true) {
+	if o.checkMove(x-ox, y-oy, true, func() {
 		o.SetPos(x, y)
-	} else {
+	}, func() {
 		o.state = toStop
+	}) {
+		//o.SetPos(x, y)
+	} else {
+		//o.state = toStop
 	}
 
 	if o.state == isMoving {
@@ -270,7 +274,7 @@ func (o *MovableObject) Update(tick time.Duration) {
 	}
 }
 
-func (o *MovableObject) checkMove(dx, dy int32, update bool) bool {
+func (o *MovableObject) checkMove(dx, dy int32, update bool, canMoveFunc func(), cantMoveFunc func()) bool {
 	o.collisionInfo.Clear()
 	o.checkMoveEvent.Call(o.instId, dx, dy, &o.collisionInfo)
 	if o.collisionInfo.Result != CollisionNone {
@@ -278,9 +282,20 @@ func (o *MovableObject) checkMove(dx, dy int32, update bool) bool {
 			if update {
 				o.SetPos(o.collisionInfo.MovingObjPos.X, o.collisionInfo.MovingObjPos.Y)
 			}
+			if cantMoveFunc != nil {
+				cantMoveFunc()
+			}
+		} else {
+			if canMoveFunc != nil {
+				canMoveFunc()
+			}
 		}
 		if o.colliderComp != nil {
 			o.colliderComp.CallCollisionEventHandle(o.mySuper, &o.collisionInfo)
+		}
+	} else {
+		if canMoveFunc != nil {
+			canMoveFunc()
 		}
 	}
 	return o.collisionInfo.Result != CollisionAndBlock

@@ -75,7 +75,7 @@ func (s *Shell) MoveNow(dir base.Angle) {
 		}
 		d := GetDefaultLinearDistance(s, tick)
 		v := dir.DistanceToVec2(d)
-		if !s.checkMove(v.X(), v.Y(), false) {
+		if !s.checkMove(v.X(), v.Y(), false, nil, nil) {
 			return
 		}
 		s.state = isMoving

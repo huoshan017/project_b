@@ -18,12 +18,14 @@ type Game struct {
 	conf *Config
 	//---------------------------------------
 	// 逻辑
-	inst          *core.Instance              // 游戲實例
-	net           *client_core.NetClient      // 网络模块
-	msgHandler    *client_core.MsgHandler     // 消息处理器
-	playerMgr     *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
-	eventMgr      *base.EventManager          // 游戏事件管理器，向上层逻辑传递事件
-	lastCheckTime time.CustomTime             // 上次检测时间
+	inst            *core.Instance              // 游戲實例
+	replays         *core.ReplayManager         // 重播管理器
+	net             *client_core.NetClient      // 网络模块
+	msgHandler      *client_core.MsgHandler     // 消息处理器
+	playerMgr       *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
+	eventMgr        *base.EventManager          // 游戏事件管理器，向上层逻辑传递事件
+	lastCheckTime   time.CustomTime             // 上次检测时间
+	isStartInstance bool                        // 開始實例
 	//---------------------------------------
 	// 表现相关
 	viewport      *client_base.Viewport // 视口
@@ -42,7 +44,8 @@ func NewGame(conf *Config) *Game {
 		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
 	g.eventMgr = base.NewEventManager()
-	g.inst = core.NewInstance(&core.InstanceArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerCount, UpdateTick: conf.updateTick})
+	g.inst = core.NewInstance(&core.InstanceArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerMaxCount, UpdateTick: conf.updateTick})
+	g.replays = core.NewReplayManager(g.inst)
 	g.net = client_core.CreateNetClient(conf.serverAddress, options.WithRunMode(options.RunModeOnlyUpdate), options.WithNoDelay(true))
 	g.playerMgr = client_core.CreateCPlayerManager()
 	g.msgHandler = client_core.CreateMsgHandler(g.net, g.inst, g.playerMgr, g.eventMgr)
@@ -93,6 +96,11 @@ func (g *Game) Inst() *core.Instance {
 	return g.inst
 }
 
+// 重播管理器
+func (g *Game) ReplayMgr() *core.ReplayManager {
+	return g.replays
+}
+
 // 調試
 func (g *Game) Debug() *client_base.Debug {
 	return &g.debug
@@ -117,9 +125,9 @@ func (g *Game) Update() error {
 	case client_base.GameStateEnteringWorld:
 	case client_base.GameStateInWorld:
 		g.update()
-		g.inputMgr.HandleInput()
+	case client_base.GameStateInReplay:
+		g.updateInReplay()
 	case client_base.GameStateExitingWorld:
-		//	g.restart()
 	}
 	g.uiMgr.Update()
 	return nil
@@ -127,7 +135,7 @@ func (g *Game) Update() error {
 
 // 绘制
 func (g *Game) Draw(screen *ebiten.Image) {
-	if g.gameData.State == client_base.GameStateInWorld {
+	if g.gameData.State == client_base.GameStateInWorld || g.gameData.State == client_base.GameStateInReplay {
 		// 画场景
 		g.playableScene.Draw(screen)
 		// 显示帧数
@@ -142,6 +150,14 @@ func (g *Game) ScreenWidthHeight() (int32, int32) {
 	return screenWidth, screenHeight
 }
 
+// 去重播
+func (g *Game) ToReplay() {
+	replay := g.replays.SelectedReplay()
+	g.inst.LoadReplay(replay)
+	g.gameData.State = client_base.GameStateInReplay
+	g.isStartInstance = true
+}
+
 // 更新
 func (g *Game) update() {
 	// 时间同步完成
@@ -153,7 +169,23 @@ func (g *Game) update() {
 	if g.lastCheckTime.IsZero() {
 		g.lastCheckTime = now
 	}
+	g.inputMgr.HandleInput()
 	tick := now.Sub(g.lastCheckTime)
+	for ; tick >= g.conf.updateTick; tick -= g.conf.updateTick {
+		g.inst.UpdateFrame()
+		g.lastCheckTime = g.lastCheckTime.Add(g.conf.updateTick)
+	}
+}
+
+// 重播更新
+func (g *Game) updateInReplay() {
+	if g.isStartInstance {
+		g.inst.CheckAndStart([]uint64{client_core.DefaultSinglePlayerId})
+		g.lastCheckTime = time.Now()
+		g.isStartInstance = false
+	}
+	g.inputMgr.HandleInput()
+	tick := time.Since(g.lastCheckTime)
 	for ; tick >= g.conf.updateTick; tick -= g.conf.updateTick {
 		g.inst.UpdateFrame()
 		g.lastCheckTime = g.lastCheckTime.Add(g.conf.updateTick)

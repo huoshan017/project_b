@@ -77,34 +77,6 @@ func (ui *loginUI) DrawFrame() {
 	imgui.End()
 }
 
-// InWorldUI
-type InWorldUI struct {
-	revive    PopupReviveUI
-	pauseMenu PauseMenuUI
-	debug     DebugUI
-}
-
-// InWorld.Init
-func (ui *InWorldUI) Init(game client_base.IGame) {
-	ui.revive.Init(game)
-	ui.pauseMenu.Init(game, getPauseMenuIdNodeTree(&ui.pauseMenu))
-	ui.debug.Init(game)
-}
-
-// InWorld.Update
-func (ui *InWorldUI) Update() {
-	ui.revive.Update()
-	ui.pauseMenu.Update()
-	ui.debug.Update()
-}
-
-// InWorld.GenFrame
-func (ui *InWorldUI) DrawFrame() {
-	ui.revive.DrawFrame()
-	ui.pauseMenu.DrawFrame()
-	ui.debug.DrawFrame()
-}
-
 // PopupReviveUI
 type PopupReviveUI struct {
 	PopupBase
@@ -129,7 +101,7 @@ func (ui *PopupReviveUI) Init(game client_base.IGame) {
 // PopupReviveUI.Update
 func (ui *PopupReviveUI) Update() {
 	if ui.toRevive {
-		ui.game.Inst().PushFrame(0, ui.game.GetGameData().MyId, core.CMD_TANK_RESPAWN, []any{common.TankTypePlayer})
+		ui.game.Inst().PushFrame(ui.game.Inst().GetFrame(), ui.game.GetGameData().MyId, core.CMD_TANK_RESPAWN, []any{common.TankTypePlayer})
 		ui.toRevive = false
 		ui.pop(false)
 	} else if ui.toExit {
@@ -154,80 +126,6 @@ func (ui *PopupReviveUI) DrawFrame() {
 		ui.toExit = true
 	}
 	ui.s = imgui.WindowSize()
-	imgui.End()
-}
-
-// DebugUI
-type DebugUI struct {
-	PopupBase
-	showMapGridSelected                      bool // 地圖網格顯示
-	showTankBBSelected                       bool // 坦克包圍盒顯示
-	showTankAABBSelected                     bool // 坦克AABB顯示
-	showShellBBSelected                      bool // 炮彈包圍盒顯示
-	showShellAABBSelected                    bool // 炮彈AABB顯示
-	showTankCollisionDetectionRegionSelected bool // 坦克碰撞檢測區域顯示
-}
-
-// DebugUI.Init
-func (ui *DebugUI) Init(game client_base.IGame) {
-	ui.uiBase.Init(game)
-}
-
-// DebugUI.Update
-func (ui *DebugUI) Update() {
-	if inpututil.IsKeyJustReleased(ebiten.KeyF1) {
-		if ui.popup {
-			ui.pop(false)
-		} else {
-			ui.pop(true)
-		}
-		return
-	}
-	debug := ui.game.Debug()
-	if ui.showMapGridSelected {
-		debug.ShowMapGrid()
-	} else {
-		debug.HideMapGrid()
-	}
-	if ui.showTankBBSelected {
-		debug.ShowTankBoundingbox()
-	} else {
-		debug.HideTankBoundingbox()
-	}
-	if ui.showTankAABBSelected {
-		debug.ShowTankAABB()
-	} else {
-		debug.HideTankAABB()
-	}
-	if ui.showShellBBSelected {
-		debug.ShowShellBoundingbox()
-	} else {
-		debug.HideShellBoundingbox()
-	}
-	if ui.showShellAABBSelected {
-		debug.ShowShellAABB()
-	} else {
-		debug.HideShellAABB()
-	}
-	if ui.showTankCollisionDetectionRegionSelected {
-		debug.ShowTankCollisionDetectionRegion()
-	} else {
-		debug.HideTankCollisionDetectionRegion()
-	}
-}
-
-// DebugUI.DrawFrame
-func (ui *DebugUI) DrawFrame() {
-	if !ui.popup {
-		return
-	}
-	imgui.Begin("debug_ui")
-	imgui.Checkbox("show map grid", &ui.showMapGridSelected)
-	imgui.Checkbox("show tank boundingbox", &ui.showTankBBSelected)
-	imgui.Checkbox("show tank AABB", &ui.showTankAABBSelected)
-	imgui.Checkbox("show shell boundingbox", &ui.showShellBBSelected)
-	imgui.Checkbox("show shell AABB", &ui.showShellAABBSelected)
-	imgui.Checkbox("show tank collision detection region", &ui.showTankCollisionDetectionRegionSelected)
 	imgui.End()
 }
 

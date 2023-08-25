@@ -85,6 +85,7 @@ func (g *GameLogic) UnloadScene() {
 	g.botMgr.Clear()
 	g.tank2Bot.Clear()
 	g.eventMgr.InvokeEvent(EventIdMapUnloaded)
+	g.frame = 0
 }
 
 // 重載場景
@@ -94,6 +95,7 @@ func (g *GameLogic) ReloadScene() {
 	g.tank2Player.Clear()
 	g.world.ReloadMap()
 	g.createBots(g.World().mapConfig)
+	g.frame = 0
 }
 
 // 場景圖

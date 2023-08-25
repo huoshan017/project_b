@@ -295,7 +295,7 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) e
 	}
 
 	orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
-	h.inst.PushFrame(0, sync.PlayerId, core.CMD_TANK_MOVE, []any{orientation})
+	h.inst.PushFrame(h.inst.GetFrame(), sync.PlayerId, core.CMD_TANK_MOVE, []any{orientation})
 
 	log.Debug("Player %v move sync", sync.PlayerId)
 
@@ -320,7 +320,7 @@ func (h *MsgHandler) onPlayerTankStopMoveSync(sess *gsnet_msg.MsgSession, msg an
 		return nil
 	}
 
-	h.inst.PushFrame(0, sync.PlayerId, core.CMD_TANK_STOP, nil)
+	h.inst.PushFrame(h.inst.GetFrame(), sync.PlayerId, core.CMD_TANK_STOP, nil)
 
 	log.Debug("Player %v stop move sync", sync.PlayerId)
 
@@ -426,7 +426,7 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 	}
 
 	// 坦克改变
-	h.inst.PushFrame(0, playerId, core.CMD_TANK_CHANGE, []any{common_data.TankConfigData[changedTankId]})
+	h.inst.PushFrame(h.inst.GetFrame(), playerId, core.CMD_TANK_CHANGE, []any{common_data.TankConfigData[changedTankId]})
 
 	// 向上传递事件
 	//h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))
@@ -443,7 +443,7 @@ func (h *MsgHandler) doTankRestore(playerId uint64, tankId int32) bool {
 	}
 
 	// 恢复坦克
-	h.inst.PushFrame(0, playerId, core.CMD_TANK_RESTORE, nil)
+	h.inst.PushFrame(h.inst.GetFrame(), playerId, core.CMD_TANK_RESTORE, nil)
 
 	// 向上传递事件
 	//h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))

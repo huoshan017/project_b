@@ -38,10 +38,6 @@ func (ui *MissionsSubUI) DrawFrame() {
 	y := ui.top
 	imgui.SetCursorPos(imgui.Vec2{X: x, Y: y})
 	imgui.SetNextItemWidth(ui.w / 3)
-	/*var item = ui.selListItem
-	if imgui.ListBox("", &item, ui.mapNameList) {
-		ui.selListItem = item
-	}*/
 	var isSelected bool
 	if imgui.BeginListBoxV("", imgui.Vec2{X: x, Y: ui.h * 2 / 3}) {
 		for i := 0; i < len(ui.mapNameList); i++ {
@@ -68,9 +64,9 @@ func (ui *MissionsSubUI) DrawFrame() {
 	if imgui.Button("Enter") {
 		ui.toEnter = true
 	}
+	imgui.PopItemFlag()
 	imgui.SameLine()
 	imgui.Checkbox("Record Game", &ui.isRecord)
-	imgui.PopItemFlag()
 }
 
 func (ui *MissionsSubUI) enterGame() {
@@ -80,6 +76,9 @@ func (ui *MissionsSubUI) enterGame() {
 	if !ui.game.Inst().Load(config) {
 		log.Error("load map %v error", mapId)
 		return
+	}
+	if ui.isRecord {
+		ui.game.ReplayMgr().SetRecord()
 	}
 	ui.game.Inst().CheckAndStart([]uint64{client_core.DefaultSinglePlayerId})
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
