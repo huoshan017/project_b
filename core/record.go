@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"project_b/common/time"
 	"project_b/log"
@@ -34,13 +33,17 @@ func (r Record) FrameNum() uint32 {
 	return r.frameNum
 }
 
+type recordNamePair struct {
+	recordName string
+	fileName   string
+}
+
 type RecordManager struct {
-	inst               *Instance
-	recordNameList     []string
-	recordFileNameList []string
-	sel                int32
-	savePath           string
-	loaded             bool
+	inst     *Instance
+	nameList []recordNamePair
+	sel      int32
+	savePath string
+	loaded   bool
 }
 
 func NewRecordManager(inst *Instance) *RecordManager {
@@ -60,40 +63,39 @@ func (rm *RecordManager) LoadRecords() {
 	if rm.loaded {
 		return
 	}
-	fsList, err := ioutil.ReadDir(rm.savePath)
+	fsList, err := os.ReadDir(rm.savePath)
 	if err != nil {
 		log.Error("RecordManager.LoadRecords ioutil.ReadDir err: %v", err)
 		return
 	}
-	var record Record
+	var pbr PbRecord
 	for i := 0; i < len(fsList); i++ {
-		if !rm.read(fsList[i].Name(), &record) {
+		if !rm.readName(fsList[i].Name(), &pbr) {
 			log.Error("RecordManager read file %v failed", fsList[i].Name())
 			continue
 		}
-		rm.recordFileNameList = append(rm.recordFileNameList, fsList[i].Name())
-		rm.recordNameList = append(rm.recordNameList, record.name)
+		rm.nameList = append(rm.nameList, recordNamePair{recordName: pbr.Name, fileName: fsList[i].Name()})
 	}
 	rm.loaded = true
 }
 
 func (rm *RecordManager) Save(mapName string, record Record) {
 	record.name = fmt.Sprintf("Record.%v: %v", mapName, time.Now().String())
-	rm.persistance(&record)
-	rm.recordNameList = append(rm.recordNameList, record.name)
+	fileName := fmt.Sprintf("%v.record", time.Now().Unix())
+	rm.persistance(fileName, &record)
+	rm.nameList = append(rm.nameList, recordNamePair{recordName: record.name, fileName: fileName})
 }
 
 func (rm *RecordManager) Delete(index int32) bool {
 	if int(index) >= len(rm.inst.frameList) {
 		return false
 	}
-	rm.recordFileNameList = append(rm.recordFileNameList[:index], rm.recordFileNameList[index+1:]...)
-	rm.recordNameList = append(rm.recordNameList[:index], rm.recordNameList[index+1:]...)
+	rm.nameList = append(rm.nameList[:index], rm.nameList[index+1:]...)
 	return true
 }
 
 func (rm *RecordManager) Select(index int32) {
-	if int(index) <= len(rm.recordNameList) {
+	if int(index) <= len(rm.nameList) {
 		rm.sel = index
 	}
 }
@@ -102,29 +104,21 @@ func (rm *RecordManager) SelectedRecord() (Record, bool) {
 	if rm.sel < 0 {
 		panic("not selected record")
 	}
-	name := rm.recordFileNameList[rm.sel]
+	np := rm.nameList[rm.sel]
 	var record Record
-	if !rm.read(name, &record) {
-		log.Error("RecordManager read selected save %v failed", name)
+	if !rm.read(np.fileName, &record) {
+		log.Error("RecordManager read selected save %v failed", np.fileName)
 		return record, false
 	}
 	return record, true
 }
 
-func (rm *RecordManager) RecordNameList() []string {
-	var nameList []string
-	for i := 0; i < len(rm.recordNameList); i++ {
-		nameList = append(nameList, rm.recordNameList[i])
-	}
-	return nameList
-}
-
 func (rm *RecordManager) GetRecordCount() int32 {
-	return int32(len(rm.recordNameList))
+	return int32(len(rm.nameList))
 }
 
 func (rm *RecordManager) GetRecordName(index int32) string {
-	return rm.recordNameList[index]
+	return rm.nameList[index].recordName
 }
 
 func (rm *RecordManager) genSavePath() {
@@ -149,24 +143,31 @@ func (rm *RecordManager) genSavePath() {
 	rm.savePath = savePath
 }
 
-func (rm *RecordManager) read(fileName string, record *Record) bool {
+func (rm *RecordManager) readName(fileName string, pbr *PbRecord) bool {
 	filePath := fmt.Sprintf("%v/%v", rm.savePath, fileName)
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Error("RecordManager read file err: %v", err)
 		return false
 	}
-	var pbr PbRecord
-	err = proto.Unmarshal(data, &pbr)
+	err = proto.Unmarshal(data, pbr)
 	if err != nil {
 		log.Error("RecordManager unmarshal err: %v", err)
+		return false
+	}
+	return true
+}
+
+func (rm *RecordManager) read(fileName string, record *Record) bool {
+	var pbr PbRecord
+	if !rm.readName(fileName, &pbr) {
 		return false
 	}
 	unserializeRecord(&pbr, record)
 	return true
 }
 
-func (rm *RecordManager) persistance(record *Record) {
+func (rm *RecordManager) persistance(fileName string, record *Record) {
 	var pbr PbRecord
 	serializeRecord(record, &pbr)
 	data, err := proto.Marshal(&pbr)
@@ -175,7 +176,6 @@ func (rm *RecordManager) persistance(record *Record) {
 		return
 	}
 
-	fileName := fmt.Sprintf("%v.record", time.Now().Unix())
 	filePath := fmt.Sprintf("%v/%v", rm.savePath, fileName)
 	var f *os.File
 	f, err = os.Create(filePath)
@@ -192,8 +192,6 @@ func (rm *RecordManager) persistance(record *Record) {
 	}
 
 	f.Sync()
-
-	rm.recordFileNameList = append(rm.recordFileNameList, fileName)
 }
 
 func serializeRecord(record *Record, pbr *PbRecord) {
