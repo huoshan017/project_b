@@ -31,8 +31,8 @@ var mapInfoArray = map[int32]mapInfo{
 	},
 	3: {
 		config:       game_map.MapConfigArray[3],
-		cameraPos:    object.Pos{X: 1000, Y: 1000},
-		cameraHeight: 3500,
-		cameraFov:    60,
+		cameraPos:    object.Pos{X: 2000, Y: 2000},
+		cameraHeight: 7000,
+		cameraFov:    90,
 	},
 }

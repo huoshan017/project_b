@@ -26,7 +26,7 @@ type IGame interface {
 	ScreenWidthHeight() (int32, int32)
 	Inst() *core.Instance
 	EventMgr() base.IEventManager
-	ReplayMgr() *core.ReplayManager
+	RecordMgr() *core.RecordManager
 	ToReplay()
 	Debug() *Debug
 }

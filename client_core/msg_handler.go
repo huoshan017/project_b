@@ -8,6 +8,7 @@ import (
 	"project_b/core"
 	"project_b/game_map"
 	"project_b/log"
+	"unsafe"
 
 	"time"
 
@@ -295,7 +296,7 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) e
 	}
 
 	orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
-	h.inst.PushFrame(h.inst.GetFrame(), sync.PlayerId, core.CMD_TANK_MOVE, []any{orientation})
+	h.inst.PushFrame(h.inst.GetFrame(), sync.PlayerId, core.CMD_TANK_MOVE, []int64{int64(orientation)})
 
 	log.Debug("Player %v move sync", sync.PlayerId)
 
@@ -426,7 +427,7 @@ func (h *MsgHandler) doTankChange(playerId uint64, changedTankId int32) bool {
 	}
 
 	// 坦克改变
-	h.inst.PushFrame(h.inst.GetFrame(), playerId, core.CMD_TANK_CHANGE, []any{common_data.TankConfigData[changedTankId]})
+	h.inst.PushFrame(h.inst.GetFrame(), playerId, core.CMD_TANK_CHANGE, []int64{int64(uintptr(unsafe.Pointer(common_data.TankConfigData[changedTankId])))})
 
 	// 向上传递事件
 	//h.invoker.InvokeEvent(common.EventIdTankChange, playerId, h.logic.GetPlayerTank(playerId))

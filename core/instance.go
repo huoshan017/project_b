@@ -27,11 +27,8 @@ type InstanceArgs struct {
 }
 
 type playerData struct {
-	playerId     uint64
-	frameCmdList []struct {
-		frame uint32
-		cmd   CmdData
-	}
+	playerId uint64
+	cmdList  []CmdData
 }
 
 type frameData struct {
@@ -42,24 +39,24 @@ type frameData struct {
 func (fd *frameData) clear() {
 	fd.frameNum = 0
 	for _, pd := range fd.playerDataList {
-		if len(pd.frameCmdList) == 0 {
+		if len(pd.cmdList) == 0 {
 			continue
 		}
-		clear(pd.frameCmdList)
-		pd.frameCmdList = pd.frameCmdList[:0]
+		clear(pd.cmdList)
+		pd.cmdList = pd.cmdList[:0]
 	}
 }
 
 type Instance struct {
-	args              *InstanceArgs                        // 參數
-	mode              instanceMode                         // 模式
-	replay            Replay                               // 重播數據，只有在重播模式下才有用
-	frameList         []*frameData                         // 幀列表
-	playerIdList      []uint64                             // 玩家列表
-	logic             *common.GameLogic                    // 游戲邏輯
-	frameIndexInList  uint32                               // 幀列表frameList或者replay.frameList的當前索引
-	frameDataFreeList *list.ListT[*frameData]              // 幀數據freelist
-	recordHandle      func(*game_map.Config, []*frameData) // 錄像處理
+	args              *InstanceArgs           // 參數
+	mode              instanceMode            // 模式
+	record            Record                  // 錄像數據，只有在重播模式下才有用
+	frameList         []*frameData            // 幀列表
+	playerIdList      []uint64                // 玩家列表
+	logic             *common.GameLogic       // 游戲邏輯
+	frameIndexInList  uint32                  // 幀列表frameList或者replay.frameList的當前索引
+	frameDataFreeList *list.ListT[*frameData] // 幀數據freelist
+	recordHandle      func(string, Record)    // 錄像處理
 }
 
 func NewInstance(args *InstanceArgs) *Instance {
@@ -80,20 +77,20 @@ func (inst *Instance) Load(config *game_map.Config) bool {
 
 func (inst *Instance) Unload() {
 	mapConfig := inst.logic.World().GetMapConfig()
-	inst.logic.UnloadScene()
-	if inst.recordHandle != nil {
-		inst.recordHandle(mapConfig, inst.frameList)
+	if inst.mode == instanceModePlay && inst.recordHandle != nil {
+		inst.recordHandle(mapConfig.Name, Record{mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame()})
 	} else {
 		inst.recycleFrameList()
 	}
+	inst.logic.UnloadScene()
 	inst.frameIndexInList = 0
 }
 
-func (inst *Instance) LoadReplay(replay Replay) bool {
-	res := inst.logic.LoadScene(replay.mapConfig)
+func (inst *Instance) LoadRecord(mapConfig *game_map.Config, record Record) bool {
+	res := inst.logic.LoadScene(mapConfig)
 	if res {
 		inst.mode = instanceModeReplay
-		inst.replay = replay
+		inst.record = record
 	}
 	return res
 }
@@ -115,6 +112,9 @@ func (inst *Instance) UnregisterPlayerEvent(playerId uint64, eid base.EventId, h
 }
 
 func (inst *Instance) CheckAndStart(playerList []uint64) bool {
+	if len(playerList) == 0 && inst.mode == instanceModeReplay {
+		playerList = inst.record.playerIdList
+	}
 	if len(playerList) != int(inst.args.PlayerNum) {
 		return false
 	}
@@ -136,8 +136,9 @@ func (inst *Instance) Restart() bool {
 	if len(inst.playerIdList) == 0 {
 		return false
 	}
-	if inst.recordHandle != nil {
-		inst.recordHandle(inst.logic.World().GetMapConfig(), inst.frameList)
+	if inst.mode == instanceModePlay && inst.recordHandle != nil {
+		mapConfig := inst.logic.World().GetMapConfig()
+		inst.recordHandle(mapConfig.Name, Record{mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame()})
 	} else {
 		inst.recycleFrameList()
 	}
@@ -153,7 +154,7 @@ func (inst *Instance) Resume() {
 	inst.logic.Resume()
 }
 
-func (inst *Instance) PushFrame(frameNum uint32, playerId uint64, cmd CmdCode, args []any) bool {
+func (inst *Instance) PushFrame(frameNum uint32, playerId uint64, cmd CmdCode, args []int64) bool {
 	if inst.mode != instanceModePlay {
 		return false
 	}
@@ -196,18 +197,22 @@ func (inst *Instance) PushFrame(frameNum uint32, playerId uint64, cmd CmdCode, a
 		}
 		if playerId == fd.playerDataList[i].playerId {
 			playerData := fd.playerDataList[i]
-			playerData.frameCmdList = append(playerData.frameCmdList, struct {
-				frame uint32
-				cmd   CmdData
-			}{frameNum, CmdData{cmd, args}})
+			playerData.cmdList = append(playerData.cmdList, CmdData{cmd, args})
 		}
 	}
 	return true
 }
 
 func (inst *Instance) UpdateFrame() {
-	inst.processFrameCmdList()
+	if !inst.processFrameCmdList() {
+		return
+	}
 	inst.logic.Update(inst.args.UpdateTick)
+	if inst.mode == instanceModeReplay {
+		if inst.logic.GetCurrFrame() == inst.record.frameNum {
+			inst.logic.Pause()
+		}
+	}
 }
 
 func (inst *Instance) GetFrame() uint32 {
@@ -227,37 +232,43 @@ func (inst *Instance) getAvailableFrameData() *frameData {
 	return fd
 }
 
-func (inst *Instance) processFrameCmdList() {
+func (inst *Instance) processFrameCmdList() bool {
+	if inst.mode == instanceModeReplay {
+		if inst.record.frameNum < inst.logic.GetCurrFrame() {
+			return false
+		}
+	}
 	var frameList []*frameData
 	if inst.mode == instanceModePlay {
 		frameList = inst.frameList
 	} else if inst.mode == instanceModeReplay {
-		frameList = inst.replay.frameList
+		frameList = inst.record.frameList
 	}
 
 	if int(inst.frameIndexInList)+1 > len(frameList) {
-		return
+		return true
 	}
 
 	fd := frameList[inst.frameIndexInList]
 	logicFrame := inst.logic.GetCurrFrame()
-	if logicFrame > fd.frameNum {
-		return
+	if logicFrame != fd.frameNum {
+		return true
 	}
 	for i := 0; i < len(fd.playerDataList); i++ {
 		playerData := fd.playerDataList[i]
-		for j := 0; j < len(playerData.frameCmdList); j++ {
-			fc := &playerData.frameCmdList[j]
-			inst.execCmd(fc.cmd.cmd, fc.cmd.args, playerData.playerId, i)
+		for j := 0; j < len(playerData.cmdList); j++ {
+			cmd := &playerData.cmdList[j]
+			inst.execCmd(cmd.cmd, cmd.args, playerData.playerId, i)
 		}
 	}
 	inst.frameIndexInList += 1
+	return true
 }
 
-func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, playerIndex int) {
+func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []int64, playerId uint64, playerIndex int) {
 	switch cmdCode {
 	case CMD_TANK_MOVE:
-		dir := cmdArgs[0].(object.Direction)
+		dir := object.Direction(cmdArgs[0])
 		orientation := object.Dir2Orientation(dir)
 		inst.logic.PlayerTankMove(playerId, orientation)
 	case CMD_TANK_STOP:
@@ -265,7 +276,7 @@ func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, p
 	case CMD_TANK_FIRE:
 		inst.logic.PlayerTankFire(playerId)
 	case CMD_TANK_ADD_SHELL:
-		inst.logic.PlayerTankAddNewShell(playerId, int32(cmdArgs[0].(int)))
+		inst.logic.PlayerTankAddNewShell(playerId, int32(cmdArgs[0]))
 	case CMD_TANK_SWITCH_SHELL:
 		inst.logic.PlayerTankSwitchShell(playerId)
 	case CMD_TANK_SHIELD:
@@ -280,7 +291,7 @@ func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []any, playerId uint64, p
 	}
 }
 
-func (inst *Instance) setRecordHandle(handle func(*game_map.Config, []*frameData)) {
+func (inst *Instance) setRecordHandle(handle func(string, Record)) {
 	inst.recordHandle = handle
 }
 

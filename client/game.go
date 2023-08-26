@@ -8,6 +8,8 @@ import (
 	"project_b/common/base"
 	"project_b/common/time"
 	"project_b/core"
+	"project_b/game_map"
+	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -19,7 +21,7 @@ type Game struct {
 	//---------------------------------------
 	// 逻辑
 	inst            *core.Instance              // 游戲實例
-	replays         *core.ReplayManager         // 重播管理器
+	records         *core.RecordManager         // 重播管理器
 	net             *client_core.NetClient      // 网络模块
 	msgHandler      *client_core.MsgHandler     // 消息处理器
 	playerMgr       *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
@@ -44,8 +46,8 @@ func NewGame(conf *Config) *Game {
 		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
 	g.eventMgr = base.NewEventManager()
-	g.inst = core.NewInstance(&core.InstanceArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerMaxCount, UpdateTick: conf.updateTick})
-	g.replays = core.NewReplayManager(g.inst)
+	g.inst = core.NewInstance(&core.InstanceArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerMaxCount, UpdateTick: conf.updateTick, SavePath: "records"})
+	g.records = core.NewRecordManager(g.inst)
 	g.net = client_core.CreateNetClient(conf.serverAddress, options.WithRunMode(options.RunModeOnlyUpdate), options.WithNoDelay(true))
 	g.playerMgr = client_core.CreateCPlayerManager()
 	g.msgHandler = client_core.CreateMsgHandler(g.net, g.inst, g.playerMgr, g.eventMgr)
@@ -97,8 +99,8 @@ func (g *Game) Inst() *core.Instance {
 }
 
 // 重播管理器
-func (g *Game) ReplayMgr() *core.ReplayManager {
-	return g.replays
+func (g *Game) RecordMgr() *core.RecordManager {
+	return g.records
 }
 
 // 調試
@@ -152,8 +154,12 @@ func (g *Game) ScreenWidthHeight() (int32, int32) {
 
 // 去重播
 func (g *Game) ToReplay() {
-	replay := g.replays.SelectedReplay()
-	g.inst.LoadReplay(replay)
+	record, o := g.records.SelectedRecord()
+	if !o {
+		return
+	}
+	mapConfig := game_map.MapConfigArray[record.MapId()]
+	g.inst.LoadRecord(mapConfig, record)
 	g.gameData.State = client_base.GameStateInReplay
 	g.isStartInstance = true
 }
@@ -180,7 +186,10 @@ func (g *Game) update() {
 // 重播更新
 func (g *Game) updateInReplay() {
 	if g.isStartInstance {
-		g.inst.CheckAndStart([]uint64{client_core.DefaultSinglePlayerId})
+		if !g.inst.CheckAndStart(nil) {
+			log.Error("Game.updateInReplay CheckAndStatrt failed")
+			return
+		}
 		g.lastCheckTime = time.Now()
 		g.isStartInstance = false
 	}
@@ -193,24 +202,28 @@ func (g *Game) updateInReplay() {
 }
 
 func (g *Game) initInputHandles() {
-	g.inputMgr.AddHandle(CMD_CAMERA_UP, func(args ...any) {
-		delta := args[0].(int)
+	g.inputMgr.AddKeyHandle(CMD_CAMERA_UP, func(args []int64) {
+		delta := args[0]
 		g.playableScene.CameraMove(0, int32(delta))
 	})
-	g.inputMgr.AddHandle(CMD_CAMERA_DOWN, func(args ...any) {
-		delta := args[0].(int)
+	g.inputMgr.AddKeyHandle(CMD_CAMERA_DOWN, func(args []int64) {
+		delta := args[0]
 		g.playableScene.CameraMove(0, int32(delta))
 	})
-	g.inputMgr.AddHandle(CMD_CAMERA_LEFT, func(args ...any) {
-		delta := args[0].(int)
+	g.inputMgr.AddKeyHandle(CMD_CAMERA_LEFT, func(args []int64) {
+		delta := args[0]
 		g.playableScene.CameraMove(int32(delta), 0)
 	})
-	g.inputMgr.AddHandle(CMD_CAMERA_RIGHT, func(args ...any) {
-		delta := args[0].(int)
+	g.inputMgr.AddKeyHandle(CMD_CAMERA_RIGHT, func(args []int64) {
+		delta := args[0]
 		g.playableScene.CameraMove(int32(delta), 0)
 	})
-	g.inputMgr.AddHandle(CMD_CAMERA_HEIGHT, func(args ...any) {
-		delta := args[0].(int)
-		g.playableScene.CameraChangeHeight(int32(delta))
+	g.inputMgr.AddKeyHandle(CMD_CAMERA_HEIGHT, func(args []int64) {
+		delta := args[0]
+		g.playableScene.CameraChangeHeight(-int32(delta))
+	})
+	g.inputMgr.SetWheelHandle(func(xoffset, yoffset float64) {
+		delta := int32(yoffset * 30)
+		g.playableScene.CameraChangeHeight(-delta)
 	})
 }

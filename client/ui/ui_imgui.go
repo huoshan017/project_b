@@ -58,7 +58,7 @@ func (ui *PopupReviveUI) Init(game client_base.IGame) {
 // PopupReviveUI.Update
 func (ui *PopupReviveUI) Update() {
 	if ui.toRevive {
-		ui.game.Inst().PushFrame(ui.game.Inst().GetFrame(), ui.game.GetGameData().MyId, core.CMD_TANK_RESPAWN, []any{common.TankTypePlayer})
+		ui.game.Inst().PushFrame(ui.game.Inst().GetFrame(), ui.game.GetGameData().MyId, core.CMD_TANK_RESPAWN, []int64{int64(common.TankTypePlayer)})
 		ui.toRevive = false
 		ui.pop(false)
 	} else if ui.toExit {

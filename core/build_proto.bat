@@ -1,0 +1,1 @@
+..\tools\protoc.exe --gofast_out=./ --proto_path=./ format/record.proto

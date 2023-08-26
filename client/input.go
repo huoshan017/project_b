@@ -4,7 +4,6 @@ import (
 	"project_b/client_base"
 	"project_b/common/object"
 	"project_b/core"
-	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -20,39 +19,39 @@ const (
 
 // 按下键位映射命令
 var keyPressed2CmdMap = map[ebiten.Key]*core.CmdData{
-	ebiten.KeyA:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirLeft}),
-	ebiten.KeyD:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRight}),
-	ebiten.KeyW:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirUp}),
-	ebiten.KeyS:        core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirDown}),
-	ebiten.KeyJ:        core.NewCmdData(core.CMD_TANK_FIRE, []any{}),
-	ebiten.KeyUp:       core.NewCmdData(CMD_CAMERA_UP, []any{10}),
-	ebiten.KeyDown:     core.NewCmdData(CMD_CAMERA_DOWN, []any{-10}),
-	ebiten.KeyLeft:     core.NewCmdData(CMD_CAMERA_LEFT, []any{-10}),
-	ebiten.KeyRight:    core.NewCmdData(CMD_CAMERA_RIGHT, []any{10}),
-	ebiten.KeyPageUp:   core.NewCmdData(CMD_CAMERA_HEIGHT, []any{10}),
-	ebiten.KeyPageDown: core.NewCmdData(CMD_CAMERA_HEIGHT, []any{-10}),
+	ebiten.KeyA:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirLeft)}),
+	ebiten.KeyD:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirRight)}),
+	ebiten.KeyW:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirUp)}),
+	ebiten.KeyS:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirDown)}),
+	ebiten.KeyJ:        core.NewCmdData(core.CMD_TANK_FIRE, []int64{}),
+	ebiten.KeyUp:       core.NewCmdData(CMD_CAMERA_UP, []int64{10}),
+	ebiten.KeyDown:     core.NewCmdData(CMD_CAMERA_DOWN, []int64{-10}),
+	ebiten.KeyLeft:     core.NewCmdData(CMD_CAMERA_LEFT, []int64{-10}),
+	ebiten.KeyRight:    core.NewCmdData(CMD_CAMERA_RIGHT, []int64{10}),
+	ebiten.KeyPageUp:   core.NewCmdData(CMD_CAMERA_HEIGHT, []int64{10}),
+	ebiten.KeyPageDown: core.NewCmdData(CMD_CAMERA_HEIGHT, []int64{-10}),
 }
 
 // 释放键位映射命令
 var keyReleased2CmdMap = map[ebiten.Key]*core.CmdData{
-	ebiten.KeyA:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
-	ebiten.KeyD:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
-	ebiten.KeyW:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
-	ebiten.KeyS:     core.NewCmdData(core.CMD_TANK_STOP, []any{}),
-	ebiten.Key1:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{1}),
-	ebiten.Key2:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{2}),
-	ebiten.Key3:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{3}),
-	ebiten.Key4:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{4}),
-	ebiten.Key5:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{5}),
-	ebiten.Key6:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{6}),
-	ebiten.Key7:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{7}),
-	ebiten.Key8:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{8}),
-	ebiten.Key9:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []any{9}),
-	ebiten.KeyQ:     core.NewCmdData(core.CMD_TANK_SWITCH_SHELL, []any{}),
-	ebiten.KeyC:     core.NewCmdData(core.CMD_TANK_CHANGE, []any{}),
-	ebiten.KeyR:     core.NewCmdData(core.CMD_TANK_RESTORE, []any{}),
-	ebiten.KeyEqual: core.NewCmdData(core.CMD_RELEASE_SMALL_BALL, []any{}),
-	ebiten.KeyU:     core.NewCmdData(core.CMD_TANK_SHIELD, []any{}),
+	ebiten.KeyA:     core.NewCmdData(core.CMD_TANK_STOP, nil),
+	ebiten.KeyD:     core.NewCmdData(core.CMD_TANK_STOP, nil),
+	ebiten.KeyW:     core.NewCmdData(core.CMD_TANK_STOP, nil),
+	ebiten.KeyS:     core.NewCmdData(core.CMD_TANK_STOP, nil),
+	ebiten.Key1:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{1}),
+	ebiten.Key2:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{2}),
+	ebiten.Key3:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{3}),
+	ebiten.Key4:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{4}),
+	ebiten.Key5:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{5}),
+	ebiten.Key6:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{6}),
+	ebiten.Key7:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{7}),
+	ebiten.Key8:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{8}),
+	ebiten.Key9:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{9}),
+	ebiten.KeyQ:     core.NewCmdData(core.CMD_TANK_SWITCH_SHELL, []int64{}),
+	ebiten.KeyC:     core.NewCmdData(core.CMD_TANK_CHANGE, []int64{}),
+	ebiten.KeyR:     core.NewCmdData(core.CMD_TANK_RESTORE, []int64{}),
+	ebiten.KeyEqual: core.NewCmdData(core.CMD_RELEASE_SMALL_BALL, []int64{}),
+	ebiten.KeyU:     core.NewCmdData(core.CMD_TANK_SHIELD, []int64{}),
 }
 
 type ComboKeyIndex struct {
@@ -80,35 +79,41 @@ var key2ComboKeyIndex = map[ebiten.Key][]ComboKeyIndex{
 }
 
 var keyIndex2CmdMap = map[int32]*core.CmdData{
-	0: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirLeftUp}),
-	1: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirLeftDown}),
-	2: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRightUp}),
-	3: core.NewCmdData(core.CMD_TANK_MOVE, []any{object.DirRightDown}),
+	0: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirLeftUp)}),
+	1: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirLeftDown)}),
+	2: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirRightUp)}),
+	3: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirRightDown)}),
 }
 
 // 輸入管理器
 type InputMgr struct {
-	game         client_base.IGame
-	inst         *core.Instance
-	pressedKeys  []ebiten.Key
-	releasedKeys []ebiten.Key
-	keyPressMap  map[ebiten.Key]struct{}
-	cmd2Handle   map[core.CmdCode]func(...any)
+	game          client_base.IGame
+	inst          *core.Instance
+	pressedKeys   []ebiten.Key
+	releasedKeys  []ebiten.Key
+	keyPressMap   map[ebiten.Key]struct{}
+	cmd2KeyHandle map[core.CmdCode]func([]int64)
+	wheelHandle   func(xoffset, yoffset float64)
 }
 
 // 創建輸入管理器
 func NewInputMgr(game client_base.IGame, inst *core.Instance) *InputMgr {
 	return &InputMgr{
-		game:        game,
-		inst:        inst,
-		keyPressMap: make(map[ebiten.Key]struct{}),
-		cmd2Handle:  make(map[core.CmdCode]func(...any)),
+		game:          game,
+		inst:          inst,
+		keyPressMap:   make(map[ebiten.Key]struct{}),
+		cmd2KeyHandle: make(map[core.CmdCode]func([]int64)),
 	}
 }
 
-// 添加處理器
-func (im *InputMgr) AddHandle(cc core.CmdCode, handle func(...any)) {
-	im.cmd2Handle[cc] = handle
+// 添加按鍵處理器
+func (im *InputMgr) AddKeyHandle(cc core.CmdCode, handle func([]int64)) {
+	im.cmd2KeyHandle[cc] = handle
+}
+
+// 設置滾輪滾動處理器
+func (im *InputMgr) SetWheelHandle(handle func(xoffset, yoffset float64)) {
+	im.wheelHandle = handle
 }
 
 // 處理輸入
@@ -134,7 +139,6 @@ func (im *InputMgr) HandleInput() {
 	im.releasedKeys = inpututil.AppendJustReleasedKeys(im.releasedKeys[:0])
 	for _, k := range im.releasedKeys {
 		if cmdData, o := keyReleased2CmdMap[k]; o {
-			log.Debug("key %v released", k)
 			im.inst.PushFrame(im.inst.GetFrame(), im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
 		}
 	}
@@ -187,11 +191,16 @@ func (im *InputMgr) HandleInput() {
 
 		cmdData, o = keyPressed2CmdMap[k]
 		if o && cmdData != nil {
-			if handle := im.cmd2Handle[cmdData.Cmd()]; handle != nil {
-				handle(cmdData.Args()...)
+			if handle := im.cmd2KeyHandle[cmdData.Cmd()]; handle != nil {
+				handle(cmdData.Args())
 				continue
 			}
 			im.inst.PushFrame(im.inst.GetFrame(), im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
 		}
+	}
+
+	xo, yo := ebiten.Wheel()
+	if im.wheelHandle != nil {
+		im.wheelHandle(xo, yo)
 	}
 }

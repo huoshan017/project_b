@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package core;
+option go_package="../core";
+
+message PbCmdData {
+    int32 Code = 1;
+    repeated int64 Args = 2;
+}
+
+message PbPlayerFrame {
+    uint64 PlayerId = 1;
+    repeated PbCmdData CmdList = 2;
+}
+
+message PbFrameData {
+    uint32 FrameNum = 1;
+    repeated PbPlayerFrame PlayerList = 2;
+}
+
+message PbRecord {
+    string Name = 1;
+    int32 MapId = 2;
+    uint32 FrameNum = 3;
+    repeated PbFrameData FrameList = 4;
+}

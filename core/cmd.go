@@ -22,11 +22,11 @@ const (
 // 命令結構
 type CmdData struct {
 	cmd  CmdCode
-	args []any
+	args []int64
 }
 
 // 創建命令數據
-func NewCmdData(cmd CmdCode, args []any) *CmdData {
+func NewCmdData(cmd CmdCode, args []int64) *CmdData {
 	return &CmdData{cmd: cmd, args: args}
 }
 
@@ -34,6 +34,6 @@ func (cd CmdData) Cmd() CmdCode {
 	return cd.cmd
 }
 
-func (cd CmdData) Args() []any {
+func (cd CmdData) Args() []int64 {
 	return cd.args
 }

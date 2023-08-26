@@ -11,7 +11,8 @@ const (
 	menuNone menuItemId = iota
 
 	menuSingleplay_missions = 10
-	menuSingleplay_replays  = 11
+	menuSingleplay_records  = 11
+	menuSingleplay_saves    = 12
 
 	menuMultiplay_local    = 20
 	menuMultiplay_internet = 21
@@ -27,7 +28,8 @@ var getMainMenuIdNodeTree = func(menuUI *MainMenuUI) []menuIdNode {
 	return []menuIdNode{
 		{id: menuNone, name: "Single Player", itemList: []menuIdNode{
 			{id: menuSingleplay_missions, name: "Missions", exec: menuUI.toMissionsUI},
-			{id: menuSingleplay_replays, name: "Replays", exec: menuUI.toReplaysUI},
+			{id: menuSingleplay_records, name: "Records", exec: menuUI.toRecordsUI},
+			{id: menuSingleplay_saves, name: "Saves", exec: menuUI.toSavesUI},
 			{id: menuNone, name: "Back", exec: menuUI.back},
 		}},
 		{id: menuNone, name: "Multiple Players", itemList: []menuIdNode{
@@ -49,13 +51,15 @@ var getMainMenuIdNodeTree = func(menuUI *MainMenuUI) []menuIdNode {
 type MainMenuUI struct {
 	Menu
 	missionsSubUI   MissionsSubUI
-	replayListSubUI ReplaysSubUI
+	recordListSubUI RecordsSubUI
+	saveListSubUI   SavesSubUI
 }
 
 func (ui *MainMenuUI) Init(game client_base.IGame, menuIdNodeList []menuIdNode) {
 	ui.Menu.Init(game, menuIdNodeList)
 	ui.missionsSubUI.Init(game)
-	ui.replayListSubUI.Init(game)
+	ui.recordListSubUI.Init(game)
+	ui.saveListSubUI.Init(game)
 }
 
 func (ui *MainMenuUI) Update() {
@@ -63,8 +67,10 @@ func (ui *MainMenuUI) Update() {
 	switch ui.currSelected {
 	case menuSingleplay_missions:
 		ui.missionsSubUI.Update()
-	case menuSingleplay_replays:
-		ui.replayListSubUI.Update()
+	case menuSingleplay_records:
+		ui.recordListSubUI.Update()
+	case menuSingleplay_saves:
+		ui.saveListSubUI.Update()
 	case menuMultiplay_local:
 	case menuMultiplay_internet:
 	case menuSettings_audio:
@@ -96,9 +102,12 @@ func (ui *MainMenuUI) DrawFrame() {
 		case menuSingleplay_missions:
 			ui.missionsSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
 			ui.missionsSubUI.DrawFrame()
-		case menuSingleplay_replays:
-			ui.replayListSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
-			ui.replayListSubUI.DrawFrame()
+		case menuSingleplay_records:
+			ui.recordListSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
+			ui.recordListSubUI.DrawFrame()
+		case menuSingleplay_saves:
+			ui.saveListSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
+			ui.saveListSubUI.DrawFrame()
 		case menuMultiplay_local:
 		case menuMultiplay_internet:
 		case menuSettings_audio:
@@ -114,8 +123,13 @@ func (ui *MainMenuUI) toMissionsUI() {
 	ui.missionsSubUI.RegisterBackEventHandle(ui.back2Menu)
 }
 
-func (ui *MainMenuUI) toReplaysUI() {
-	ui.replayListSubUI.RegisterBackEventHandle(ui.back2Menu)
+func (ui *MainMenuUI) toRecordsUI() {
+	ui.recordListSubUI.RegisterBackEventHandle(ui.back2Menu)
+	ui.recordListSubUI.recordMgr.LoadRecords()
+}
+
+func (ui *MainMenuUI) toSavesUI() {
+	ui.saveListSubUI.RegisterBackEventHandle(ui.back2Menu)
 }
 
 func (ui *MainMenuUI) back2Menu(...any) {
@@ -123,7 +137,9 @@ func (ui *MainMenuUI) back2Menu(...any) {
 	ui.currSelected = menuNone
 	if ui.prevSelected == menuSingleplay_missions {
 		ui.missionsSubUI.UnregisterBackEventHandle(ui.back2Menu)
-	} else if ui.prevSelected == menuSingleplay_replays {
-		ui.replayListSubUI.UnregisterBackEventHandle(ui.back2Menu)
+	} else if ui.prevSelected == menuSingleplay_records {
+		ui.recordListSubUI.UnregisterBackEventHandle(ui.back2Menu)
+	} else if ui.prevSelected == menuSingleplay_saves {
+		ui.saveListSubUI.UnregisterBackEventHandle(ui.back2Menu)
 	}
 }

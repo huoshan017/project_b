@@ -78,7 +78,7 @@ func (ui *MissionsSubUI) enterGame() {
 		return
 	}
 	if ui.isRecord {
-		ui.game.ReplayMgr().SetRecord()
+		ui.game.RecordMgr().SetRecord()
 	}
 	ui.game.Inst().CheckAndStart([]uint64{client_core.DefaultSinglePlayerId})
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
