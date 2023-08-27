@@ -79,9 +79,8 @@ func (inst *Instance) Unload() {
 	mapConfig := inst.logic.World().GetMapConfig()
 	if inst.mode == instanceModePlay && inst.recordHandle != nil {
 		inst.recordHandle(mapConfig.Name, Record{mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame()})
-	} else {
-		inst.recycleFrameList()
 	}
+	inst.recycleFrameList()
 	inst.logic.UnloadScene()
 	inst.frameIndexInList = 0
 }
@@ -139,18 +138,23 @@ func (inst *Instance) Restart() bool {
 	if inst.mode == instanceModePlay && inst.recordHandle != nil {
 		mapConfig := inst.logic.World().GetMapConfig()
 		inst.recordHandle(mapConfig.Name, Record{mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame()})
-	} else {
-		inst.recycleFrameList()
 	}
+	inst.recycleFrameList()
 	inst.logic.ReloadScene()
 	return inst.CheckAndStart(inst.playerIdList)
 }
 
 func (inst *Instance) Pause() {
+	if inst.mode == instanceModeReplay && inst.logic.GetCurrFrame() >= inst.record.frameNum {
+		return
+	}
 	inst.logic.Pause()
 }
 
 func (inst *Instance) Resume() {
+	if inst.mode == instanceModeReplay && inst.logic.GetCurrFrame() >= inst.record.frameNum {
+		return
+	}
 	inst.logic.Resume()
 }
 
@@ -296,10 +300,19 @@ func (inst *Instance) setRecordHandle(handle func(string, Record)) {
 }
 
 func (inst *Instance) recycleFrameList() {
-	for _, f := range inst.frameList {
-		f.clear()
-		inst.frameDataFreeList.PushBack(f)
+	if inst.mode == instanceModePlay {
+		for _, f := range inst.frameList {
+			f.clear()
+			inst.frameDataFreeList.PushBack(f)
+		}
+		clear(inst.frameList)
+		inst.frameList = inst.frameList[:0]
+	} else if inst.mode == instanceModeReplay {
+		for _, f := range inst.record.frameList {
+			f.clear()
+			inst.frameDataFreeList.PushBack(f)
+		}
+		clear(inst.record.frameList)
+		inst.record.frameList = inst.record.frameList[:0]
 	}
-	clear(inst.frameList)
-	inst.frameList = inst.frameList[:0]
 }

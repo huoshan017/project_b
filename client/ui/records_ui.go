@@ -33,6 +33,7 @@ func (ui *RecordsSubUI) Update() {
 			ui.isDelete = false
 		}
 	}
+	ui.SubUI.Update()
 }
 
 func (ui *RecordsSubUI) DrawFrame() {

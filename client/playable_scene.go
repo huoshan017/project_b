@@ -14,6 +14,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+var mainCamera *client_base.Camera
+
 type objOpCache struct {
 	op                      ebiten.DrawImageOptions
 	playable                IPlayable
@@ -29,18 +31,16 @@ type PlayableScene struct {
 	viewport        *client_base.Viewport
 	playableObjs    map[uint32]*objOpCache
 	playableEffects map[uint32]*objOpCache
-	debug           *client_base.Debug
 }
 
 /**
  * 创建可绘制场景
  */
-func CreatePlayableScene(viewport *client_base.Viewport, debug *client_base.Debug) *PlayableScene {
+func CreatePlayableScene(viewport *client_base.Viewport) *PlayableScene {
 	return &PlayableScene{
 		viewport:        viewport,
 		playableObjs:    make(map[uint32]*objOpCache),
 		playableEffects: make(map[uint32]*objOpCache),
-		debug:           debug,
 	}
 }
 
@@ -55,6 +55,7 @@ func (s *PlayableScene) SetScene(world *common.World) {
 	s.scene = world
 	s.scene.RegisterObjectRemovedHandle(s.onObjRemovedHandle)
 	s.scene.RegisterEffectRemovedHandle(s.onEffectRemovedHandle)
+	mainCamera = s.camera
 }
 
 /**
@@ -157,8 +158,6 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 	}
 
 	s._draw(tc, obj.Width(), obj.Length(), dstImage)
-	s.drawBoundingbox(obj, dstImage)
-	s.drawAABB(obj, dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect effect.IEffect, dstImage *ebiten.Image) {
@@ -176,52 +175,6 @@ func (s *PlayableScene) drawEffect(effect effect.IEffect, dstImage *ebiten.Image
 	}
 
 	s._draw(tc, effect.Width(), effect.Height(), dstImage)
-}
-
-func (s *PlayableScene) drawBoundingbox(obj object.IObject, dstImage *ebiten.Image) {
-	showShellBoundingbox := (s.debug.IsShowShellBoundingbox() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeShell)
-	showTankBoundingbox := (s.debug.IsShowTankBoundingbox() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeTank)
-	if showShellBoundingbox || showTankBoundingbox {
-		x0, y0 := obj.LeftTop()
-		x1, y1 := obj.RightTop()
-		x2, y2 := obj.RightBottom()
-		x3, y3 := obj.LeftBottom()
-		x0, y0 = s.camera.World2Screen(x0, y0)
-		x1, y1 = s.camera.World2Screen(x1, y1)
-		x2, y2 = s.camera.World2Screen(x2, y2)
-		x3, y3 = s.camera.World2Screen(x3, y3)
-		var c color.RGBA
-		if showShellBoundingbox {
-			c = color.RGBA{255, 0, 0, 0}
-		} else {
-			c = color.RGBA{0, 255, 0, 0}
-		}
-		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
-	}
-}
-
-func (s *PlayableScene) drawAABB(obj object.IObject, dstImage *ebiten.Image) {
-	showShellAABB := (s.debug.IsShowShellAABB() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeShell)
-	showTankAABB := (s.debug.IsShowTankAABB() && obj.Type() == object.ObjTypeMovable && obj.Subtype() == object.ObjSubtypeTank)
-	if showShellAABB || showTankAABB {
-		collider := obj.GetColliderComp()
-		if collider == nil {
-			return
-		}
-		aabb := collider.GetAABB()
-		x0, y0 := s.camera.World2Screen(aabb.Left, aabb.Bottom)
-		x1, y1 := s.camera.World2Screen(aabb.Right, aabb.Bottom)
-		x2, y2 := s.camera.World2Screen(aabb.Right, aabb.Top)
-		x3, y3 := s.camera.World2Screen(aabb.Left, aabb.Top)
-		c := color.RGBA{255, 255, 0, 0}
-		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
-	}
 }
 
 func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebiten.Image) {
@@ -259,7 +212,7 @@ func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebi
 }
 
 func (s *PlayableScene) drawMapGrid(dstImage *ebiten.Image) {
-	if !s.debug.IsShowMapGrid() {
+	if !debug.IsShowMapGrid() {
 		return
 	}
 	mw, mh := s.scene.GetMapWidthHeight()

@@ -28,7 +28,6 @@ type IGame interface {
 	EventMgr() base.IEventManager
 	RecordMgr() *core.RecordManager
 	ToReplay()
-	Debug() *Debug
 }
 
 type IUIMgr interface {

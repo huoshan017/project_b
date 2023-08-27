@@ -31,6 +31,7 @@ func (ui *MissionsSubUI) Update() {
 		ui.enterGame()
 		ui.toEnter = false
 	}
+	ui.SubUI.Update()
 }
 
 func (ui *MissionsSubUI) DrawFrame() {

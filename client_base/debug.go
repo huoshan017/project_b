@@ -80,3 +80,9 @@ func (d *Debug) ShowTankCollisionDetectionRegion() {
 func (d *Debug) HideTankCollisionDetectionRegion() {
 	d.showTankCollisionDetectionRegion = false
 }
+
+var debug Debug
+
+func GetDebug() *Debug {
+	return &debug
+}

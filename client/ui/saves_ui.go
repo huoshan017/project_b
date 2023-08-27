@@ -11,7 +11,7 @@ func (ui *SavesSubUI) Init(game client_base.IGame) {
 }
 
 func (ui *SavesSubUI) Update() {
-
+	ui.SubUI.Update()
 }
 
 func (ui *SavesSubUI) DrawFrame() {

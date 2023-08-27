@@ -34,7 +34,7 @@ func (ui *DebugUI) Update() {
 		}
 		return
 	}
-	debug := ui.game.Debug()
+	debug := client_base.GetDebug()
 	if ui.showMapGridSelected {
 		debug.ShowMapGrid()
 	} else {

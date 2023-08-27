@@ -16,6 +16,8 @@ import (
 	"github.com/huoshan017/gsnet/options"
 )
 
+var debug = client_base.GetDebug()
+
 type Game struct {
 	conf *Config
 	//---------------------------------------
@@ -36,7 +38,6 @@ type Game struct {
 	eventHandles  *EventHandles         // 事件处理
 	inputMgr      *InputMgr             // 輸入管理器
 	gameData      client_base.GameData  // 其他游戏数据
-	debug         client_base.Debug     // 調試
 }
 
 // 创建游戏
@@ -52,7 +53,7 @@ func NewGame(conf *Config) *Game {
 	g.playerMgr = client_core.CreateCPlayerManager()
 	g.msgHandler = client_core.CreateMsgHandler(g.net, g.inst, g.playerMgr, g.eventMgr)
 	g.uiMgr = ui.NewImguiManager(g)
-	g.playableScene = CreatePlayableScene(g.viewport, &g.debug)
+	g.playableScene = CreatePlayableScene(g.viewport)
 	g.eventHandles = CreateEventHandles(g.net, g.inst, g.playableScene, &g.gameData)
 	g.inputMgr = NewInputMgr(g, g.inst)
 	return g
@@ -101,11 +102,6 @@ func (g *Game) Inst() *core.Instance {
 // 重播管理器
 func (g *Game) RecordMgr() *core.RecordManager {
 	return g.records
-}
-
-// 調試
-func (g *Game) Debug() *client_base.Debug {
-	return &g.debug
 }
 
 // 布局

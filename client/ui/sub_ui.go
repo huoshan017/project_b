@@ -3,6 +3,9 @@ package ui
 import (
 	"project_b/client_base"
 	"project_b/common/base"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type SubUI struct {
@@ -14,6 +17,13 @@ type SubUI struct {
 
 func (ui *SubUI) Init(game client_base.IGame) {
 	ui.uiBase.Init(game)
+}
+
+func (ui *SubUI) Update() {
+	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
+		ui.Back()
+		return
+	}
 }
 
 func (ui *SubUI) SetRect(left, top, w, h float32) {

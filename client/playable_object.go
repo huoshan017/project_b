@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"project_b/client_base"
 	common_base "project_b/common/base"
 	"project_b/common/effect"
@@ -9,6 +10,7 @@ import (
 	"project_b/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type Transform struct {
@@ -253,6 +255,53 @@ func (po *PlayableMoveObject) onEventResume(args ...any) {
 	po.lastTime = time.Now()
 }
 
+// 繪製包圍盒
+func (po *PlayableMoveObject) drawBoundingbox(dstImage *ebiten.Image) {
+	showShellBoundingbox := debug.IsShowShellBoundingbox()
+	showTankBoundingbox := debug.IsShowTankBoundingbox()
+	if showShellBoundingbox || showTankBoundingbox {
+		x0, y0 := po.mobj.LeftTop()
+		x1, y1 := po.mobj.RightTop()
+		x2, y2 := po.mobj.RightBottom()
+		x3, y3 := po.mobj.LeftBottom()
+		x0, y0 = mainCamera.World2Screen(x0, y0)
+		x1, y1 = mainCamera.World2Screen(x1, y1)
+		x2, y2 = mainCamera.World2Screen(x2, y2)
+		x3, y3 = mainCamera.World2Screen(x3, y3)
+		var c color.RGBA
+		if showShellBoundingbox {
+			c = color.RGBA{255, 0, 0, 0}
+		} else {
+			c = color.RGBA{0, 255, 0, 0}
+		}
+		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
+	}
+}
+
+func (po *PlayableMoveObject) drawAABB(dstImage *ebiten.Image) {
+	showShellAABB := debug.IsShowShellAABB()
+	showTankAABB := debug.IsShowTankAABB()
+	if showShellAABB || showTankAABB {
+		collider := po.mobj.GetColliderComp()
+		if collider == nil {
+			return
+		}
+		aabb := collider.GetAABB()
+		x0, y0 := mainCamera.World2Screen(aabb.Left, aabb.Bottom)
+		x1, y1 := mainCamera.World2Screen(aabb.Right, aabb.Bottom)
+		x2, y2 := mainCamera.World2Screen(aabb.Right, aabb.Top)
+		x3, y3 := mainCamera.World2Screen(aabb.Left, aabb.Top)
+		c := color.RGBA{255, 255, 0, 0}
+		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
+		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
+	}
+}
+
 // 炮彈播放對象
 type PlayableShell struct {
 	*PlayableMoveObject
@@ -281,6 +330,13 @@ func (ps *PlayableShell) Init() {
 func (ps *PlayableShell) Uninit() {
 	ps.PlayableMoveObject.Uninit()
 	ps.shell.UnregisterLateUpdateEventHandle(ps.onEventLateUpdate)
+}
+
+// 繪製
+func (ps *PlayableShell) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	ps.PlayableMoveObject.Draw(screen, op)
+	ps.drawAABB(screen)
+	ps.drawBoundingbox(screen)
 }
 
 // 插值
@@ -371,7 +427,7 @@ func (pt *PlayableTank) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) 
 	// 顯示根據邏輯數據插值
 	op.GeoM.Concat(pt.op.GeoM)
 	pt.anim.Update(screen, op)
-	tank := pt.mobj.(object.ITank)
+	tank := pt.mobj.(*object.Tank)
 	if tank.HasShield() {
 		var tmpOp ebiten.DrawImageOptions
 		tmpOp.GeoM.Translate(-2, -2)
@@ -379,6 +435,8 @@ func (pt *PlayableTank) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) 
 		tmpOp.ColorScale.SetA(0)
 		pt.shieldAnim.Update(screen, &tmpOp)
 	}
+	pt.drawAABB(screen)
+	pt.drawBoundingbox(screen)
 }
 
 // 变化事件

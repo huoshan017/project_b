@@ -86,11 +86,11 @@ func (ui *MainMenuUI) DrawFrame() {
 	ui.s = imgui.Vec2{X: float32(w), Y: float32(h)}
 	imgui.SetNextWindowSize(ui.s)
 	imgui.BeginV("Main Menu", nil, imgui.WindowFlagsNoDecoration|imgui.WindowFlagsNoMove)
-	// background image
-	bounds := images.GetTitleImg().Bounds()
-	var left = float32(w/2 - int32(bounds.Dx())/2)
-	var top = float32(h/2 - int32(bounds.Dy()))
 	if ui.currSelected == menuNone {
+		// background image
+		bounds := images.GetTitleImg().Bounds()
+		var left = float32(w/2 - int32(bounds.Dx())/2)
+		var top = float32(h/2 - int32(bounds.Dy()))
 		imgui.SetCursorPos(imgui.Vec2{X: left, Y: top})
 		imgui.Image(titleImgId, imgui.Vec2{X: float32(bounds.Dx()), Y: float32(bounds.Dy())})
 		localPos := imgui.Vec2{X: float32(w/2 - int32(bounds.Dx())/4), Y: float32(h/2 + int32(bounds.Dy()/5))}
@@ -100,13 +100,16 @@ func (ui *MainMenuUI) DrawFrame() {
 	} else {
 		switch ui.currSelected {
 		case menuSingleplay_missions:
-			ui.missionsSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
+			ww, hh := w/3, h/3
+			ui.missionsSubUI.SetRect(float32(w/2-ww/2), float32(h/2-hh/2), float32(ww), float32(hh))
 			ui.missionsSubUI.DrawFrame()
 		case menuSingleplay_records:
-			ui.recordListSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
+			ww, hh := w/3, h/2
+			ui.recordListSubUI.SetRect(float32(w/2-ww/2), float32(h/2-hh/2), float32(ww), float32(hh))
 			ui.recordListSubUI.DrawFrame()
 		case menuSingleplay_saves:
-			ui.saveListSubUI.SetRect(left, top, ui.s.X/5, ui.s.Y/3)
+			ww, hh := w/3, h/2
+			ui.saveListSubUI.SetRect(float32(w/2-ww/2), float32(h/2-hh/2), float32(ww), float32(hh))
 			ui.saveListSubUI.DrawFrame()
 		case menuMultiplay_local:
 		case menuMultiplay_internet:
