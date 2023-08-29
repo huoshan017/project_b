@@ -7,7 +7,6 @@ import (
 	"project_b/common/effect"
 	"project_b/common/object"
 	"project_b/common/time"
-	"project_b/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -135,11 +134,11 @@ type PlayableMoveObject struct {
 	op                *ebiten.DrawImageOptions
 	mobj              object.IMovableObject
 	anim              *client_base.SpriteAnim
-	currSpeed         int32           // 当前速度
-	lastTime          time.CustomTime // 更新时间点
-	interpolate       bool            // 上次是停止状态
-	lastX, lastY      int32           // 上次物體位置
-	lastInterpolation Transform       // 上次插值位置
+	currSpeed         int32     // 当前速度
+	lastMs            uint32    // 更新时间点
+	interpolate       bool      // 上次是停止状态
+	lastX, lastY      int32     // 上次物體位置
+	lastInterpolation Transform // 上次插值位置
 }
 
 // 创建可移动物体的播放对象
@@ -222,10 +221,10 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 	if po.lastX != cx || po.lastY != cy {
 		po.lastX = cx
 		po.lastY = cy
-		po.lastTime = time.Now() //core.GetSyncServTime()
+		po.lastMs = time.CurrentMs() //core.GetSyncServTime()
 	}
-	duration := time.Since(po.lastTime)
-	nx, ny := object.DefaultMove(po.mobj, duration)
+	durationMs := time.CurrentMs() - po.lastMs
+	nx, ny := object.DefaultMove(po.mobj, durationMs)
 	transform.tx, transform.ty = float64(nx), float64(ny)
 	po.lastInterpolation = *transform
 }
@@ -234,7 +233,7 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 func (po *PlayableMoveObject) onEventMove(args ...any) {
 	po.Play()
 	po.lastX, po.lastY = po.mobj.Pos()
-	po.lastTime = time.Now() //core.GetSyncServTime()
+	po.lastMs = time.CurrentMs() //core.GetSyncServTime()
 	po.interpolate = true
 }
 
@@ -252,7 +251,7 @@ func (po *PlayableMoveObject) onEventPause(args ...any) {
 // 恢復事件處理
 func (po *PlayableMoveObject) onEventResume(args ...any) {
 	po.interpolate = true
-	po.lastTime = time.Now()
+	po.lastMs = time.CurrentMs()
 }
 
 // 繪製包圍盒
@@ -316,7 +315,7 @@ func NewPlayableShell(shell object.IShell, animConfig *MovableObjectAnimConfig) 
 		PlayableMoveObject: NewPlayableMoveObject(shell, animConfig),
 		shell:              shell,
 	}
-	playable.lastTime = time.Now() //core.GetSyncServTime()
+	playable.lastMs = time.CurrentMs() //core.GetSyncServTime()
 	return playable
 }
 
@@ -364,7 +363,7 @@ func (ps *PlayableShell) Interpolation(transform *Transform) {
 		ps.updated = false
 	} else {
 		ps.moveInfo.Rotation = ps.shell.WorldRotation()
-		duration := time.Since(ps.lastTime)
+		duration := time.CurrentMs() - ps.lastMs
 		nx, ny = object.GetShellTrackMovedPos(ps.shell, duration, &ps.moveInfo)
 	}
 	transform.tx, transform.ty = float64(nx), float64(ny)
@@ -377,7 +376,7 @@ func (ps *PlayableShell) onEventLateUpdate(args ...any) {
 	ps.moveInfo.X, ps.moveInfo.Y = args[0].(int32), args[1].(int32)
 	ps.moveInfo.Rotation = args[2].(common_base.Angle)
 	ps.updated = true
-	ps.lastTime = time.Now() //core.GetSyncServTime()
+	ps.lastMs = time.CurrentMs() //core.GetSyncServTime()
 }
 
 // 坦克播放对象
@@ -472,7 +471,7 @@ func NewPlayableSurroundObj(sobj object.ISurroundObject, animConfig *MovableObje
 		playableAroundCenterObj: playableAroundCenterObj,
 	}
 	pobj.interpolate = true
-	pobj.lastTime = core.GetSyncSendTime()
+	pobj.lastMs = time.CurrentMs()
 	var transform Transform
 	playableAroundCenterObj.Interpolation(&transform)
 	pobj.lastMoveInfo.LastCenterX, pobj.lastMoveInfo.LastCenterY = int32(transform.tx), int32(transform.ty)
@@ -505,8 +504,10 @@ func (ps *PlayableSurroundObj) Interpolation(transform *Transform) {
 		transform.tx, transform.ty = float64(nx), float64(ny)
 		return
 	}
-	duration := time.Since(ps.lastTime)
-	ps.lastTime = time.Now() //core.GetSyncServTime()
+
+	currMs := time.CurrentMs()
+	duration := currMs - ps.lastMs
+	ps.lastMs = currMs
 	var interpolateX, interpolateY float64
 	if pobj, o := ps.playableAroundCenterObj.(IPlayableMovableObject); !o {
 		var t Transform
@@ -523,9 +524,9 @@ func (ps *PlayableSurroundObj) Interpolation(transform *Transform) {
 
 // 更新事件處理
 func (ps *PlayableSurroundObj) onEventLateUpdate(args ...any) {
-	ps.lastTime = time.Now() //core.GetSyncServTime()
+	ps.lastMs = time.CurrentMs()
 	ps.lastMoveInfo.TurnAngle = args[0].(int32)
-	ps.lastMoveInfo.AccumulateTime = args[1].(time.Duration)
+	ps.lastMoveInfo.AccumulateMs = args[1].(int32)
 }
 
 // 可播放效果

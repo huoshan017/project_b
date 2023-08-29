@@ -2,7 +2,7 @@ package client_base
 
 import (
 	"image"
-	"time"
+	"project_b/common/time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -30,11 +30,11 @@ const (
 
 // 精灵动画
 type SpriteAnim struct {
-	Config         *SpriteAnimConfig
-	currFrame      int32
-	lastUpdateTime time.Time
-	currState      SpriteAnimState
-	images         []*ebiten.Image
+	Config       *SpriteAnimConfig
+	currFrame    int32
+	lastUpdateMs uint32
+	currState    SpriteAnimState
+	images       []*ebiten.Image
 }
 
 // 创建精灵动画
@@ -79,14 +79,14 @@ func (a *SpriteAnim) Update(screen *ebiten.Image, options *ebiten.DrawImageOptio
 		return
 	}
 
-	now := time.Now()
-	if a.lastUpdateTime.IsZero() {
+	currMs := time.CurrentMs()
+	if a.lastUpdateMs == 0 {
 		a.draw(a.currFrame, screen, options)
-		a.lastUpdateTime = now
+		a.lastUpdateMs = currMs
 		return
 	}
 
-	sub := int32(now.Sub(a.lastUpdateTime).Milliseconds())
+	sub := int32(currMs - a.lastUpdateMs)
 	if sub < a.Config.PlayInterval {
 		a.draw(a.currFrame, screen, options)
 		return
@@ -102,7 +102,7 @@ func (a *SpriteAnim) Update(screen *ebiten.Image, options *ebiten.DrawImageOptio
 	a.draw(a.currFrame, screen, options)
 
 	// 更新时间，保证该时间的增长是刷新间隔PlayerInterval的整数倍
-	a.lastUpdateTime = now.Add(-time.Duration(sub * int32(time.Millisecond)))
+	a.lastUpdateMs = currMs - uint32(sub)
 }
 
 // 内部函数，画到screen上

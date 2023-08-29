@@ -88,7 +88,7 @@ var keyIndex2CmdMap = map[int32]*core.CmdData{
 // 輸入管理器
 type InputMgr struct {
 	game          client_base.IGame
-	inst          *core.Instance
+	gameCore      *core.GameCore
 	pressedKeys   []ebiten.Key
 	releasedKeys  []ebiten.Key
 	keyPressMap   map[ebiten.Key]struct{}
@@ -97,10 +97,10 @@ type InputMgr struct {
 }
 
 // 創建輸入管理器
-func NewInputMgr(game client_base.IGame, inst *core.Instance) *InputMgr {
+func NewInputMgr(game client_base.IGame, gameCore *core.GameCore) *InputMgr {
 	return &InputMgr{
 		game:          game,
-		inst:          inst,
+		gameCore:      gameCore,
 		keyPressMap:   make(map[ebiten.Key]struct{}),
 		cmd2KeyHandle: make(map[core.CmdCode]func([]int64)),
 	}
@@ -139,7 +139,7 @@ func (im *InputMgr) HandleInput() {
 	im.releasedKeys = inpututil.AppendJustReleasedKeys(im.releasedKeys[:0])
 	for _, k := range im.releasedKeys {
 		if cmdData, o := keyReleased2CmdMap[k]; o {
-			im.inst.PushFrame(im.inst.GetFrame(), im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
+			im.gameCore.PushSyncPlayerCmd(im.game.GetGameData().MyId, cmdData)
 		}
 	}
 
@@ -177,7 +177,7 @@ func (im *InputMgr) HandleInput() {
 				if _, o = im.keyPressMap[ki.otherKey]; o {
 					cmdData, o = keyIndex2CmdMap[ki.index]
 					if o && cmdData != nil {
-						im.inst.PushFrame(im.inst.GetFrame(), im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
+						im.gameCore.PushSyncPlayerCmd(im.game.GetGameData().MyId, cmdData)
 					}
 					keyUsed = append(keyUsed, ki.otherKey)
 					hasCombo = true
@@ -195,7 +195,7 @@ func (im *InputMgr) HandleInput() {
 				handle(cmdData.Args())
 				continue
 			}
-			im.inst.PushFrame(im.inst.GetFrame(), im.game.GetGameData().MyId, cmdData.Cmd(), cmdData.Args())
+			im.gameCore.PushSyncPlayerCmd(im.game.GetGameData().MyId, cmdData)
 		}
 	}
 

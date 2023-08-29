@@ -5,7 +5,6 @@ import (
 	"project_b/common"
 	"project_b/common/base"
 	"project_b/common/object"
-	"project_b/common/time"
 	"project_b/game_map"
 	"project_b/log"
 
@@ -18,13 +17,6 @@ const (
 	instanceModePlay   instanceMode = iota
 	instanceModeReplay instanceMode = 1
 )
-
-type InstanceArgs struct {
-	EventMgr   base.IEventManager
-	PlayerNum  int32
-	UpdateTick time.Duration
-	SavePath   string
-}
 
 type playerData struct {
 	playerId uint64
@@ -48,21 +40,24 @@ func (fd *frameData) clear() {
 }
 
 type Instance struct {
-	args              *InstanceArgs           // 參數
+	eventMgr          base.IEventManager
+	playerNum         int32
+	frameMs           uint32
 	mode              instanceMode            // 模式
-	record            Record                  // 錄像數據，只有在重播模式下才有用
+	record            *Record                 // 錄像數據，只有在重播模式下才有用
 	frameList         []*frameData            // 幀列表
 	playerIdList      []uint64                // 玩家列表
 	logic             *common.GameLogic       // 游戲邏輯
 	frameIndexInList  uint32                  // 幀列表frameList或者replay.frameList的當前索引
 	frameDataFreeList *list.ListT[*frameData] // 幀數據freelist
-	recordHandle      func(string, Record)    // 錄像處理
 }
 
-func NewInstance(args *InstanceArgs) *Instance {
+func newInstance(eventMgr base.IEventManager, playerNum int32, frameMs uint32) *Instance {
 	return &Instance{
-		args:              args,
-		logic:             common.NewGameLogic(args.EventMgr),
+		eventMgr:          eventMgr,
+		playerNum:         playerNum,
+		frameMs:           frameMs,
+		logic:             common.NewGameLogic(eventMgr),
 		frameDataFreeList: list.NewListT[*frameData](),
 	}
 }
@@ -76,16 +71,18 @@ func (inst *Instance) Load(config *game_map.Config) bool {
 }
 
 func (inst *Instance) Unload() {
-	mapConfig := inst.logic.World().GetMapConfig()
+	/*mapConfig := inst.logic.World().GetMapConfig()
 	if inst.mode == instanceModePlay && inst.recordHandle != nil {
-		inst.recordHandle(mapConfig.Name, Record{mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame()})
-	}
+		inst.recordHandle(mapConfig.Name, Record{
+			mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame(), frameMs: inst.frameMs / uint32(time.Millisecond),
+		})
+	}*/
 	inst.recycleFrameList()
 	inst.logic.UnloadScene()
 	inst.frameIndexInList = 0
 }
 
-func (inst *Instance) LoadRecord(mapConfig *game_map.Config, record Record) bool {
+func (inst *Instance) LoadRecord(mapConfig *game_map.Config, record *Record) bool {
 	res := inst.logic.LoadScene(mapConfig)
 	if res {
 		inst.mode = instanceModeReplay
@@ -114,7 +111,7 @@ func (inst *Instance) CheckAndStart(playerList []uint64) bool {
 	if len(playerList) == 0 && inst.mode == instanceModeReplay {
 		playerList = inst.record.playerIdList
 	}
-	if len(playerList) != int(inst.args.PlayerNum) {
+	if len(playerList) != int(inst.playerNum) {
 		return false
 	}
 	for _, pid := range playerList {
@@ -134,10 +131,6 @@ func (inst *Instance) CheckAndStart(playerList []uint64) bool {
 func (inst *Instance) Restart() bool {
 	if len(inst.playerIdList) == 0 {
 		return false
-	}
-	if inst.mode == instanceModePlay && inst.recordHandle != nil {
-		mapConfig := inst.logic.World().GetMapConfig()
-		inst.recordHandle(mapConfig.Name, Record{mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame()})
 	}
 	inst.recycleFrameList()
 	inst.logic.ReloadScene()
@@ -211,7 +204,7 @@ func (inst *Instance) UpdateFrame() {
 	if !inst.processFrameCmdList() {
 		return
 	}
-	inst.logic.Update(inst.args.UpdateTick)
+	inst.logic.Update(inst.frameMs)
 	if inst.mode == instanceModeReplay {
 		if inst.logic.GetCurrFrame() == inst.record.frameNum {
 			inst.logic.Pause()
@@ -293,10 +286,6 @@ func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []int64, playerId uint64,
 	case CMD_TANK_RESTORE:
 		inst.logic.PlayerTankRestore(playerId)
 	}
-}
-
-func (inst *Instance) setRecordHandle(handle func(string, Record)) {
-	inst.recordHandle = handle
 }
 
 func (inst *Instance) recycleFrameList() {

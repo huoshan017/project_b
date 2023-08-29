@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"project_b/common/time"
 	"project_b/common_data"
 	"project_b/log"
 
@@ -14,14 +13,14 @@ import (
 )
 
 const (
-	screenWidth  = 1280
-	screenHeight = 720
+	screenWidth  = 800
+	screenHeight = 500
 )
 
 type Config struct {
 	serverAddress  string
 	playerMaxCount int32
-	updateTick     time.Duration
+	frameMs        uint32
 }
 
 func main() {
@@ -36,7 +35,7 @@ func main() {
 
 	logger := log.InitLog("./log/client.log", 2, 100, 30, false, true, -1)
 
-	game := NewGame(&Config{serverAddress: *ip_str, playerMaxCount: 1, updateTick: common_data.GameLogicTick})
+	game := NewGame(&Config{serverAddress: *ip_str, playerMaxCount: 1, frameMs: common_data.GameLogicFrameMs})
 	err := game.Init()
 	if err != nil {
 		log.Error("game init err: %v", err)

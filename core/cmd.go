@@ -30,6 +30,10 @@ func NewCmdData(cmd CmdCode, args []int64) *CmdData {
 	return &CmdData{cmd: cmd, args: args}
 }
 
+func NewCmdDataObj(cmd CmdCode, args []int64) CmdData {
+	return CmdData{cmd: cmd, args: args}
+}
+
 func (cd CmdData) Cmd() CmdCode {
 	return cd.cmd
 }

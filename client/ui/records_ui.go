@@ -3,6 +3,7 @@ package ui
 import (
 	"project_b/client_base"
 	"project_b/core"
+	"project_b/log"
 
 	"github.com/inkyblackness/imgui-go/v4"
 )
@@ -17,19 +18,17 @@ type RecordsSubUI struct {
 
 func (ui *RecordsSubUI) Init(game client_base.IGame) {
 	ui.SubUI.Init(game)
-	ui.recordMgr = game.RecordMgr()
+	ui.recordMgr = game.GameCore().GetRecordMgr()
 	ui.selIndex = -1
 }
 
 func (ui *RecordsSubUI) Update() {
 	if ui.selIndex >= 0 {
 		if ui.isPlay {
-			ui.game.RecordMgr().Select(ui.selIndex)
-			ui.game.ToReplay()
-			ui.isPlay = false
+			ui.toReplay()
 		}
 		if ui.isDelete {
-			ui.game.RecordMgr().Delete(ui.selIndex)
+			ui.recordMgr.Delete(ui.selIndex)
 			ui.isDelete = false
 		}
 	}
@@ -72,4 +71,13 @@ func (ui *RecordsSubUI) DrawFrame() {
 		ui.isDelete = true
 	}
 	imgui.PopItemFlag()
+}
+
+func (ui *RecordsSubUI) toReplay() {
+	if !ui.game.GameCore().LoadRecordStart(ui.selIndex) {
+		log.Error("load record by index %v failed", ui.selIndex)
+		return
+	}
+	ui.game.GetGameData().State = client_base.GameStateInReplay
+	ui.isPlay = false
 }

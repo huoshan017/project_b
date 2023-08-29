@@ -4,7 +4,6 @@ import (
 	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/math"
-	"project_b/common/time"
 	"project_b/common_data"
 	"project_b/log"
 )
@@ -24,8 +23,8 @@ type Bot struct {
 	tankInstId                    uint32
 	searchRadius                  int32
 	state                         BotStateType
-	totalTick                     time.Duration
-	timer                         time.Duration
+	totalTickMs                   uint32
+	timerMs                       uint32
 	enemyId                       uint32
 	enemyGetEvent, enemyLostEvent base.Event
 }
@@ -42,12 +41,12 @@ func (b *Bot) init(id int32, world *World, tankInstId uint32) {
 	b.tankInstId = tankInstId
 	b.searchRadius = common_data.DefaultSearchRadius
 	b.state = BotStateIdle
-	b.totalTick = 0
-	b.timer = 0
+	b.totalTickMs = 0
+	b.timerMs = 0
 	b.enemyId = 0
 }
 
-func (b *Bot) Update(tick time.Duration) {
+func (b *Bot) Update(tickMs uint32) {
 	botTank := b.world.GetTank(b.tankInstId)
 	if botTank == nil {
 		b.state = BotStateIdle
@@ -56,9 +55,9 @@ func (b *Bot) Update(tick time.Duration) {
 	}
 	switch b.state {
 	case BotStateIdle:
-		if b.totalTick == 0 || b.totalTick-b.timer >= time.Second {
+		if b.totalTickMs == 0 || b.totalTickMs-b.timerMs >= 1000 {
 			b.state = BotStatePatrol
-			b.timer = b.totalTick
+			b.timerMs = b.totalTickMs
 		}
 	case BotStatePatrol:
 		b.enemyId = b.searchEnemyTank()
@@ -116,7 +115,7 @@ func (b *Bot) Update(tick time.Duration) {
 		angle := base.NewAngle(orientation, 0)
 		botTank.Move(angle)
 	}
-	b.totalTick += tick
+	b.totalTickMs += tickMs
 }
 
 func (b *Bot) searchEnemyTank() uint32 {
@@ -217,7 +216,7 @@ func (bm *BotManager) removeBot(bot *Bot) {
 	bm.botPool.Put(bot)
 }
 
-func (bm *BotManager) Update(tick time.Duration) {
+func (bm *BotManager) Update(tickMs uint32) {
 	if bm.pause {
 		return
 	}
@@ -227,7 +226,7 @@ func (bm *BotManager) Update(tick time.Duration) {
 		if bot == nil {
 			continue
 		}
-		bot.Update(tick)
+		bot.Update(tickMs)
 	}
 }
 

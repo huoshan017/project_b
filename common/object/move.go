@@ -6,13 +6,13 @@ import (
 )
 
 // 獲得移動距離
-func GetDefaultLinearDistance(obj IMovableObject, duration time.Duration) int32 {
-	return int32((int64(obj.CurrentSpeed()) * int64(duration)) / int64(time.Second))
+func GetDefaultLinearDistance(obj IMovableObject, tickMs uint32) int32 {
+	return (obj.CurrentSpeed() * int32(tickMs)) / 1000
 }
 
 // 默認移動，就是直綫移動
-func DefaultMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
-	distance := GetDefaultLinearDistance(mobj, tick)
+func DefaultMove(mobj IMovableObject, tickMs uint32) (int32, int32) {
+	distance := GetDefaultLinearDistance(mobj, tickMs)
 	dir := mobj.MoveDir()
 	sn, sd := base.Sine(dir)
 	cn, cd := base.Cosine(dir)
@@ -23,8 +23,8 @@ func DefaultMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
 }
 
 // 計算移動位置
-func movePos(x, y int32, moveDir base.Angle, speed int32, duration time.Duration) (int32, int32) {
-	distance := int32(int64(speed) * int64(duration) / int64(time.Second))
+func movePos(x, y int32, moveDir base.Angle, speed int32, tickMs uint32) (int32, int32) {
+	distance := int32(int64(speed) * int64(tickMs*uint32(time.Millisecond)) / int64(time.Second))
 	sn, sd := base.Sine(moveDir)
 	cn, cd := base.Cosine(moveDir)
 	dx := distance * cn / cd
@@ -33,54 +33,54 @@ func movePos(x, y int32, moveDir base.Angle, speed int32, duration time.Duration
 }
 
 // 環繞物移動
-func SurroundObjMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
+func SurroundObjMove(mobj IMovableObject, tickMs uint32) (int32, int32) {
 	var sobj = mobj.(*SurroundObj)
-	return getSurroundObjMovedPos(sobj, tick, nil)
+	return getSurroundObjMovedPos(sobj, tickMs, nil)
 }
 
 // 環繞物移動信息
 type SurroundMoveInfo struct {
 	LastCenterX, LastCenterY int32
 	TurnAngle                int32 // 單位是分，1/60度
-	AccumulateTime           time.Duration
+	AccumulateMs             int32
 }
 
 // 獲得環繞物移動位置
-func GetSurroundObjMovedPos(sobj *SurroundObj, tick time.Duration, moveInfo *SurroundMoveInfo) (int32, int32) {
-	return getSurroundObjMovedPos(sobj, tick, moveInfo)
+func GetSurroundObjMovedPos(sobj *SurroundObj, tickMs uint32, moveInfo *SurroundMoveInfo) (int32, int32) {
+	return getSurroundObjMovedPos(sobj, tickMs, moveInfo)
 }
 
 // 環繞物移動位置
-func getSurroundObjMovedPos(sobj *SurroundObj, tick time.Duration, moveInfo *SurroundMoveInfo) (x, y int32) {
+func getSurroundObjMovedPos(sobj *SurroundObj, tickMs uint32, moveInfo *SurroundMoveInfo) (x, y int32) {
 	aroundCenterObj := sobj.getAroundCenterObjFunc(sobj.aroundCenterObjInstId)
 	if aroundCenterObj == nil {
 		return 0, 0
 	}
 
 	var (
-		turnAngle      int32
-		accumulateTime time.Duration
-		cx, cy         int32
+		turnAngle    int32
+		accumulateMs int32
+		cx, cy       int32
 	)
 	if moveInfo != nil {
 		turnAngle = moveInfo.TurnAngle
-		accumulateTime = moveInfo.AccumulateTime
+		accumulateMs = int32(moveInfo.AccumulateMs)
 		cx, cy = moveInfo.LastCenterX, moveInfo.LastCenterY
 	} else {
 		turnAngle = sobj.turnAngle
-		accumulateTime = sobj.accumulateTime
+		accumulateMs = int32(sobj.accumulateMs)
 		cx, cy = aroundCenterObj.Pos()
 	}
-	accumulateTime += tick
+	accumulateMs += int32(tickMs)
 
 	staticInfo := sobj.SurroundObjStaticInfo()
-	angle := int32(accumulateTime * time.Duration(staticInfo.AngularVelocity) / time.Second)
+	angle := accumulateMs * staticInfo.AngularVelocity / 1000
 	turnAngle += angle
 	degree, minute := turnAngle/60, turnAngle%60
 	if degree >= 360 {
 		degree -= 360
 	}
-	accumulateTime -= time.Duration(angle) * time.Second / time.Duration(staticInfo.AngularVelocity)
+	accumulateMs -= angle * 1000 / staticInfo.AngularVelocity
 	an := base.NewAngle(int16(degree), int16(minute))
 	sn, sd := base.Sine(an)
 	cn, cd := base.Cosine(an)
@@ -91,22 +91,22 @@ func getSurroundObjMovedPos(sobj *SurroundObj, tick time.Duration, moveInfo *Sur
 	}
 	if moveInfo != nil {
 		moveInfo.TurnAngle = degree*60 + minute
-		moveInfo.AccumulateTime = accumulateTime
+		moveInfo.AccumulateMs = accumulateMs
 	} else {
 		sobj.turnAngle = degree*60 + minute
-		sobj.accumulateTime = accumulateTime
+		sobj.accumulateMs = accumulateMs
 	}
 	return x, y
 }
 
 // 跟蹤移動
-func ShellTrackMove(mobj IMovableObject, tick time.Duration) (int32, int32) {
+func ShellTrackMove(mobj IMovableObject, tickMs uint32) (int32, int32) {
 	if mobj.Subtype() != ObjSubtypeShell {
-		return DefaultMove(mobj, tick)
+		return DefaultMove(mobj, tickMs)
 	}
 
 	shell := mobj.(*Shell)
-	return getShellTrackMovedPos(shell, tick, nil)
+	return getShellTrackMovedPos(shell, tickMs, nil)
 }
 
 // 追蹤移動信息
@@ -116,32 +116,32 @@ type TrackMoveInfo struct {
 }
 
 // 獲得炮彈追蹤移動位置
-func GetShellTrackMovedPos(shell IShell, tick time.Duration, moveInfo *TrackMoveInfo) (int32, int32) {
+func GetShellTrackMovedPos(shell IShell, tickMs uint32, moveInfo *TrackMoveInfo) (int32, int32) {
 	s := shell.(*Shell)
-	return getShellTrackMovedPos(s, tick, moveInfo)
+	return getShellTrackMovedPos(s, tickMs, moveInfo)
 }
 
 // 炮彈追蹤移動位置
-func getShellTrackMovedPos(shell *Shell, tick time.Duration, moveInfo *TrackMoveInfo) (int32, int32) {
+func getShellTrackMovedPos(shell *Shell, tickMs uint32, moveInfo *TrackMoveInfo) (int32, int32) {
 	staticInfo := shell.ShellStaticInfo()
 	if !staticInfo.TrackTarget || staticInfo.SteeringAngularVelocity <= 0 {
-		return DefaultMove(shell, tick)
+		return DefaultMove(shell, tickMs)
 	}
 
 	var target IObject
 	if shell.trackTargetId == 0 {
 		if moveInfo == nil {
-			return DefaultMove(shell, tick)
+			return DefaultMove(shell, tickMs)
 		}
 		target = shell.searchTargetFunc(shell)
 		if target == nil {
-			return DefaultMove(shell, tick)
+			return DefaultMove(shell, tickMs)
 		}
 		shell.trackTargetId = target.InstId()
 	} else {
 		target = shell.fetchTargetFunc(shell.trackTargetId)
 		if target == nil {
-			return DefaultMove(shell, tick)
+			return DefaultMove(shell, tickMs)
 		}
 	}
 
@@ -156,13 +156,13 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, moveInfo *TrackMove
 	// 求叉積確定逆時針還是順時針轉
 	cross := shellDir.Cross(targetDir)
 	if cross == 0 {
-		return DefaultMove(shell, tick)
+		return DefaultMove(shell, tickMs)
 	}
 
 	// tick時間轉向角度
-	deltaMinutes := int16(time.Duration(shell.ShellStaticInfo().SteeringAngularVelocity) * tick / time.Second)
+	deltaMinutes := int16(shell.ShellStaticInfo().SteeringAngularVelocity * int32(tickMs) / 1000)
 	if deltaMinutes == 0 {
-		return DefaultMove(shell, tick)
+		return DefaultMove(shell, tickMs)
 	}
 	// 利用點積求夾角
 	dot := shellDir.Dot(targetDir)
@@ -199,7 +199,7 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, moveInfo *TrackMove
 		} else {
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, previous angle %v, track target %v, tick %v", angle, *rotation, target.InstId(), tick)
 		}*/
-		return DefaultMove(shell, tick)
+		return DefaultMove(shell, tickMs)
 	} else {
 		/*if cross > 0 {
 			log.Debug("< 逆時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
@@ -207,6 +207,6 @@ func getShellTrackMovedPos(shell *Shell, tick time.Duration, moveInfo *TrackMove
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
 		}*/
 		x, y := shell.Pos()
-		return movePos(x, y, angle, shell.CurrentSpeed(), tick)
+		return movePos(x, y, angle, shell.CurrentSpeed(), tickMs)
 	}
 }

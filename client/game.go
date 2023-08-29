@@ -9,7 +9,6 @@ import (
 	"project_b/common/time"
 	"project_b/core"
 	"project_b/game_map"
-	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -22,8 +21,7 @@ type Game struct {
 	conf *Config
 	//---------------------------------------
 	// 逻辑
-	inst            *core.Instance              // 游戲實例
-	records         *core.RecordManager         // 重播管理器
+	gameCore        *core.GameCore              // 游戲實例
 	net             *client_core.NetClient      // 网络模块
 	msgHandler      *client_core.MsgHandler     // 消息处理器
 	playerMgr       *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
@@ -47,15 +45,16 @@ func NewGame(conf *Config) *Game {
 		viewport: client_base.CreateViewport(0, 0, screenWidth, screenHeight),
 	}
 	g.eventMgr = base.NewEventManager()
-	g.inst = core.NewInstance(&core.InstanceArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerMaxCount, UpdateTick: conf.updateTick, SavePath: "records"})
-	g.records = core.NewRecordManager(g.inst)
+	g.gameCore = core.NewGameCore(core.CoreArgs{EventMgr: g.eventMgr, PlayerNum: conf.playerMaxCount, FrameMs: conf.frameMs, GetMapFunc: func(mapId int32) *game_map.Config {
+		return game_map.MapConfigArray[mapId]
+	}})
 	g.net = client_core.CreateNetClient(conf.serverAddress, options.WithRunMode(options.RunModeOnlyUpdate), options.WithNoDelay(true))
 	g.playerMgr = client_core.CreateCPlayerManager()
-	g.msgHandler = client_core.CreateMsgHandler(g.net, g.inst, g.playerMgr, g.eventMgr)
+	g.msgHandler = client_core.CreateMsgHandler(g.net, g.playerMgr, g.eventMgr)
 	g.uiMgr = ui.NewImguiManager(g)
 	g.playableScene = CreatePlayableScene(g.viewport)
-	g.eventHandles = CreateEventHandles(g.net, g.inst, g.playableScene, &g.gameData)
-	g.inputMgr = NewInputMgr(g, g.inst)
+	g.eventHandles = CreateEventHandles(g.net, g.gameCore, g.playableScene, &g.gameData)
+	g.inputMgr = NewInputMgr(g, g.gameCore)
 	return g
 }
 
@@ -66,6 +65,7 @@ func (g *Game) Init() error {
 	g.eventHandles.Init()
 	g.initInputHandles()
 	g.restart()
+	time.InitTime()
 	return nil
 }
 
@@ -94,14 +94,9 @@ func (g *Game) EventMgr() base.IEventManager {
 	return g.eventMgr
 }
 
-// 游戲實例
-func (g *Game) Inst() *core.Instance {
-	return g.inst
-}
-
-// 重播管理器
-func (g *Game) RecordMgr() *core.RecordManager {
-	return g.records
+// 游戲核心
+func (g *Game) GameCore() *core.GameCore {
+	return g.gameCore
 }
 
 // 布局
@@ -148,18 +143,6 @@ func (g *Game) ScreenWidthHeight() (int32, int32) {
 	return screenWidth, screenHeight
 }
 
-// 去重播
-func (g *Game) ToReplay() {
-	record, o := g.records.SelectedRecord()
-	if !o {
-		return
-	}
-	mapConfig := game_map.MapConfigArray[record.MapId()]
-	g.inst.LoadRecord(mapConfig, record)
-	g.gameData.State = client_base.GameStateInReplay
-	g.isStartInstance = true
-}
-
 // 更新
 func (g *Game) update() {
 	// 时间同步完成
@@ -167,34 +150,14 @@ func (g *Game) update() {
 		return
 	}
 	now := core.GetSyncServTime()*/
-	now := time.Now()
-	if g.lastCheckTime.IsZero() {
-		g.lastCheckTime = now
-	}
 	g.inputMgr.HandleInput()
-	tick := now.Sub(g.lastCheckTime)
-	for ; tick >= g.conf.updateTick; tick -= g.conf.updateTick {
-		g.inst.UpdateFrame()
-		g.lastCheckTime = g.lastCheckTime.Add(g.conf.updateTick)
-	}
+	g.gameCore.Update(time.CurrentMs())
 }
 
 // 重播更新
 func (g *Game) updateInReplay() {
-	if g.isStartInstance {
-		if !g.inst.CheckAndStart(nil) {
-			log.Error("Game.updateInReplay CheckAndStatrt failed")
-			return
-		}
-		g.lastCheckTime = time.Now()
-		g.isStartInstance = false
-	}
 	g.inputMgr.HandleInput()
-	tick := time.Since(g.lastCheckTime)
-	for ; tick >= g.conf.updateTick; tick -= g.conf.updateTick {
-		g.inst.UpdateFrame()
-		g.lastCheckTime = g.lastCheckTime.Add(g.conf.updateTick)
-	}
+	g.gameCore.Update(time.CurrentMs())
 }
 
 func (g *Game) initInputHandles() {

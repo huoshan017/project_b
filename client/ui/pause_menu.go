@@ -38,6 +38,9 @@ func (ui *PauseMenuUI) Init(game client_base.IGame, menuIdNodeList []menuIdNode)
 // PauseMenuUI.Update
 func (ui *PauseMenuUI) Update() {
 	if inpututil.IsKeyJustReleased(ebiten.KeyEscape) {
+		if ui.queryDialog != nil && ui.queryDialog.IsShow() {
+			return
+		}
 		if ui.isPaused {
 			ui.resume()
 		} else {
@@ -59,14 +62,14 @@ func (ui *PauseMenuUI) DrawFrame() {
 	}
 
 	w, h := ui.game.ScreenWidthHeight()
-	s := imgui.Vec2{X: float32(w) / 8, Y: float32(h) / 5}
+	s := imgui.Vec2{X: float32(w) / 5, Y: float32(h) * 2 / 7}
 	imgui.SetNextWindowSize(s)
 	pos := imgui.Vec2{X: float32(w)/2 - float32(s.X)/2, Y: float32(h)/2 - float32(s.Y)/2}
 	imgui.SetNextWindowPos(pos)
 	imgui.BeginV("Paused Menu", nil, imgui.WindowFlagsNoDecoration|imgui.WindowFlagsNoMove)
 	imgui.Text("Paused")
 	if ui.currSelected == menuNone {
-		buttonSize := imgui.Vec2{X: s.X * 3 / 4, Y: s.Y / 7}
+		buttonSize := imgui.Vec2{X: s.X * 3 / 4, Y: s.Y / 6}
 		localPos := imgui.Vec2{X: s.X/2 - buttonSize.X/2, Y: s.Y / 7}
 		posInterval := imgui.Vec2{X: 0, Y: s.Y / 5}
 		ui.Menu.draw(localPos, posInterval, buttonSize)
@@ -81,12 +84,12 @@ func (ui *PauseMenuUI) DrawFrame() {
 }
 
 func (ui *PauseMenuUI) resume() {
-	ui.game.Inst().Resume()
+	ui.game.GameCore().Resume()
 	ui.isPaused = false
 }
 
 func (ui *PauseMenuUI) pause() {
-	ui.game.Inst().Pause()
+	ui.game.GameCore().Pause()
 	ui.isPaused = true
 }
 
@@ -111,13 +114,13 @@ func (ui *PauseMenuUI) popQueryQuit2MainMenuDialog() {
 }
 
 func (ui *PauseMenuUI) restart() {
-	ui.game.Inst().Restart()
+	ui.game.GameCore().Restart()
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
 	ui.resume()
 }
 
 func (ui *PauseMenuUI) quit2MainMenu() {
-	ui.game.Inst().Unload()
+	ui.game.GameCore().End()
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerExitGame, ui.game.GetGameData().MyId)
 	ui.resume()
 }

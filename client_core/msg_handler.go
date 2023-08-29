@@ -25,10 +25,9 @@ type MsgHandler struct {
 	invoker   base.IEventInvoker
 }
 
-func CreateMsgHandler(net *NetClient, inst *core.Instance, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
+func CreateMsgHandler(net *NetClient, playerMgr *CPlayerManager, invoker base.IEventInvoker) *MsgHandler {
 	return &MsgHandler{
 		net:       net,
-		inst:      inst,
 		playerMgr: playerMgr,
 		invoker:   invoker,
 	}

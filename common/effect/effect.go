@@ -2,7 +2,6 @@ package effect
 
 import (
 	"project_b/common/object"
-	"project_b/common/time"
 )
 
 // 效果作用類型
@@ -21,7 +20,7 @@ type IEffect interface {
 	Pos() (int32, int32)
 	Width() int32
 	Height() int32
-	Update()
+	Update(uint32)
 	IsOver() bool
 }
 
@@ -40,7 +39,7 @@ type Effect struct {
 	args       []any
 	center     object.Pos
 	count      int32
-	startTime  time.CustomTime
+	durationMs uint32
 	isOver     bool
 }
 
@@ -70,7 +69,7 @@ func (e *Effect) SetPos(x, y int32) {
 	e.center.X, e.center.Y = x, y
 }
 
-func (e *Effect) Update() {
+func (e *Effect) Update(tickMs uint32) {
 	if e.isOver {
 		return
 	}
@@ -84,14 +83,14 @@ func (e *Effect) Update() {
 			e.isOver = true
 		}
 	} else if e.staticInfo.Et == EffectTypeTime {
-		if e.startTime.IsZero() || time.Since(e.startTime) < time.Duration(e.staticInfo.Param) {
+		if int32(e.durationMs) < e.staticInfo.Param {
 			if e.effectFunc != nil {
 				e.effectFunc(e.args...)
 			}
-			e.startTime = time.Now()
 		} else {
 			e.isOver = true
 		}
+		e.durationMs += tickMs
 	}
 }
 
@@ -116,6 +115,6 @@ func (e *Effect) uninit() {
 	e.effectFunc = nil
 	e.args = nil
 	e.count = 0
-	e.startTime = time.CustomTime{}
+	e.durationMs = 0
 	e.isOver = false
 }

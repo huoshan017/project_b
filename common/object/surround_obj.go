@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 	"unsafe"
 )
 
@@ -12,7 +11,7 @@ type SurroundObj struct {
 	aroundCenterObjInstId  uint32               // 環繞物體實例id
 	getAroundCenterObjFunc func(uint32) IObject // 獲得環繞物體函數
 	turnAngle              int32                // 轉過角度
-	accumulateTime         time.Duration        // 纍計時間
+	accumulateMs           int32                // 纍計時間(毫秒)
 	lateUpdateEvent        base.Event           // 后更新事件
 }
 
@@ -30,7 +29,7 @@ func (b *SurroundObj) Uninit() {
 	b.aroundCenterObjInstId = 0
 	b.getAroundCenterObjFunc = nil
 	b.turnAngle = 0
-	b.accumulateTime = 0
+	b.accumulateMs = 0
 	b.MovableObject.Uninit()
 }
 
@@ -67,13 +66,13 @@ func (b *SurroundObj) getCenterObj() IObject {
 	return aroundObj
 }
 
-func (b *SurroundObj) Update(tick time.Duration) {
+func (b *SurroundObj) Update(tickMs uint32) {
 	if b.getCenterObj() == nil {
 		return
 	}
-	b.MovableObject.Update(tick)
+	b.MovableObject.Update(tickMs)
 	if b.state == isMoving {
-		b.lateUpdateEvent.Call(b.turnAngle, b.accumulateTime)
+		b.lateUpdateEvent.Call(b.turnAngle, b.accumulateMs)
 	}
 }
 

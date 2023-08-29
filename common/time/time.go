@@ -42,3 +42,15 @@ func Since(t CustomTime) Duration {
 func Until(t CustomTime) Duration {
 	return Duration(time.Until(t.Time))
 }
+
+var (
+	startTime CustomTime
+)
+
+func InitTime() {
+	startTime = Now()
+}
+
+func CurrentMs() uint32 {
+	return uint32(Since(startTime) / Millisecond)
+}

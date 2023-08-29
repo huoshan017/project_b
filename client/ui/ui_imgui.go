@@ -58,7 +58,8 @@ func (ui *PopupReviveUI) Init(game client_base.IGame) {
 // PopupReviveUI.Update
 func (ui *PopupReviveUI) Update() {
 	if ui.toRevive {
-		ui.game.Inst().PushFrame(ui.game.Inst().GetFrame(), ui.game.GetGameData().MyId, core.CMD_TANK_RESPAWN, []int64{int64(common.TankTypePlayer)})
+		var cmdData = core.NewCmdDataObj(core.CMD_TANK_RESPAWN, []int64{int64(common.TankTypePlayer)})
+		ui.game.GameCore().PushSyncPlayerCmd(ui.game.GetGameData().MyId, &cmdData)
 		ui.toRevive = false
 		ui.pop(false)
 	} else if ui.toExit {
@@ -114,8 +115,8 @@ type ImguiManager struct {
 	renderMgr *renderer.Manager
 	login     loginUI
 	mainMenu  MainMenuUI
-	inWorld   InWorldUI
-	inReplay  InReplayUI
+	inWorld   *InWorldUI
+	inReplay  *InReplayUI
 }
 
 func NewImguiManager(game client_base.IGame) *ImguiManager {
@@ -131,8 +132,6 @@ func (ui *ImguiManager) Init() {
 	ui.initTextures()
 	ui.login.Init(ui.game)
 	ui.mainMenu.Init(ui.game, getMainMenuIdNodeTree(&ui.mainMenu))
-	ui.inWorld.Init(ui.game)
-	ui.inReplay.Init(ui.game)
 }
 
 func (ui *ImguiManager) Update() {
@@ -143,8 +142,16 @@ func (ui *ImguiManager) Update() {
 	case client_base.GameStateMainMenu:
 		ui.mainMenu.Update()
 	case client_base.GameStateInWorld:
+		if ui.inWorld == nil {
+			ui.inWorld = &InWorldUI{}
+			ui.inWorld.Init(ui.game)
+		}
 		ui.inWorld.Update()
 	case client_base.GameStateInReplay:
+		if ui.inReplay == nil {
+			ui.inReplay = &InReplayUI{}
+			ui.inReplay.Init(ui.game)
+		}
 		ui.inReplay.Update()
 	}
 }
@@ -158,9 +165,13 @@ func (ui *ImguiManager) Draw(screen *ebiten.Image) {
 	case client_base.GameStateMainMenu:
 		ui.mainMenu.DrawFrame()
 	case client_base.GameStateInWorld:
-		ui.inWorld.DrawFrame()
+		if ui.inWorld != nil {
+			ui.inWorld.DrawFrame()
+		}
 	case client_base.GameStateInReplay:
-		ui.inReplay.DrawFrame()
+		if ui.inReplay != nil {
+			ui.inReplay.DrawFrame()
+		}
 	default:
 		draw = false
 	}

@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 )
 
 // 基礎物体静态信息
@@ -58,7 +57,7 @@ func (info ObjStaticInfo) Collision() bool {
 // 移動物體靜態配置
 type MovableObjStaticInfo struct {
 	ObjStaticInfo
-	MoveFunc func(IMovableObject, time.Duration) (int32, int32) // 移動函數
+	MoveFunc func(IMovableObject, uint32) (int32, int32) // 移動函數
 }
 
 // 環繞物體靜態配置
@@ -84,8 +83,8 @@ type ShellStaticInfo struct {
 type TankShellConfig struct {
 	ShellInfo         *ShellStaticInfo // 子彈配置ID
 	AmountFireOneTime int8             // 一次發射炮彈量
-	IntervalInFire    int32            // 一次發射的幾發炮彈之間的間隔時間(毫秒)
-	Cooldown          int32            // 每次發射冷卻時間(毫秒)
+	IntervalInFireMs  int32            // 一次發射的幾發炮彈之間的間隔時間(毫秒)
+	CooldownMs        int32            // 每次發射冷卻時間(毫秒)
 }
 
 // 坦克靜態配置
@@ -100,6 +99,6 @@ type TankStaticInfo struct {
 
 // 坦克護盾配置
 type TankShieldStaticInfo struct {
-	Width, Length int32         // 長寬
-	Duration      time.Duration // 持續時間，0表示無限
+	Width, Length int32  // 長寬
+	DurationMs    uint32 // 持續時間(毫秒)，0表示無限
 }

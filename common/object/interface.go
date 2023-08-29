@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 )
 
 type IRecycle interface {
@@ -16,6 +15,7 @@ type IObject interface {
 	ObjStaticInfo() *ObjStaticInfo  // 獲得靜態信息
 	Init(uint32, *ObjStaticInfo)    // 初始化
 	Uninit()                        // 反初始化
+	Update(tickMs uint32)           // 更新
 	InstId() uint32                 // 实例id
 	Id() int32                      // 注意：这是配置id
 	Type() ObjectType               // 类型
@@ -42,6 +42,7 @@ type IObject interface {
 	GetComp(name string) IComponent // 獲取組件
 	HasComp(name string) bool       // 是否擁有組件
 	GetColliderComp() *ColliderComp // 獲得碰撞器組件
+	CurrMs() uint32                 // 當前相對時間(毫秒)
 }
 
 // 静态物体接口
@@ -72,7 +73,6 @@ type IMovableObject interface {
 	LastPos() (x, y int32)     // 上次Update時位置
 	Pause()                    // 暫停
 	Resume()                   // 繼續
-	Update(tick time.Duration) // 更新
 
 	// ----------------------------------
 	// 事件接口

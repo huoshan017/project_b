@@ -20,7 +20,7 @@ type event2Handle struct {
 
 type EventHandles struct {
 	net           *client_core.NetClient
-	inst          *core.Instance
+	gameCore      *core.GameCore
 	playableScene *PlayableScene
 	gameData      *client_base.GameData
 	// --------------------------------------
@@ -30,10 +30,10 @@ type EventHandles struct {
 }
 
 // 创建EventHandles
-func CreateEventHandles(net *client_core.NetClient, inst *core.Instance, playableScene *PlayableScene, gameData *client_base.GameData) *EventHandles {
+func CreateEventHandles(net *client_core.NetClient, gameCore *core.GameCore, playableScene *PlayableScene, gameData *client_base.GameData) *EventHandles {
 	eh := &EventHandles{
 		net:           net,
-		inst:          inst,
+		gameCore:      gameCore,
 		playableScene: playableScene,
 		gameData:      gameData,
 	}
@@ -78,14 +78,14 @@ func (g *EventHandles) registerEvents() {
 	}
 
 	for _, e2h := range g.playerEvent2Handles {
-		g.inst.RegisterEvent(e2h.eid, e2h.handle)
+		g.gameCore.RegisterEvent(e2h.eid, e2h.handle)
 	}
 }
 
 // 注销事件
 func (g *EventHandles) unregisterEvents() {
 	for _, e2h := range g.playerEvent2Handles {
-		g.inst.UnregisterEvent(e2h.eid, e2h.handle)
+		g.gameCore.UnregisterEvent(e2h.eid, e2h.handle)
 	}
 }
 
@@ -180,7 +180,7 @@ func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...any) {
 
 	// 注册本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
-		g.inst.RegisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
+		g.gameCore.RegisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
 	log.Info("handle event: my player (account: %v, uid: %v) enter game finished", g.gameData.MyAcc, g.gameData.MyId)
@@ -192,21 +192,14 @@ func (g *EventHandles) onEventPlayerEnterGameCompleted(args ...any) {
 args[0]: uid(uint64)
 */
 func (g *EventHandles) onEventPlayerExitGame(args ...any) {
-	if len(args) < 1 {
-		log.Warn("onEventPlayerExitGame event args length cant less 1")
-		return
-	}
-
-	uid := args[0].(uint64)
-
 	// 注销本游戏场景事件
 	for _, e2h := range g.gameEvent2Handles {
-		g.inst.UnregisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
+		g.gameCore.UnregisterPlayerEvent(g.gameData.MyId, e2h.eid, e2h.handle)
 	}
 
 	g.gameData.State = client_base.GameStateMainMenu
 
-	log.Info("handle event: player (uid: %v) exited game", uid)
+	log.Info("handle event: player exited game")
 }
 
 /*

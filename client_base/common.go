@@ -24,10 +24,8 @@ type IGame interface {
 	GetState() GameState
 	GetGameData() *GameData
 	ScreenWidthHeight() (int32, int32)
-	Inst() *core.Instance
+	GameCore() *core.GameCore
 	EventMgr() base.IEventManager
-	RecordMgr() *core.RecordManager
-	ToReplay()
 }
 
 type IUIMgr interface {

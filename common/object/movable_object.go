@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 	"project_b/log"
 	"unsafe"
 )
@@ -24,7 +23,6 @@ type MovableObject struct {
 	moveDir        base.Angle      // 移動的方向角度
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
-	lastTick       time.Duration   // 上次tick花費時間
 	state          moveObjectState // 移动状态
 	mySuper        IMovableObject  // 父類
 	checkMoveEvent base.Event      // 檢查坐標事件
@@ -61,7 +59,6 @@ func (o *MovableObject) Uninit() {
 	o.speed = 0
 	o.lastX = 0
 	o.lastY = 0
-	o.lastTick = 0
 	o.state = stopped
 	o.checkMoveEvent.Clear()
 	o.moveEvent.Clear()
@@ -147,10 +144,7 @@ func (o *MovableObject) Move(dir base.Angle) {
 	}
 	o.moveDir = dir
 	if o.state == stopped {
-		var tick time.Duration = o.lastTick
-		if tick == 0 {
-			tick = 100 * time.Millisecond
-		}
+		var tick uint32 = 100
 		d := GetDefaultLinearDistance(o, tick)
 		v := dir.DistanceToVec2(d)
 		if !o.checkMove(v.X(), v.Y(), false, nil, nil) {
@@ -228,13 +222,15 @@ func (o *MovableObject) Resume() {
 }
 
 // 更新
-func (o *MovableObject) Update(tick time.Duration) {
+func (o *MovableObject) Update(tickMs uint32) {
 	if o.pause {
 		return
 	}
+
+	o.object.Update(tickMs)
+
 	// 每次Update都要更新lastX和lastY
 	o.lastX, o.lastY = o.Pos()
-	o.lastTick = tick
 
 	if o.state == stopped {
 		return
@@ -249,9 +245,9 @@ func (o *MovableObject) Update(tick time.Duration) {
 
 	var x, y int32
 	if o.MovableObjStaticInfo().MoveFunc != nil {
-		x, y = o.MovableObjStaticInfo().MoveFunc(o.mySuper, tick)
+		x, y = o.MovableObjStaticInfo().MoveFunc(o.mySuper, tickMs)
 	} else {
-		x, y = DefaultMove(o.mySuper, tick)
+		x, y = DefaultMove(o.mySuper, tickMs)
 	}
 
 	ox, oy := o.Pos()

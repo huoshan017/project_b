@@ -47,7 +47,7 @@ func (ui *QueryDialog) DrawFrame() {
 		return
 	}
 	w, h := ui.game.ScreenWidthHeight()
-	s := imgui.Vec2{X: float32(w) / 7, Y: float32(h) / 12}
+	s := imgui.Vec2{X: float32(w) / 6, Y: float32(h) / 9}
 	imgui.SetNextWindowSize(s)
 	pos := imgui.Vec2{X: float32(w)/2 - float32(s.X)/2, Y: float32(h)/2 - float32(s.Y)/2}
 	imgui.SetNextWindowPos(pos)
@@ -68,6 +68,6 @@ func (ui *QueryDialog) Show() {
 	ui.sel = selQueryNone
 }
 
-func (ui *QueryDialog) Hide() {
-	ui.sel = selQueryCancel
+func (ui *QueryDialog) IsShow() bool {
+	return ui.sel == selQueryNone
 }

@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 	"project_b/log"
 	"unsafe"
 )
@@ -69,10 +68,7 @@ func (s *Shell) MoveNow(dir base.Angle) {
 	}
 	s.moveDir = dir
 	if s.state == stopped {
-		tick := s.lastTick
-		if tick == 0 {
-			tick = 100 * time.Millisecond
-		}
+		var tick uint32 = 100
 		d := GetDefaultLinearDistance(s, tick)
 		v := dir.DistanceToVec2(d)
 		if !s.checkMove(v.X(), v.Y(), false, nil, nil) {
@@ -84,11 +80,11 @@ func (s *Shell) MoveNow(dir base.Angle) {
 }
 
 // 更新
-func (s *Shell) Update(tick time.Duration) {
+func (s *Shell) Update(tickMs uint32) {
 	if s.pause {
 		return
 	}
-	s.MovableObject.Update(tick)
+	s.MovableObject.Update(tickMs)
 	if s.state == isMoving {
 		x, y := s.Pos()
 		s.lateUpdateEvent.Call(x, y, s.WorldRotation())

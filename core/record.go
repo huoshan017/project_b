@@ -9,12 +9,17 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+var (
+	recordsDirectory = "records"
+)
+
 type Record struct {
 	name         string
 	mapId        int32
-	frameList    []*frameData
 	playerIdList []uint64
+	frameMs      uint32
 	frameNum     uint32
+	frameList    []*frameData
 }
 
 func (r *Record) Clear() {
@@ -33,30 +38,31 @@ func (r Record) FrameNum() uint32 {
 	return r.frameNum
 }
 
+func (r Record) FrameMs() uint32 {
+	return r.frameMs
+}
+
 type recordNamePair struct {
 	recordName string
 	fileName   string
 }
 
 type RecordManager struct {
-	inst     *Instance
-	nameList []recordNamePair
-	sel      int32
-	savePath string
-	loaded   bool
+	inst      *Instance
+	nameList  []recordNamePair
+	selIndex  int32
+	selRecord Record
+	savePath  string
+	loaded    bool
 }
 
-func NewRecordManager(inst *Instance) *RecordManager {
+func newRecordManager(inst *Instance) *RecordManager {
 	rm := &RecordManager{
-		inst: inst,
-		sel:  -1,
+		inst:     inst,
+		selIndex: -1,
 	}
 	rm.genSavePath()
 	return rm
-}
-
-func (rm *RecordManager) SetRecord() {
-	rm.inst.setRecordHandle(rm.Save)
 }
 
 func (rm *RecordManager) LoadRecords() {
@@ -96,21 +102,20 @@ func (rm *RecordManager) Delete(index int32) bool {
 
 func (rm *RecordManager) Select(index int32) {
 	if int(index) <= len(rm.nameList) {
-		rm.sel = index
+		rm.selIndex = index
 	}
 }
 
-func (rm *RecordManager) SelectedRecord() (Record, bool) {
-	if rm.sel < 0 {
+func (rm *RecordManager) SelectedRecord() *Record {
+	if rm.selIndex < 0 {
 		panic("not selected record")
 	}
-	np := rm.nameList[rm.sel]
-	var record Record
-	if !rm.read(np.fileName, &record) {
+	np := rm.nameList[rm.selIndex]
+	if !rm.read(np.fileName, &rm.selRecord) {
 		log.Error("RecordManager read selected save %v failed", np.fileName)
-		return record, false
+		return nil
 	}
-	return record, true
+	return &rm.selRecord
 }
 
 func (rm *RecordManager) GetRecordCount() int32 {
@@ -128,7 +133,7 @@ func (rm *RecordManager) genSavePath() {
 		return
 	}
 
-	savePath := dir + "/" + rm.inst.args.SavePath
+	savePath := dir + "/" + recordsDirectory
 	err = os.MkdirAll(savePath, os.ModePerm)
 	if err != nil {
 		log.Error("Record persistance make dir err: %v", err)
@@ -197,6 +202,7 @@ func (rm *RecordManager) persistance(fileName string, record *Record) {
 func serializeRecord(record *Record, pbr *PbRecord) {
 	pbr.Name = record.name
 	pbr.MapId = record.mapId
+	pbr.FrameMs = record.frameMs
 	pbr.FrameNum = record.frameNum
 	var frameList []*PbFrameData
 	for i := 0; i < len(record.frameList); i++ {
@@ -219,6 +225,7 @@ func serializeRecord(record *Record, pbr *PbRecord) {
 func unserializeRecord(pbr *PbRecord, record *Record) {
 	record.name = pbr.Name
 	record.mapId = pbr.MapId
+	record.frameMs = pbr.FrameMs
 	record.frameNum = pbr.FrameNum
 	var (
 		frameList    []*frameData

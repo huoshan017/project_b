@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 	"project_b/log"
 	"unsafe"
 )
@@ -40,7 +39,8 @@ func (v *Vehicle) Uninit() {
 type Shield struct {
 	tank        *Tank
 	staticInfo  *TankShieldStaticInfo
-	startTime   time.CustomTime
+	startMs     uint32
+	totalMs     uint32
 	pause       bool
 	isEffective bool
 }
@@ -51,19 +51,20 @@ func NewShield(tank *Tank, staticInfo *TankShieldStaticInfo) *Shield {
 		tank:       tank,
 		staticInfo: staticInfo,
 	}
-	if staticInfo.Duration > 0 {
-		shield.startTime = time.Now()
-	}
 	shield.isEffective = true
 	return shield
 }
 
 // 更新
-func (s *Shield) Update(tick time.Duration) {
+func (s *Shield) Update(tickMs uint32) {
 	if s.pause {
 		return
 	}
-	if s.staticInfo.Duration > 0 && time.Since(s.startTime) > s.staticInfo.Duration {
+	if s.startMs == 0 {
+		s.startMs = tickMs
+	}
+	s.totalMs += tickMs
+	if s.staticInfo.DurationMs > 0 && s.totalMs-s.startMs > s.staticInfo.DurationMs {
 		s.isEffective = false
 		return
 	}
@@ -87,15 +88,15 @@ func (s *Shield) IsEffective() bool {
 // 坦克
 type Tank struct {
 	*Vehicle
-	level                      int32
-	changeEvent                base.Event
-	fireTime, fireIntervalTime time.CustomTime
-	shellFireCount             int8
-	shellStaticInfoList        []*ShellStaticInfo
-	shellIndex                 int32
-	shield                     *Shield
-	addShieldEvent             base.Event
-	cancelShieldEvent          base.Event
+	level                          int32
+	changeEvent                    base.Event
+	fireTimeMs, fireIntervalTimeMs uint32
+	shellFireCount                 int8
+	shellStaticInfoList            []*ShellStaticInfo
+	shellIndex                     int32
+	shield                         *Shield
+	addShieldEvent                 base.Event
+	cancelShieldEvent              base.Event
 }
 
 // 创建坦克
@@ -122,10 +123,18 @@ func (t *Tank) Init(instId uint32, staticInfo *ObjStaticInfo) {
 
 // 反初始化
 func (t *Tank) Uninit() {
+	t.level = 0
 	if len(t.shellStaticInfoList) > 0 {
 		t.shellStaticInfoList = t.shellStaticInfoList[:0]
 	}
 	t.shield = nil
+	t.shellIndex = 0
+	t.fireTimeMs = 0
+	t.fireIntervalTimeMs = 0
+	t.shellFireCount = 0
+	t.changeEvent.Clear()
+	t.addShieldEvent.Clear()
+	t.cancelShieldEvent.Clear()
 	t.Vehicle.Uninit()
 }
 
@@ -195,18 +204,19 @@ func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell) *Shell {
 		return nil
 	}
 	// 先檢測炮彈冷卻時間
-	if t.fireTime.IsZero() || time.Since(t.fireTime) >= time.Duration(staticInfo.ShellConfig.Cooldown)*time.Millisecond {
+	currMs := t.CurrMs()
+	if t.fireTimeMs == 0 || int32(currMs-t.fireTimeMs) >= staticInfo.ShellConfig.CooldownMs {
 		shell = newShellFunc(t.shellStaticInfoList[t.shellIndex])
-		t.fireTime = time.Now()
+		t.fireTimeMs = currMs
 		t.shellFireCount = 1
 	}
 	// 再檢測一次發射中的炮彈間隔
 	if t.TankStaticInfo().ShellConfig.AmountFireOneTime > 1 && t.shellFireCount < t.TankStaticInfo().ShellConfig.AmountFireOneTime {
-		if t.fireIntervalTime.IsZero() || time.Since(t.fireIntervalTime) >= time.Duration(t.TankStaticInfo().ShellConfig.IntervalInFire)*time.Millisecond {
+		if t.fireIntervalTimeMs == 0 || int32(currMs-t.fireIntervalTimeMs) >= t.TankStaticInfo().ShellConfig.IntervalInFireMs {
 			if shell == nil {
 				shell = newShellFunc(t.shellStaticInfoList[t.shellIndex])
 			}
-			t.fireIntervalTime = time.Now()
+			t.fireIntervalTimeMs = currMs
 			t.shellFireCount += 1
 		}
 	}
@@ -249,15 +259,18 @@ func (t *Tank) Stop() {
 }
 
 // 炮彈更新
-func (t *Tank) Update(tick time.Duration) {
+func (t *Tank) Update(tickMs uint32) {
 	if t.pause {
 		return
 	}
 
-	if t.checkRotateState(tick) {
+	if t.checkRotateState(tickMs) {
 		return
 	}
-	t.MovableObject.Update(tick)
+	t.MovableObject.Update(tickMs)
+	if t.shield != nil {
+		t.shield.Update(tickMs)
+	}
 }
 
 // 添加彈藥
@@ -309,12 +322,12 @@ func (t *Tank) shellLaunchPos(shell *Shell) (int32, int32) {
 }
 
 // 檢測旋轉狀態
-func (t *Tank) checkRotateState(tick time.Duration) bool {
+func (t *Tank) checkRotateState(tickMs uint32) bool {
 	if t.state != rotating {
 		return false
 	}
 
-	tickMinutes := time.Duration(t.TankStaticInfo().SteeringAngularVelocity) * tick / time.Second
+	tickMinutes := uint32(t.TankStaticInfo().SteeringAngularVelocity) * tickMs / 1000
 	var tickAngle base.Angle
 	tickAngle.Set(int16(tickMinutes))
 	tickAngle.Normalize()

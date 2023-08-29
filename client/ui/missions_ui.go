@@ -73,14 +73,10 @@ func (ui *MissionsSubUI) DrawFrame() {
 func (ui *MissionsSubUI) enterGame() {
 	// 载入地图
 	mapId := common_data.MapIdList[ui.selListItem]
-	config := game_map.MapConfigArray[mapId]
-	if !ui.game.Inst().Load(config) {
+	if !ui.game.GameCore().LoadMap(mapId) {
 		log.Error("load map %v error", mapId)
 		return
 	}
-	if ui.isRecord {
-		ui.game.RecordMgr().SetRecord()
-	}
-	ui.game.Inst().CheckAndStart([]uint64{client_core.DefaultSinglePlayerId})
+	ui.game.GameCore().Start([]uint64{client_core.DefaultSinglePlayerId}, ui.isRecord)
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
 }

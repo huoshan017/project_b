@@ -6,7 +6,6 @@ import (
 	"project_b/common/effect"
 	"project_b/common/math"
 	"project_b/common/object"
-	"project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/log"
@@ -483,11 +482,11 @@ func (s *World) TankUnlimitedShield(instId uint32) {
 	s.TankShield(instId, 1)
 }
 
-func (s *World) Update(tick time.Duration) {
+func (s *World) Update(tickMs uint32) {
 	count := s.tankList.Count()
 	for i := int32(0); i < count; i++ {
 		_, tank := s.tankList.GetByIndex(i)
-		tank.Update(tick)          // 相當於MonoBehevior.Update
+		tank.Update(tickMs)        // 相當於MonoBehevior.Update
 		s.gmap.UpdateMovable(tank) // 相當於MonoBehevior.FixedUpdate
 		if tank.IsRecycle() {
 			s.tankRecycleList = append(s.tankRecycleList, tank)
@@ -497,7 +496,7 @@ func (s *World) Update(tick time.Duration) {
 	count = s.shellList.Count()
 	for i := int32(0); i < count; i++ {
 		_, shell := s.shellList.GetByIndex(i)
-		shell.Update(tick)
+		shell.Update(tickMs)
 		s.gmap.UpdateMovable(shell)
 		if shell.IsRecycle() {
 			s.shellRecycleList = append(s.shellRecycleList, shell)
@@ -508,7 +507,7 @@ func (s *World) Update(tick time.Duration) {
 	count = s.surroundObjList.Count()
 	for i := int32(0); i < count; i++ {
 		_, ball := s.surroundObjList.GetByIndex(i)
-		ball.Update(tick)
+		ball.Update(tickMs)
 		s.gmap.UpdateMovable(ball)
 		if ball.IsRecycle() {
 			s.surroundObjRecycleList = append(s.surroundObjRecycleList, ball)
@@ -518,7 +517,7 @@ func (s *World) Update(tick time.Duration) {
 	count = s.effectList.Count()
 	for i := int32(0); i < count; i++ {
 		_, effect := s.effectList.GetByIndex(i)
-		effect.Update() // todo 效果暫時不可移動，所以不需要在parition_map中更新位置
+		effect.Update(tickMs) // todo 效果暫時不可移動，所以不需要在parition_map中更新位置
 		if effect.IsOver() {
 			s.effectRecycleList = append(s.effectRecycleList, effect)
 		}

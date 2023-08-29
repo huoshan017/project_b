@@ -39,6 +39,7 @@ type object struct {
 	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
 	toRecycle         bool           // 去回收
 	colliderComp      *ColliderComp  // 碰撞器組件
+	currMs            uint32         // 當前相對時間(毫秒)
 }
 
 // 回收
@@ -73,6 +74,11 @@ func (o *object) Uninit() {
 	o.components = o.components[:0]
 	o.changedStaticInfo = nil
 	o.toRecycle = false
+}
+
+// 更新
+func (o *object) Update(tickMs uint32) {
+	o.currMs += tickMs
 }
 
 // 靜態信息
@@ -332,6 +338,11 @@ func (o *object) SetCollisionHandle(handle func(IMovableObject, *CollisionInfo))
 // 獲得碰撞器組件
 func (o *object) GetColliderComp() *ColliderComp {
 	return o.colliderComp
+}
+
+// 當前相對時間
+func (o *object) CurrMs() uint32 {
+	return o.currMs
 }
 
 // 静态物体

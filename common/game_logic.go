@@ -5,7 +5,6 @@ import (
 	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/object"
-	"project_b/common/time"
 	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/log"
@@ -119,15 +118,15 @@ func (g *GameLogic) GetCurrFrame() uint32 {
 }
 
 // 在逻辑线程中更新
-func (g *GameLogic) Update(tick time.Duration) {
+func (g *GameLogic) Update(tickMs uint32) {
 	if g.state == logicStateNotStart {
 		g.state = logicStateRunning
 	}
 	if g.state != logicStateRunning {
 		return
 	}
-	g.botMgr.Update(tick)
-	g.world.Update(tick)
+	g.botMgr.Update(tickMs)
+	g.world.Update(tickMs)
 	g.frame += 1
 	if g.maxFrame > 0 {
 		if g.frame >= g.maxFrame {

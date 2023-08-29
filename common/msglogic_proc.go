@@ -9,8 +9,8 @@ import (
 
 const (
 	LogicProcDefaultMsgListLength = 100
-	LogicProcDefaultTimeTick      = 100 * time.Millisecond
-	LogicProcMinTimeTick          = 10 * time.Millisecond
+	LogicProcDefaultTimeTickMs    = 100
+	LogicProcMinTimeTickMs        = 10
 )
 
 var (
@@ -42,8 +42,8 @@ type MsgLogicProc struct {
 	agentCh     chan *agentData
 	agentMap    map[AgentKey]any
 	handleMap   map[uint32]func(AgentKey, MsgData) error
-	tickHandle  func(tick time.Duration)
-	tick        time.Duration
+	tickHandle  func(tickMs uint32)
+	tickMs      uint32
 	closeCh     chan struct{}
 	closed      int32
 	errHandle   func(err error)
@@ -74,9 +74,9 @@ func (p *MsgLogicProc) RegisterHandle(msgid uint32, handle func(key AgentKey, ms
 }
 
 // 设置定时器处理函数
-func (p *MsgLogicProc) SetTickHandle(handle func(tick time.Duration), tick time.Duration) {
+func (p *MsgLogicProc) SetTickHandle(handle func(tickMs uint32), tickMs uint32) {
 	p.tickHandle = handle
-	p.tick = tick
+	p.tickMs = tickMs
 }
 
 // 设置错误处理函数
@@ -160,16 +160,15 @@ func (p *MsgLogicProc) Run() {
 		return
 	}
 
-	if p.tick == 0 {
-		p.tick = LogicProcDefaultTimeTick
-	} else if p.tick < LogicProcMinTimeTick {
-		p.tick = LogicProcMinTimeTick
+	if p.tickMs == 0 {
+		p.tickMs = LogicProcDefaultTimeTickMs
+	} else if p.tickMs < LogicProcMinTimeTickMs {
+		p.tickMs = LogicProcMinTimeTickMs
 	}
 
 	var (
-		ticker        = time.NewTicker(p.tick)
-		lastCheckTime = time.Now()
-		loop          = true
+		ticker = time.NewTicker(time.Duration(p.tickMs) * time.Millisecond)
+		loop   = true
 	)
 
 	for loop {
@@ -210,10 +209,7 @@ func (p *MsgLogicProc) Run() {
 			}
 		case <-ticker.C:
 			if p.tickHandle != nil {
-				now := time.Now()
-				tick := now.Sub(lastCheckTime)
-				p.tickHandle(tick)
-				lastCheckTime = now
+				p.tickHandle(p.tickMs)
 			}
 		case <-p.closeCh:
 			loop = false

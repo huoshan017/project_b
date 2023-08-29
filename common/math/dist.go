@@ -2,7 +2,6 @@ package math
 
 import (
 	"math"
-	"project_b/common/utils"
 )
 
 var (
@@ -105,7 +104,7 @@ func DistNotEqual(a, b Dist) bool {
  * N samples approximates a true Gaussian
  */
 func DistFromPDF(m *MersennelTwister, samples int32) Dist {
-	arr := utils.MakeArray(samples, func(int32) interface{} {
+	arr := MakeArray(samples, func(int32) interface{} {
 		return m.Next2(-oneValueUnits, oneValueUnits)
 	})
 	var sum int32
