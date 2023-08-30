@@ -5,6 +5,14 @@ import (
 	"project_b/game_map"
 )
 
+type coreState int
+
+const (
+	coreStateIdle         coreState = iota
+	coreStatePrepareStart coreState = 1
+	coreStateRunning      coreState = 2
+)
+
 type CoreArgs struct {
 	EventMgr   base.IEventManager
 	PlayerNum  int32
@@ -13,12 +21,12 @@ type CoreArgs struct {
 }
 
 type GameCore struct {
-	args         CoreArgs
-	inst         *Instance
-	recordMgr    *RecordManager
-	lastCheckMs  uint32
-	prepareStart bool
-	isRecord     bool
+	args        CoreArgs
+	inst        *Instance
+	recordMgr   *RecordManager
+	lastCheckMs uint32
+	state       coreState
+	isRecord    bool
 }
 
 func NewGameCore(args CoreArgs) *GameCore {
@@ -68,7 +76,7 @@ func (core *GameCore) Start(playerIdList []uint64, isRecord bool) bool {
 	if !core.inst.CheckAndStart(playerIdList) {
 		return false
 	}
-	core.prepareStart = true
+	core.state = coreStatePrepareStart
 	core.isRecord = isRecord
 	return true
 }
@@ -85,7 +93,7 @@ func (core *GameCore) Restart() bool {
 	if !core.inst.Restart() {
 		return false
 	}
-	core.prepareStart = true
+	core.state = coreStatePrepareStart
 	return true
 }
 
@@ -106,9 +114,12 @@ func (core *GameCore) PushSyncPlayerCmd(playerId uint64, cmdData *CmdData) bool 
 }
 
 func (core *GameCore) Update(ms uint32) {
-	if core.prepareStart {
+	if core.state == coreStatePrepareStart {
 		core.lastCheckMs = ms
-		core.prepareStart = false
+		core.state = coreStateRunning
+	}
+	if core.state != coreStateRunning {
+		return
 	}
 	usedMs := ms - core.lastCheckMs
 	for usedMs >= uint32(core.args.FrameMs) {
@@ -121,6 +132,7 @@ func (core *GameCore) Update(ms uint32) {
 func (core *GameCore) End() {
 	core.checkRecord()
 	core.inst.Unload()
+	core.state = coreStateIdle
 }
 
 func (core *GameCore) GetFrame() uint32 {

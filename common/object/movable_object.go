@@ -10,11 +10,11 @@ import (
 type moveObjectState int32
 
 const (
-	stopped  = moveObjectState(0)
-	rotating = moveObjectState(1)
-	toMove   = moveObjectState(2)
-	isMoving = moveObjectState(3)
-	toStop   = moveObjectState(4)
+	stopped moveObjectState = iota
+	rotating
+	toMove
+	isMoving
+	toStop
 )
 
 // 可移动的物体
@@ -23,7 +23,7 @@ type MovableObject struct {
 	moveDir        base.Angle      // 移動的方向角度
 	speed          int32           // 当前移动速度（米/秒）
 	lastX, lastY   int32           // 上次更新的位置
-	state          moveObjectState // 移动状态
+	state, pstate  moveObjectState // 移动状态和上一狀態
 	mySuper        IMovableObject  // 父類
 	checkMoveEvent base.Event      // 檢查坐標事件
 	moveEvent      base.Event      // 移动事件
@@ -60,6 +60,7 @@ func (o *MovableObject) Uninit() {
 	o.lastX = 0
 	o.lastY = 0
 	o.state = stopped
+	o.pstate = stopped
 	o.checkMoveEvent.Clear()
 	o.moveEvent.Clear()
 	o.stopEvent.Clear()
@@ -150,8 +151,8 @@ func (o *MovableObject) Move(dir base.Angle) {
 		if !o.checkMove(v.X(), v.Y(), false, nil, nil) {
 			return
 		}
-		o.state = toMove
-		log.Debug("@@@ object %v stopped => to move", o.instId)
+		o.setState(toMove)
+		log.Debug("@@@ object %v stopped => to move, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 	}
 }
 
@@ -162,14 +163,14 @@ func (o *MovableObject) Stop() {
 	}
 	// 准备移动则直接停止
 	if o.state == toMove {
-		o.state = stopped
-		log.Debug("@@@ object %v to move => stopped", o.instId)
+		o.setState(stopped)
+		log.Debug("@@@ object %v to move => stopped, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 		return
 	}
 	// 正在移动则准备停止
 	if o.state == isMoving {
-		o.state = toStop
-		log.Debug("@@@ object %v moving => to stop", o.instId)
+		o.setState(toStop)
+		log.Debug("@@@ object %v moving => to stop, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 		return
 	}
 }
@@ -180,11 +181,11 @@ func (o *MovableObject) StopNow() {
 		return
 	}
 	if o.state == toMove || o.state == isMoving {
-		o.state = stopped
-		if o.state == toMove {
-			log.Debug("@@@ object %v to move => stopped", o.instId)
+		o.setState(stopped)
+		if o.pstate == toMove {
+			log.Debug("@@@ stop now!!! object %v to move => stopped, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 		} else {
-			log.Debug("@@@ object %v moving => stopped", o.instId)
+			log.Debug("@@@ stop now!!! object %v moving => stopped, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 		}
 		return
 	}
@@ -237,9 +238,9 @@ func (o *MovableObject) Update(tickMs uint32) {
 	}
 
 	if o.state == toMove {
-		o.state = isMoving
+		o.setState(isMoving)
 		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.moveDir, o.CurrentSpeed())
-		log.Debug("@@@ object %v to move => moving", o.instId)
+		log.Debug("@@@ object %v to move => moving, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 		return
 	}
 
@@ -254,7 +255,7 @@ func (o *MovableObject) Update(tickMs uint32) {
 	if o.checkMove(x-ox, y-oy, true, func() {
 		o.SetPos(x, y)
 	}, func() {
-		o.state = toStop
+		o.setState(toStop)
 	}) {
 		//o.SetPos(x, y)
 	} else {
@@ -264,12 +265,13 @@ func (o *MovableObject) Update(tickMs uint32) {
 	if o.state == isMoving {
 		o.updateEvent.Call(Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
 	} else if o.state == toStop {
-		o.state = stopped
+		o.setState(stopped)
 		o.stopEvent.Call(Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
-		log.Debug("@@@ object %v to stop => stopped", o.instId)
+		log.Debug("@@@ object %v to stop => stopped, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 	}
 }
 
+// 檢測是否移動
 func (o *MovableObject) checkMove(dx, dy int32, update bool, canMoveFunc func(), cantMoveFunc func()) bool {
 	o.collisionInfo.Clear()
 	o.checkMoveEvent.Call(o.instId, dx, dy, &o.collisionInfo)
@@ -295,6 +297,12 @@ func (o *MovableObject) checkMove(dx, dy int32, update bool, canMoveFunc func(),
 		}
 	}
 	return o.collisionInfo.Result != CollisionAndBlock
+}
+
+// 設置狀態
+func (o *MovableObject) setState(newState moveObjectState) {
+	o.pstate = o.state
+	o.state = newState
 }
 
 // 注冊檢查坐標事件

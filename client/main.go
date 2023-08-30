@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	screenWidth  = 800
-	screenHeight = 500
+	screenWidth  = 1280
+	screenHeight = 720
 )
 
 type Config struct {

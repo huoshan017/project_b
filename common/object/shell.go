@@ -74,7 +74,7 @@ func (s *Shell) MoveNow(dir base.Angle) {
 		if !s.checkMove(v.X(), v.Y(), false, nil, nil) {
 			return
 		}
-		s.state = isMoving
+		s.setState(isMoving)
 		log.Debug("@@@ object %v stopped => moving", s.instId)
 	}
 }

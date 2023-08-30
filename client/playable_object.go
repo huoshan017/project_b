@@ -7,6 +7,7 @@ import (
 	"project_b/common/effect"
 	"project_b/common/object"
 	"project_b/common/time"
+	"project_b/log"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -137,7 +138,6 @@ type PlayableMoveObject struct {
 	currSpeed         int32     // 当前速度
 	lastMs            uint32    // 更新时间点
 	interpolate       bool      // 上次是停止状态
-	lastX, lastY      int32     // 上次物體位置
 	lastInterpolation Transform // 上次插值位置
 }
 
@@ -148,9 +148,7 @@ func NewPlayableMoveObject(mobj object.IMovableObject, animConfig *MovableObject
 		op:          &ebiten.DrawImageOptions{},
 		mobj:        mobj,
 		anim:        client_base.NewSpriteAnim(animConfig.AnimConfig /*[object.DirRight]*/),
-		interpolate: mobj.IsMoving(),
-		lastX:       x,
-		lastY:       y,
+		interpolate: true,
 	}
 	pobj.lastInterpolation.tx = float64(x)
 	pobj.lastInterpolation.ty = float64(y)
@@ -164,6 +162,7 @@ func (po *PlayableMoveObject) Init() {
 	// 注册移动停止更新事件
 	po.mobj.RegisterMoveEventHandle(po.onEventMove)
 	po.mobj.RegisterStopMoveEventHandle(po.onEventStopMove)
+	po.mobj.RegisterUpdateEventHandle(po.onEventUpdate)
 	po.mobj.RegisterPauseEventHandle(po.onEventPause)
 	po.mobj.RegisterResumeEventHandle(po.onEventResume)
 }
@@ -173,6 +172,7 @@ func (po *PlayableMoveObject) Uninit() {
 	// 注销移动停止更新事件
 	po.mobj.UnregisterMoveEventHandle(po.onEventMove)
 	po.mobj.UnregisterStopMoveEventHandle(po.onEventStopMove)
+	po.mobj.UnregisterUpdateEventHandle(po.onEventUpdate)
 	po.mobj.UnregisterPauseEventHandle(po.onEventPause)
 	po.mobj.UnregisterResumeEventHandle(po.onEventResume)
 }
@@ -218,11 +218,11 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 	}
 	// 上一次Update的坐标点与当前的不一样，说明又Update了，重置LastX和LastY和开始时间
 	// 所以每次Update后都要重置LastX,lastY,LastTime，是因为要从重置点开始计算位置插值
-	if po.lastX != cx || po.lastY != cy {
+	/*if po.lastX != cx || po.lastY != cy {
 		po.lastX = cx
 		po.lastY = cy
 		po.lastMs = time.CurrentMs() //core.GetSyncServTime()
-	}
+	}*/
 	durationMs := time.CurrentMs() - po.lastMs
 	nx, ny := object.DefaultMove(po.mobj, durationMs)
 	transform.tx, transform.ty = float64(nx), float64(ny)
@@ -232,15 +232,20 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 // 移动事件处理
 func (po *PlayableMoveObject) onEventMove(args ...any) {
 	po.Play()
-	po.lastX, po.lastY = po.mobj.Pos()
 	po.lastMs = time.CurrentMs() //core.GetSyncServTime()
-	po.interpolate = true
+	log.Debug("event move")
 }
 
 // 停止移动事件处理
 func (po *PlayableMoveObject) onEventStopMove(args ...any) {
 	po.Stop()
-	po.interpolate = false
+	log.Debug("event stop move")
+}
+
+// 更新事件處理
+func (po *PlayableMoveObject) onEventUpdate(args ...any) {
+	po.lastMs = time.CurrentMs()
+	log.Debug("event update")
 }
 
 // 暫停事件處理

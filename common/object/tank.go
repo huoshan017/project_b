@@ -234,10 +234,14 @@ func (t *Tank) Move(dir base.Angle) {
 	if t.pause {
 		return
 	}
+	// toStop狀態不能被打斷
+	if t.state == toStop {
+		return
+	}
 	t.moveDir = dir
 	if t.moveDir != t.Rotation() || t.state == rotating {
-		t.state = rotating
-		log.Debug("@@@ tank %v rotating", t.instId)
+		t.setState(rotating)
+		log.Debug("@@@ tank %v rotating, moveDir %v, rotation %v, currMs %v", t.instId, t.moveDir, t.Rotation(), t.CurrMs())
 		return
 	}
 	t.MovableObject.Move(dir)
@@ -248,11 +252,12 @@ func (t *Tank) Stop() {
 	if t.pause {
 		return
 	}
+	// rotating狀態不能被打斷
 	if t.state == rotating {
-		t.state = stopped
+		/*t.setState(toStop)
 		x, y := t.Pos()
 		t.stopEvent.Call(Pos{X: x, Y: y}, t.moveDir, t.CurrentSpeed())
-		log.Debug("@@@ tank %v rotating => stopped", t.instId)
+		log.Debug("@@@ tank %v rotating => to stop, moveDir %v, rotation %v, currMs %v", t.instId, t.moveDir, t.Rotation(), t.CurrMs())*/
 		return
 	}
 	t.MovableObject.Stop()
@@ -344,7 +349,8 @@ func (t *Tank) checkRotateState(tickMs uint32) bool {
 	// 角度差的絕對值小於等於tick時間内的角度變化
 	if (!angleDiff.IsNegative() && angleDiff.LessEqual(tickAngle)) || (angleDiff.IsNegative() && angleDiff.GreaterEqual(tickAngle.Negative())) {
 		t.RotateTo(t.moveDir)
-		t.state = toMove
+		// todo 旋轉結束設置坦克狀態為停止，如果設置為toStop,toMove,moving則會出現漂移現象
+		t.setState(stopped)
 		return false
 	}
 
@@ -354,6 +360,6 @@ func (t *Tank) checkRotateState(tickMs uint32) bool {
 	} else {
 		t.Rotate(tickAngle.Negative())
 	}
-	t.state = rotating
+	t.setState(rotating)
 	return true
 }

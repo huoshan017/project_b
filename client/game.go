@@ -21,13 +21,11 @@ type Game struct {
 	conf *Config
 	//---------------------------------------
 	// 逻辑
-	gameCore        *core.GameCore              // 游戲實例
-	net             *client_core.NetClient      // 网络模块
-	msgHandler      *client_core.MsgHandler     // 消息处理器
-	playerMgr       *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
-	eventMgr        *base.EventManager          // 游戏事件管理器，向上层逻辑传递事件
-	lastCheckTime   time.CustomTime             // 上次检测时间
-	isStartInstance bool                        // 開始實例
+	gameCore   *core.GameCore              // 游戲核心
+	net        *client_core.NetClient      // 网络模块
+	msgHandler *client_core.MsgHandler     // 消息处理器
+	playerMgr  *client_core.CPlayerManager // 玩家管理器，這裏的玩家是指獨立於游戲邏輯GameLogic之外的登錄用戶
+	eventMgr   *base.EventManager          // 游戏事件管理器，向上层逻辑传递事件
 	//---------------------------------------
 	// 表现相关
 	viewport      *client_base.Viewport // 视口

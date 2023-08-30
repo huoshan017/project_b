@@ -194,7 +194,15 @@ func (inst *Instance) PushFrame(frameNum uint32, playerId uint64, cmd CmdCode, a
 		}
 		if playerId == fd.playerDataList[i].playerId {
 			playerData := fd.playerDataList[i]
+			//cmdListLen := len(playerData.cmdList)
+			//if cmdListLen == 0 {
 			playerData.cmdList = append(playerData.cmdList, CmdData{cmd, args})
+			//} else {
+			//	pcmd := &playerData.cmdList[cmdListLen-1]
+			//	if pcmd.cmd != cmd || reflect.DeepEqual(pcmd.args, args) {
+			//		playerData.cmdList = append(playerData.cmdList, CmdData{cmd, args})
+			//	}
+			//}
 		}
 	}
 	return true
