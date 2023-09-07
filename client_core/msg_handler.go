@@ -3,7 +3,6 @@ package client_core
 import (
 	"fmt"
 	"project_b/common/base"
-	"project_b/common/object"
 	custom_time "project_b/common/time"
 	"project_b/core"
 	"project_b/game_map"
@@ -294,7 +293,7 @@ func (h *MsgHandler) onPlayerTankMoveSync(sess *gsnet_msg.MsgSession, msg any) e
 		return nil
 	}
 
-	orientation := object.Dir2Orientation(object.Direction(sync.MoveInfo.Direction))
+	orientation := base.Dir2Orientation(base.Direction(sync.MoveInfo.Direction))
 	h.inst.PushFrame(h.inst.GetFrame(), sync.PlayerId, core.CMD_TANK_MOVE, []int64{int64(orientation)})
 
 	log.Debug("Player %v move sync", sync.PlayerId)

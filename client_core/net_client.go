@@ -1,7 +1,7 @@
 package client_core
 
 import (
-	"project_b/common/object"
+	"project_b/common/base"
 	custom_time "project_b/common/time"
 	"project_b/core"
 	"project_b/game_proto"
@@ -107,7 +107,7 @@ func (c *NetClient) SendTankMoveReq( /*dir object.Direction*/ orientation int32)
 	return c.msgClient.Send(gsnet_msg.MsgIdType(game_proto.MsgPlayerTankMoveReq_Id), &req)
 }
 
-func (c *NetClient) SendTankUpdatePosReq(state game_proto.MovementState, pos object.Pos /*dir object.Direction,*/, orientation int32, speed int32) error {
+func (c *NetClient) SendTankUpdatePosReq(state game_proto.MovementState, pos base.Pos /*dir object.Direction,*/, orientation int32, speed int32) error {
 	var req game_proto.MsgPlayerTankUpdatePosReq
 	req.State = game_proto.MovementState(state)
 	req.MoveInfo = &game_proto.TankMoveInfo{}

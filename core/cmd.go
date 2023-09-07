@@ -15,6 +15,8 @@ const (
 	CMD_TANK_RESPAWN       CmdCode = 7   // 復活
 	CMD_TANK_SHIELD        CmdCode = 8   // 添加或取消護盾
 	CMD_TANK_ADD_SHELL     CmdCode = 10  // 增加新炮彈
+	CMD_TANK_EMIT_LASER    CmdCode = 11  // 坦克發射激光
+	CMD_TANK_CANCEL_LASER  CmdCode = 12  // 坦克取消激光發射
 	CMD_RESTART            CmdCode = 100 // 重新开始
 	CMD_RELEASE_SMALL_BALL CmdCode = 999 // 釋放小球 測試用
 )

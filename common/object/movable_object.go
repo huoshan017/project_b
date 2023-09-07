@@ -239,7 +239,7 @@ func (o *MovableObject) Update(tickMs uint32) {
 
 	if o.state == toMove {
 		o.setState(isMoving)
-		o.moveEvent.Call(Pos{X: o.lastX, Y: o.lastY}, o.moveDir, o.CurrentSpeed())
+		o.moveEvent.Call(base.Pos{X: o.lastX, Y: o.lastY}, o.moveDir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to move => moving, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 		return
 	}
@@ -263,10 +263,10 @@ func (o *MovableObject) Update(tickMs uint32) {
 	}
 
 	if o.state == isMoving {
-		o.updateEvent.Call(Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
+		o.updateEvent.Call(base.Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
 	} else if o.state == toStop {
 		o.setState(stopped)
-		o.stopEvent.Call(Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
+		o.stopEvent.Call(base.Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
 		log.Debug("@@@ object %v to stop => stopped, moveDir %v, rotation %v, currMs %v", o.instId, o.moveDir, o.Rotation(), o.CurrMs())
 	}
 }

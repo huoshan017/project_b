@@ -2,6 +2,7 @@ package main
 
 import (
 	"project_b/common"
+	"project_b/common/base"
 	"project_b/common/object"
 	"project_b/common_data"
 	"project_b/game_map"
@@ -201,7 +202,7 @@ func (t *GameLogicThread) onPlayerTankMoveReq(key common.AgentKey, msg common.Ms
 	m := msg.(*game_proto.MsgPlayerTankMoveReq)
 
 	// 检测移动数据的合法性，计算当前位置
-	orientation := object.Dir2Orientation(object.Direction(m.MoveInfo.Direction))
+	orientation := base.Dir2Orientation(base.Direction(m.MoveInfo.Direction))
 	t.gameLogic.PlayerTankMove(pd.pid /*object.Direction(m.MoveInfo.Direction)*/, orientation)
 
 	var ack game_proto.MsgPlayerTankMoveAck

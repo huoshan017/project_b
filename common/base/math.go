@@ -1586,3 +1586,10 @@ func Sqrt(num uint32) uint32 {
 	}
 	return x0
 }
+
+func Abs(num int32) int32 {
+	if num < 0 {
+		num = -num
+	}
+	return num
+}

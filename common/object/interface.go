@@ -18,9 +18,9 @@ type IObject interface {
 	Update(tickMs uint32)           // 更新
 	InstId() uint32                 // 实例id
 	Id() int32                      // 注意：这是配置id
-	Type() ObjectType               // 类型
-	Subtype() ObjSubtype            // 子类型
-	OwnerType() ObjOwnerType        // 所有者类型
+	Type() base.ObjectType          // 类型
+	Subtype() base.ObjSubtype       // 子类型
+	OwnerType() base.ObjOwnerType   // 所有者类型
 	StaticInfo() *ObjStaticInfo     // 靜態信息
 	Center() (x, y int32)           // 中心點坐標，本地坐標係
 	Pos() (x, y int32)              // 中心位置，世界坐標係
@@ -34,8 +34,8 @@ type IObject interface {
 	WorldRotation() base.Angle      // todo 是局部坐標系在世界坐標系中的旋轉
 	LocalRotation() base.Angle      // 局部坐標系中的旋轉
 	Rotation() base.Angle           // 最終的旋轉(x軸正向逆時針旋轉角度)，局部旋轉與世界旋轉纍加，垂直於寬(Width)，平行於長(Height)
-	Camp() CampType                 // 陣營
-	SetCamp(CampType)               // 設置陣營
+	Camp() base.CampType            // 陣營
+	SetCamp(base.CampType)          // 設置陣營
 	RestoreCamp()                   // 重置陣營
 	AddComp(comp IComponent)        // 添加組件
 	RemoveComp(name string)         // 去除組件

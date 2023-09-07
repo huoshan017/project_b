@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/math"
 	"project_b/common/object"
@@ -55,6 +56,8 @@ type GridMap struct {
 	resultLayerObjs         [MapMaxLayer]*heap.BinaryHeapKV[uint32, int32]  // 缓存返回的结果给调用者，主要为了提高性能，减少GC
 	resultMovableObjList    []uint32                                        // 緩存搜索的可移動物體的結果
 	checkCollisionObjList   []object.IObject                                // 檢測碰撞物體列表
+	nineSquared             [3][3]int32                                     // 九宮格
+	resultObjList           []uint32                                        // 緩存物體id列表
 }
 
 func NewGridMap(gridTileSize int16) *GridMap {
@@ -80,23 +83,23 @@ func (m *GridMap) Load(config *game_map.Config) {
 	}
 
 	// 計算網格寬度和高度
-	gridTileWidth, gridTileHeight := m.minGridTileSize, m.minGridTileSize
-	for colNum%gridTileWidth > 0 && colNum%gridTileWidth < m.minGridTileSize {
-		gridTileWidth += 1
+	gridTileNum4Width, gridTileNum4Height := m.minGridTileSize, m.minGridTileSize
+	for colNum%gridTileNum4Width > 0 && colNum%gridTileNum4Width < m.minGridTileSize {
+		gridTileNum4Width += 1
 	}
-	for lineNum%gridTileHeight > 0 && lineNum%gridTileHeight < m.minGridTileSize {
-		gridTileHeight += 1
+	for lineNum%gridTileNum4Height > 0 && lineNum%gridTileNum4Height < m.minGridTileSize {
+		gridTileNum4Height += 1
 	}
 
 	// 創建網格
-	gridColNum, gridLineNum := (colNum+gridTileWidth-1)/gridTileWidth, (lineNum+gridTileHeight-1)/gridTileHeight
+	gridColNum, gridLineNum := (colNum+gridTileNum4Width-1)/gridTileNum4Width, (lineNum+gridTileNum4Height-1)/gridTileNum4Height
 	m.grids = make([]gridObjList, gridLineNum*gridColNum)
 	m.gridLineNum = gridLineNum
 	m.gridColNum = gridColNum
 
 	// 網格寬度和高度
-	m.gridWidth = int32(gridTileWidth) * m.config.TileWidth
-	m.gridHeight = int32(gridTileHeight) * m.config.TileHeight
+	m.gridWidth = int32(gridTileNum4Width) * m.config.TileWidth
+	m.gridHeight = int32(gridTileNum4Height) * m.config.TileHeight
 
 	// 創建結果層
 	for i := 0; i < len(m.resultLayerObjs); i++ {
@@ -149,7 +152,7 @@ func (m *GridMap) RemoveTile(instId uint32) {
 
 func (m *GridMap) AddObj(obj object.IObject) {
 	instId := obj.InstId()
-	if obj.Type() == object.ObjTypeMovable {
+	if obj.Type() == base.ObjTypeMovable {
 		if m.mobjs.Exists(instId) {
 			return
 		}
@@ -164,7 +167,7 @@ func (m *GridMap) AddObj(obj object.IObject) {
 	if !m.grids[index].addObj(instId) {
 		panic(fmt.Sprintf("GridMap: obj %v already exists in grid %v", instId, index))
 	}
-	if obj.Type() == object.ObjTypeMovable {
+	if obj.Type() == base.ObjTypeMovable {
 		m.mobjs.Add(instId, obj.(object.IMovableObject))
 		m.mobj2GridIndex.Add(instId, index)
 	} else {
@@ -226,7 +229,7 @@ func (m *GridMap) UpdateMovable(obj object.IMovableObject) {
 			panic(fmt.Sprintf("GridMap.UpdateMovable: add obj %v to grid %v failed", obj.InstId(), index))
 		}
 		m.mobj2GridIndex.Set(obj.InstId(), index)
-		if obj.Subtype() == object.ObjSubtypeTank {
+		if obj.Subtype() == base.ObjSubtypeTank {
 			log.Info("GridMap: obj %v(type:%v, subtype:%v) remove from grid(%v), add to grid(%v)", obj.InstId(), obj.Type(), obj.Subtype(), lastIndex, index)
 		}
 	}
@@ -282,7 +285,29 @@ func (m *GridMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap.Bina
 	return m.resultLayerObjs
 }
 
-func (m *GridMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype object.ObjSubtype) []uint32 {
+func (m *GridMap) PointInObjList(pos base.Pos) []uint32 {
+	if len(m.resultObjList) > 0 {
+		clear(m.resultObjList)
+		m.resultObjList = m.resultObjList[:0]
+	}
+	index := m.posGridIndex(pos.X, pos.Y)
+	objIds := m.grids[index]
+	for i := 0; i < len(objIds); i++ {
+		obj, o := m.sobjs.Get(objIds[i])
+		if !o {
+			obj, o = m.mobjs.Get(objIds[i])
+			if !o {
+				continue
+			}
+		}
+		if object.IsPointInObject(pos, obj) {
+			m.resultObjList = append(m.resultObjList, objIds[i])
+		}
+	}
+	return m.resultObjList
+}
+
+func (m *GridMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype base.ObjSubtype) []uint32 {
 	if len(m.resultMovableObjList) > 0 {
 		m.resultMovableObjList = m.resultMovableObjList[:0]
 	}
@@ -311,7 +336,7 @@ func (m *GridMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype 
 					if !o {
 						continue
 					}
-					if subtype != object.ObjSubtypeNone && obj.Subtype() == subtype {
+					if subtype != base.ObjSubtypeNone && obj.Subtype() == subtype {
 						m.resultMovableObjList = append(m.resultMovableObjList, obj.InstId())
 					}
 				}
@@ -322,7 +347,95 @@ func (m *GridMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype 
 }
 
 func (m *GridMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
-	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeNone)
+	return m.GetMovableObjListWithRangeAndSubtype(rect, base.ObjSubtypeNone)
+}
+
+func (m *GridMap) GetObjListWithLineSegment(start, end *base.Pos) (objList []uint32) {
+	sx, sy := start.X, start.Y
+	ex, ey := end.X, end.Y
+	var (
+		dx, dy                 int32 = ex - sx, ey - sy
+		is, ie, js, je, di, dj int32
+		flag                   bool
+	)
+	// check abs_dx/abs_dy and m.gridWidth/m.gridHeight
+	// abs_dx/abs_dy >= m.gridWidth/m.gridHeight
+	abs_dx, abs_dy := base.Abs(dx), base.Abs(dy)
+	// 計算從start到end的綫段在水平和垂直兩個方向上的步進增量
+	// 以一個方向(x軸或y軸)網格的寬度或高度爲增量遍歷經過的網格
+	// 而另一個方向(y軸或x軸)遍歷時的增量按網格寬高比計算，不超
+	// 過網格的高度或寬度，這樣才能保證遍歷所有經過的網格，而不
+	// 遺漏掉任何網格
+	if abs_dx*m.gridHeight >= abs_dy*m.gridWidth {
+		if dx >= 0 {
+			if dy >= 0 {
+				is, ie, js, je = sx, ex, sy, ey
+				dj = abs_dy * m.gridWidth / abs_dx
+			} else {
+				is, ie, js, je = sx, ex, ey, sy
+				dj = -(abs_dy * m.gridWidth / abs_dx)
+			}
+			di = m.gridWidth
+		} else {
+			if dy >= 0 {
+				is, ie, js, je = ex, sx, sy, ey
+				dj = abs_dy * m.gridWidth / abs_dx
+			} else {
+				is, ie, js, je = ex, sx, ey, sy
+				dj = -(abs_dy * m.gridWidth / abs_dx)
+			}
+			di = -m.gridWidth
+		}
+	} else { // abs_dx/abs_dy >= m.gridWidth/m.gridHeight
+		if dy >= 0 {
+			if dx >= 0 {
+				is, ie, js, je = sy, ey, sx, ex
+				dj = abs_dx * m.gridHeight / abs_dy
+			} else {
+				is, ie, js, je = sy, ey, ex, sx
+				dj = -(abs_dx * m.gridHeight / abs_dy)
+			}
+			di = m.gridHeight
+		} else {
+			if dx >= 0 {
+				is, ie, js, je = ey, sy, sx, ex
+				dj = abs_dx * m.gridHeight / abs_dy
+			} else {
+				is, ie, js, je = ey, sy, ex, sx
+				dj = -(abs_dx * m.gridHeight / abs_dy)
+			}
+			di = -m.gridHeight
+		}
+		flag = true
+	}
+	var (
+		index int32
+		i, j  = is, js
+	)
+	for i = is; ; i += di {
+		for j = js; ; j += dj {
+			if !flag {
+				index = m.posGridIndex(i, j)
+			} else {
+				index = m.posGridIndex(j, i)
+			}
+			l := m.grids[index]
+			for k := 0; k < len(l); k++ {
+				// 判斷綫段跟物體是否有相交
+				obj, o := m.sobjs.Get(l[k])
+				if o && object.CheckLineSegmentIntersectObj(start, end, obj) {
+					objList = append(objList, l[k])
+				}
+			}
+			if dj == 0 || (dj > 0 && j+dj > je) || (dj < 0 && j+dj < je) {
+				break
+			}
+		}
+		if di == 0 || (di > 0 && i+di > ie) || (di < 0 && i+di < ie) {
+			break
+		}
+	}
+	return
 }
 
 func (m *GridMap) gridBoundsBy(left, bottom, right, top int32) (lx, by, rx, ty int16) {
@@ -364,6 +477,25 @@ func (m GridMap) gridIndex2LineColumn(index int32) (int32, int32) {
 	return index / int32(m.gridColNum), index % int32(m.gridColNum)
 }
 
+func (m *GridMap) getNineSquaredGridIndexWithPos(x, y int32) {
+	line, column := m.pos2LineColumn(x, y)
+	for l := int16(-1); l <= 1; l++ {
+		if line+l < 0 || line+l >= m.gridLineNum {
+			for c := int16(-1); c <= 1; c++ {
+				m.nineSquared[l-(-1)][c-(-1)] = -1
+			}
+			continue
+		}
+		for c := int16(-1); c <= 1; c++ {
+			if column+c < 0 || column+c >= m.gridColNum {
+				m.nineSquared[l-(-1)][c-(-1)] = -1
+				continue
+			}
+			m.nineSquared[l-(-1)][c-(-1)] = m.gridLineCol2Index(line+l, column+c)
+		}
+	}
+}
+
 // 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
 func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int32, collisionInfo *object.CollisionInfo) object.CollisionResult {
 	// 是否擁有碰撞組件
@@ -371,25 +503,13 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 		return object.CollisionNone
 	}
 
-	// 九宮格
-	var nineSquared = [3][3]int32{{-1, -1, -1}, {-1, -1, -1}, {-1, -1, -1}}
 	x, y := mobj.Pos()
 	x += dx
 	y += dy
-
 	var index int32
-	line, column := m.pos2LineColumn(x, y)
-	for l := int16(-1); l <= 1; l++ {
-		if line+l < 0 || line+l >= m.gridLineNum {
-			continue
-		}
-		for c := int16(-1); c <= 1; c++ {
-			if column+c < 0 || column+c >= m.gridColNum {
-				continue
-			}
-			nineSquared[l-(-1)][c-(-1)] = m.gridLineCol2Index(line+l, column+c)
-		}
-	}
+
+	// 九宮格
+	m.getNineSquaredGridIndexWithPos(x, y)
 
 	var (
 		obj object.IObject
@@ -399,9 +519,9 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 		clear(m.checkCollisionObjList)
 		m.checkCollisionObjList = m.checkCollisionObjList[:0]
 	}
-	for i := 0; i < len(nineSquared); i++ {
-		for j := 0; j < len(nineSquared[i]); j++ {
-			index = nineSquared[i][j]
+	for i := 0; i < len(m.nineSquared); i++ {
+		for j := 0; j < len(m.nineSquared[i]); j++ {
+			index = m.nineSquared[i][j]
 			if index < 0 {
 				continue
 			}

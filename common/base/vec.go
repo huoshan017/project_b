@@ -52,6 +52,26 @@ func (v Vec2) Scale(sx, sy int32) Vec2 {
 	return Vec2{v.x * sx, v.y * sy}
 }
 
+// TODO 返回的角度範圍是[-90, 90]
 func (v Vec2) ToAngle() Angle {
 	return ArcTangent(v.y, v.x)
+}
+
+// 返回的角度是[0, 360)
+func (v Vec2) ToAngle360() Angle {
+	if v.x == 0 && v.y < 0 {
+		return Angle{degree: 270}
+	}
+	if v.y == 0 && v.x < 0 {
+		return Angle{degree: 180}
+	}
+	angle := v.ToAngle()
+	if v.x > 0 && v.y < 0 {
+		angle.Add(TwoPiAngle())
+	} else if v.x < 0 && v.y > 0 {
+		angle.Add(PiAngle())
+	} else if v.x < 0 && v.y < 0 {
+		angle.Add(PiAngle())
+	}
+	return angle
 }

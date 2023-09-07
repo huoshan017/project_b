@@ -257,7 +257,7 @@ args[1]: direction(object.Direction)
 args[2]: speed(int32)
 */
 func (eh *EventHandles) onEventTankMove(args ...any) {
-	pos := args[0].(object.Pos)
+	pos := args[0].(base.Pos)
 	orientation := args[1].(base.Angle)
 	speed := args[2].(int32)
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_StartMove, pos, int32(orientation.ToMinutes()) /*dir*/, speed)
@@ -274,7 +274,7 @@ args[1]: object.Direction
 args[2]: int32
 */
 func (eh *EventHandles) onEventTankStopMove(args ...any) {
-	pos := args[0].(object.Pos)
+	pos := args[0].(base.Pos)
 	orientation := args[1].(base.Angle)
 	speed := args[2].(int32)
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos /*dir*/, int32(orientation.ToMinutes()), speed)
@@ -291,7 +291,7 @@ args[1]: object.Direction
 args[2]: int32
 */
 func (eh *EventHandles) onEventTankSetPos(args ...any) {
-	pos := args[0].(object.Pos)
+	pos := args[0].(base.Pos)
 	orientation := args[1].(base.Angle)
 	speed := args[2].(int32)
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos /*dir*/, int32(orientation.ToMinutes()), speed)

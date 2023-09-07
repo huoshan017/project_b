@@ -2,7 +2,6 @@ package object
 
 import (
 	"project_b/common/base"
-	"project_b/common/time"
 )
 
 // 獲得移動距離
@@ -19,16 +18,6 @@ func DefaultMove(mobj IMovableObject, tickMs uint32) (int32, int32) {
 	dx := distance * cn / cd
 	dy := distance * sn / sd
 	x, y := mobj.Pos()
-	return x + dx, y + dy
-}
-
-// 計算移動位置
-func movePos(x, y int32, moveDir base.Angle, speed int32, tickMs uint32) (int32, int32) {
-	distance := int32(int64(speed) * int64(tickMs*uint32(time.Millisecond)) / int64(time.Second))
-	sn, sd := base.Sine(moveDir)
-	cn, cd := base.Cosine(moveDir)
-	dx := distance * cn / cd
-	dy := distance * sn / sd
 	return x + dx, y + dy
 }
 
@@ -101,7 +90,7 @@ func getSurroundObjMovedPos(sobj *SurroundObj, tickMs uint32, moveInfo *Surround
 
 // 跟蹤移動
 func ShellTrackMove(mobj IMovableObject, tickMs uint32) (int32, int32) {
-	if mobj.Subtype() != ObjSubtypeShell {
+	if mobj.Subtype() != base.ObjSubtypeShell {
 		return DefaultMove(mobj, tickMs)
 	}
 
@@ -207,6 +196,6 @@ func getShellTrackMovedPos(shell *Shell, tickMs uint32, moveInfo *TrackMoveInfo)
 			log.Debug("> 順時針 !!!!!!!! rotate to angle %v, track target %v, tick %v", angle, target.InstId(), tick)
 		}*/
 		x, y := shell.Pos()
-		return movePos(x, y, angle, shell.CurrentSpeed(), tickMs)
+		return base.MovePos(x, y, angle, shell.CurrentSpeed(), tickMs)
 	}
 }

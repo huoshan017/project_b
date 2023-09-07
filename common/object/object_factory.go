@@ -2,6 +2,7 @@ package object
 
 import (
 	"math"
+	"project_b/common/base"
 	"project_b/log"
 )
 
@@ -17,7 +18,7 @@ type ObjectFactory struct {
 func NewObjectFactory(isRecycleObjId bool) *ObjectFactory {
 	return &ObjectFactory{
 		objMap:          make(map[uint32]IObject),
-		freeMovableObjs: make([][]IMovableObject, MovableObjEnumMax),
+		freeMovableObjs: make([][]IMovableObject, base.MovableObjEnumMax),
 	}
 }
 
@@ -44,7 +45,7 @@ func (f *ObjectFactory) GetObj(instId uint32) IObject {
 }
 
 func (f *ObjectFactory) NewStaticObject(info *ObjStaticInfo) IStaticObject {
-	if info.typ != ObjTypeStatic {
+	if info.typ != base.ObjTypeStatic {
 		log.Error("object type is invalid, must ObjTypeStatic")
 		return nil
 	}
@@ -63,7 +64,7 @@ func (f *ObjectFactory) NewStaticObject(info *ObjStaticInfo) IStaticObject {
 }
 
 func (f *ObjectFactory) RecycleStaticObject(obj IStaticObject) bool {
-	if obj.Type() != ObjTypeStatic {
+	if obj.Type() != base.ObjTypeStatic {
 		log.Error("object type is invalid, must ObjTypeStatic")
 		return false
 	}
@@ -81,18 +82,18 @@ func (f *ObjectFactory) RecycleStaticObject(obj IStaticObject) bool {
 }
 
 func (f *ObjectFactory) NewTank(info *TankStaticInfo) *Tank {
-	if info.typ != ObjTypeMovable && info.subType != ObjSubtypeTank {
+	if info.typ != base.ObjTypeMovable && info.subType != base.ObjSubtypeTank {
 		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeTank")
 		return nil
 	}
 	id := f.getNewObjId()
-	l := len(f.freeMovableObjs[MovableObjTank])
+	l := len(f.freeMovableObjs[base.MovableObjTank])
 	var obj *Tank
 	if l == 0 {
 		obj = NewTank()
 	} else {
-		obj = f.freeMovableObjs[MovableObjTank][l-1].(*Tank)
-		f.freeMovableObjs[MovableObjTank] = f.freeMovableObjs[MovableObjTank][:l-1]
+		obj = f.freeMovableObjs[base.MovableObjTank][l-1].(*Tank)
+		f.freeMovableObjs[base.MovableObjTank] = f.freeMovableObjs[base.MovableObjTank][:l-1]
 	}
 	obj.Init(id, &info.ObjStaticInfo)
 	f.objMap[id] = obj
@@ -108,18 +109,18 @@ func (f *ObjectFactory) RecycleTank(tank *Tank) bool {
 }
 
 func (f *ObjectFactory) NewShell(info *ShellStaticInfo) *Shell {
-	if info.typ != ObjTypeMovable && info.subType != ObjSubtypeShell {
+	if info.typ != base.ObjTypeMovable && info.subType != base.ObjSubtypeShell {
 		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeShell")
 		return nil
 	}
 	id := f.getNewObjId()
-	l := len(f.freeMovableObjs[MovableObjShell])
+	l := len(f.freeMovableObjs[base.MovableObjShell])
 	var obj *Shell
 	if l == 0 {
 		obj = NewShell()
 	} else {
-		obj = f.freeMovableObjs[MovableObjShell][l-1].(*Shell)
-		f.freeMovableObjs[MovableObjShell] = f.freeMovableObjs[MovableObjShell][:l-1]
+		obj = f.freeMovableObjs[base.MovableObjShell][l-1].(*Shell)
+		f.freeMovableObjs[base.MovableObjShell] = f.freeMovableObjs[base.MovableObjShell][:l-1]
 	}
 	obj.Init(id, &info.ObjStaticInfo)
 	f.objMap[id] = obj
@@ -135,18 +136,18 @@ func (f *ObjectFactory) RecycleShell(shell *Shell) bool {
 }
 
 func (f *ObjectFactory) NewSurroundObj(info *SurroundObjStaticInfo) *SurroundObj {
-	if info.typ != ObjTypeMovable && info.subType != ObjSubtypeSurroundObj {
+	if info.typ != base.ObjTypeMovable && info.subType != base.ObjSubtypeSurroundObj {
 		log.Error("object type and subtype is invalid, must ObjTypeMovable and ObjSubTypeSurroundObj")
 		return nil
 	}
 	id := f.getNewObjId()
-	l := len(f.freeMovableObjs[MovableObjSurroundObj])
+	l := len(f.freeMovableObjs[base.MovableObjSurroundObj])
 	var obj *SurroundObj
 	if l == 0 {
 		obj = NewSurroundObj()
 	} else {
-		obj = f.freeMovableObjs[MovableObjSurroundObj][l-1].(*SurroundObj)
-		f.freeMovableObjs[MovableObjSurroundObj] = f.freeMovableObjs[MovableObjSurroundObj][:l-1]
+		obj = f.freeMovableObjs[base.MovableObjSurroundObj][l-1].(*SurroundObj)
+		f.freeMovableObjs[base.MovableObjSurroundObj] = f.freeMovableObjs[base.MovableObjSurroundObj][:l-1]
 	}
 	obj.Init(id, &info.ObjStaticInfo)
 	f.objMap[id] = obj
@@ -175,10 +176,10 @@ func (f *ObjectFactory) recycleMovableObject(mobj IMovableObject) bool {
 
 func (f *ObjectFactory) Clear() {
 	for _, obj := range f.objMap {
-		if obj.Type() == ObjTypeStatic {
+		if obj.Type() == base.ObjTypeStatic {
 			f.RecycleStaticObject(obj.(*StaticObject))
 			obj.Uninit()
-		} else if obj.Type() == ObjTypeMovable {
+		} else if obj.Type() == base.ObjTypeMovable {
 			f.recycleMovableObject(obj.(*MovableObject))
 			obj.Uninit()
 		}

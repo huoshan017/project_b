@@ -16,30 +16,19 @@ import (
 				|
 *******************************/
 
-// 坐标位置
-type Pos struct {
-	X, Y int32 // 注意：x轴向右，y轴向上 为正方向
-}
-
-// 矩形
-type Rect struct {
-	LeftBottom Pos // 左上
-	RightTop   Pos // 右下
-}
-
 // 物体结构
 type object struct {
-	instId            uint32         // 实例id
-	ownerType         ObjOwnerType   // 所有制类型，可被动态临时改变，所以需要在对象中另外缓存
-	currentCamp       CampType       // 當前陣營
-	staticInfo        *ObjStaticInfo // 静态常量数据
-	x, y              int32          // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
-	rotation          base.Angle     // 旋轉角度，以X軸正方向為0度，逆時針方向為旋轉正方向
-	components        []IComponent   // 組件
-	changedStaticInfo *ObjStaticInfo // 改变的静态常量数据
-	toRecycle         bool           // 去回收
-	colliderComp      *ColliderComp  // 碰撞器組件
-	currMs            uint32         // 當前相對時間(毫秒)
+	instId            uint32            // 实例id
+	ownerType         base.ObjOwnerType // 所有制类型，可被动态临时改变，所以需要在对象中另外缓存
+	currentCamp       base.CampType     // 當前陣營
+	staticInfo        *ObjStaticInfo    // 静态常量数据
+	x, y              int32             // 指本地坐标系在父坐标系的坐标，如果父坐标系是世界坐标系，x、y就是世界坐标
+	rotation          base.Angle        // 旋轉角度，以X軸正方向為0度，逆時針方向為旋轉正方向
+	components        []IComponent      // 組件
+	changedStaticInfo *ObjStaticInfo    // 改变的静态常量数据
+	toRecycle         bool              // 去回收
+	colliderComp      *ColliderComp     // 碰撞器組件
+	currMs            uint32            // 當前相對時間(毫秒)
 }
 
 // 回收
@@ -66,8 +55,8 @@ func (o *object) Init(instId uint32, staticInfo *ObjStaticInfo) {
 // 反初始化
 func (o *object) Uninit() {
 	o.instId = 0
-	o.ownerType = OwnerNone
-	o.currentCamp = CampTypeNone
+	o.ownerType = base.OwnerNone
+	o.currentCamp = base.CampTypeNone
 	o.staticInfo = nil
 	o.x, o.y = 0, 0
 	o.rotation.Clear()
@@ -122,22 +111,22 @@ func (o object) OriginId() int32 {
 }
 
 // 类型
-func (o object) Type() ObjectType {
+func (o object) Type() base.ObjectType {
 	return o.staticInfo.typ
 }
 
 // 子类型
-func (o object) Subtype() ObjSubtype {
+func (o object) Subtype() base.ObjSubtype {
 	return o.staticInfo.subType
 }
 
 // 所有者类型
-func (o object) OwnerType() ObjOwnerType {
+func (o object) OwnerType() base.ObjOwnerType {
 	return o.ownerType
 }
 
 // 陣營
-func (o object) Camp() CampType {
+func (o object) Camp() base.CampType {
 	return o.currentCamp
 }
 
@@ -281,7 +270,7 @@ func (o object) Rotation() base.Angle {
 }
 
 // 設置陣營
-func (o *object) SetCamp(camp CampType) {
+func (o *object) SetCamp(camp base.CampType) {
 	o.currentCamp = camp
 }
 

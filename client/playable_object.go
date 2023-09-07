@@ -3,11 +3,12 @@ package main
 import (
 	"image/color"
 	"project_b/client_base"
+	"project_b/common/base"
 	common_base "project_b/common/base"
 	"project_b/common/effect"
 	"project_b/common/object"
 	"project_b/common/time"
-	"project_b/log"
+	"project_b/common/weapon"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -233,19 +234,16 @@ func (po *PlayableMoveObject) Interpolation(transform *Transform) {
 func (po *PlayableMoveObject) onEventMove(args ...any) {
 	po.Play()
 	po.lastMs = time.CurrentMs() //core.GetSyncServTime()
-	log.Debug("event move")
 }
 
 // 停止移动事件处理
 func (po *PlayableMoveObject) onEventStopMove(args ...any) {
 	po.Stop()
-	log.Debug("event stop move")
 }
 
 // 更新事件處理
 func (po *PlayableMoveObject) onEventUpdate(args ...any) {
 	po.lastMs = time.CurrentMs()
-	log.Debug("event update")
 }
 
 // 暫停事件處理
@@ -439,8 +437,31 @@ func (pt *PlayableTank) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) 
 		tmpOp.ColorScale.SetA(0)
 		pt.shieldAnim.Update(screen, &tmpOp)
 	}
+	laser := tank.GetLaser()
+	if laser != nil {
+		pt.drawLaser(laser, screen, op)
+	}
 	pt.drawAABB(screen)
 	pt.drawBoundingbox(screen)
+}
+
+// 繪製激光
+func (pt *PlayableTank) drawLaser(laser *weapon.Laser, screen *ebiten.Image, op *ebiten.DrawImageOptions) {
+	var (
+		startPt, endPt base.Pos
+		o              bool
+	)
+	startPt, o = laser.GetStartPoint()
+	if !o {
+		return
+	}
+	endPt, o = laser.GetEndPoint()
+	if !o {
+		return
+	}
+	sx, sy := mainCamera.World2Screen(startPt.X, startPt.Y)
+	ex, ey := mainCamera.World2Screen(endPt.X, endPt.Y)
+	vector.StrokeLine(screen, float32(sx), float32(sy), float32(ex), float32(ey), float32(laser.StaticInfo().Diameter), color.RGBA{255, 0, 0, 0}, false)
 }
 
 // 变化事件

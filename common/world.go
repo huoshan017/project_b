@@ -1,11 +1,13 @@
 package common
 
 import (
+	sys_math "math"
 	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/effect"
 	"project_b/common/math"
 	"project_b/common/object"
+	"project_b/common/weapon"
 	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/log"
@@ -80,7 +82,7 @@ func (s *World) LoadMap(m *game_map.Config) bool {
 func (s *World) loadMap(m *game_map.Config, reload bool) {
 	for line := 0; line < len(m.Layers); line++ {
 		for col := 0; col < len(m.Layers[line]); col++ {
-			st := object.StaticObjType(m.Layers[line][col])
+			st := base.StaticObjType(m.Layers[line][col])
 			if common_data.StaticObjectConfigData[st] == nil {
 				if reload {
 					continue
@@ -278,7 +280,7 @@ func (s *World) GetObj(instId uint32) object.IObject {
 }
 
 func (s *World) GetTankListWithRange(rect *math.Rect) []uint32 {
-	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeTank)
+	return s.gmap.GetMovableObjListWithRangeAndSubtype(rect, base.ObjSubtypeTank)
 }
 
 func (s *World) GetEffectListWithRange(rect *math.Rect) []uint32 {
@@ -403,6 +405,28 @@ func (s *World) TankFire(instId uint32) {
 			shell.Move(tank.Rotation())
 		}
 	}
+}
+
+func (w *World) TankEmitLaser(tankInstId uint32) {
+	tank, o := w.tankList.Get(tankInstId)
+	if !o {
+		log.Error("World: tank %v not found", tankInstId)
+		return
+	}
+	laserId := tank.TankStaticInfo().LaserId
+	laserStaticInfo := common_data.LaserConfigData[laserId]
+	laser := tank.LaunchLaser(laserStaticInfo)
+	laser.SetEffectFunc(w.LaserEffect)
+	laser.Emit()
+}
+
+func (w *World) TankCancelLaser(tankInstId uint32) {
+	tank, o := w.tankList.Get(tankInstId)
+	if !o {
+		log.Error("World: tank %v not found", tankInstId)
+		return
+	}
+	tank.CancelLaser()
 }
 
 func (s *World) TankAddNewShell(instId uint32, shellConfigId int32) bool {
@@ -610,7 +634,7 @@ func (s *World) checkObjMoveEventHandle(args ...any) {
 	ci := args[3].(*object.CollisionInfo)
 
 	obj := s.objFactory.GetObj(instId)
-	if obj.Type() != object.ObjTypeMovable {
+	if obj.Type() != base.ObjTypeMovable {
 		log.Error("World.checkObjMoveEventHandle object %v must be movable", instId)
 		return
 	}
@@ -680,7 +704,7 @@ func (s *World) checkObjMoveRange(obj object.IMovableObject, dx, dy int32, ci *o
 }
 
 func (s *World) onMovableObjReachMapBorder(mobj object.IMovableObject) {
-	if mobj.Subtype() == object.ObjSubtypeShell {
+	if mobj.Subtype() == base.ObjSubtypeShell {
 		mobj.ToRecycle()
 	}
 }
@@ -693,20 +717,20 @@ func (s *World) onTankCollision(mobj object.IMovableObject, ci *object.Collision
 	for i := 0; i < len(ci.ObjList); i++ {
 		obj := ci.ObjList[i]
 		objType := obj.Type()
-		if objType == object.ObjTypeMovable {
-			if obj.Subtype() == object.ObjSubtypeShell {
+		if objType == base.ObjTypeMovable {
+			if obj.Subtype() == base.ObjSubtypeShell {
 				s.shellEffect(obj.(*object.Shell), tank)
 			}
-		} else if objType == object.ObjTypeItem {
+		} else if objType == base.ObjTypeItem {
 			objSubtype := obj.Subtype()
 			switch objSubtype {
-			case object.ObjSubtypeRewardLife:
-			case object.ObjSubtypeReinforcement:
-			case object.ObjSubtypeFrozen:
-			case object.ObjSubtypeSelfUpgrade:
-			case object.ObjSubtypeShield:
+			case base.ObjSubtypeRewardLife:
+			case base.ObjSubtypeReinforcement:
+			case base.ObjSubtypeFrozen:
+			case base.ObjSubtypeSelfUpgrade:
+			case base.ObjSubtypeShield:
 				tank.AddShield(common_data.TankShieldConfigData[2])
-			case object.ObjSubtypeBomb:
+			case base.ObjSubtypeBomb:
 			}
 		}
 	}
@@ -733,13 +757,13 @@ func (s *World) shellEffect(shell *object.Shell, obj object.IObject) {
 	effectParams[0].effectId = 1
 	effectParams[0].effectFunc = bulletExplodeEffect
 	effectParams[0].cx, effectParams[0].cy = shell.Pos()
-	if objType == object.ObjTypeMovable {
-		if obj.Subtype() == object.ObjSubtypeShell {
+	if objType == base.ObjTypeMovable {
+		if obj.Subtype() == base.ObjSubtypeShell {
 			obj.ToRecycle()
 			effectParams[1].effectId = 1
 			effectParams[1].effectFunc = bulletExplodeEffect
 			effectParams[1].cx, effectParams[1].cy = obj.Pos()
-		} else if obj.Subtype() == object.ObjSubtypeTank {
+		} else if obj.Subtype() == base.ObjSubtypeTank {
 			tank := obj.(*object.Tank)
 			if !tank.HasShield() {
 				obj.ToRecycle()
@@ -764,7 +788,7 @@ func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 	staticInfo := shell.ShellStaticInfo()
 	cx, cy := shell.Pos()
 	rect := math.NewRect(cx-staticInfo.SearchTargetRadius, cy-staticInfo.SearchTargetRadius, cx+staticInfo.SearchTargetRadius, cy+staticInfo.SearchTargetRadius)
-	objList := s.gmap.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeTank)
+	objList := s.gmap.GetMovableObjListWithRangeAndSubtype(rect, base.ObjSubtypeTank)
 	var (
 		tank *object.Tank
 		o    bool
@@ -789,4 +813,151 @@ func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 		return tank
 	}
 	return nil
+}
+
+// 激光效果
+func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (realEnd base.Pos, result bool) {
+	var (
+		pos, in, in2 base.Pos
+		distance     uint32 = sys_math.MaxUint32
+	)
+	log.Debug("LaserEffect: start %v, end %v", start, end)
+	if !s.posIsValid(&start) {
+		return pos, false
+	}
+	if start == end {
+		return pos, false
+	}
+	if !s.posIsValid(&end) {
+		if start.X == end.X {
+			if end.Y < s.mapConfig.Y {
+				end.Y = s.mapConfig.Y
+			}
+			if end.Y >= s.mapConfig.Y+s.mapHeight {
+				end.Y = s.mapConfig.Y + s.mapHeight - 1
+			}
+		} else if start.Y == end.Y {
+			if end.X < s.mapConfig.X {
+				end.X = s.mapConfig.X
+			}
+			if end.X >= s.mapConfig.X+s.mapWidth {
+				end.X = s.mapConfig.X + s.mapWidth - 1
+			}
+		} else {
+			var x, y int32
+			// (end.X-start.X)/(end.Y-start.Y) == (x-start.X)/(y-start.Y)
+			// 判斷end點在start點的方位
+			if end.X < start.X && end.Y < start.Y {
+				// 左下方
+				// 令x=s.mapConfig.X，求出y，如果y在(s.mapConfig.Y, s.mapConfig.Y+s.mapHeight)
+				// 之間，無需再判斷，否則令y=s.mapConfig.Y，求出x
+				x = s.mapConfig.X
+				y = (end.Y-start.Y)*(x-start.X)/(end.X-start.X) + start.Y
+				if y < s.mapConfig.Y {
+					y = s.mapConfig.Y
+					x = (end.X-start.X)*(y-start.Y)/(end.Y-start.Y) + start.X
+				}
+			} else if end.X > start.X && end.Y < start.Y {
+				// 右下方
+				x = s.mapConfig.X + s.mapWidth - 1
+				y = (end.Y-start.Y)*(x-start.X)/(end.X-start.X) + start.Y
+				if y < s.mapConfig.Y {
+					y = s.mapConfig.Y
+					x = (end.X-start.X)*(y-start.Y)/(end.Y-start.Y) + start.X
+				}
+			} else if end.X > start.X && end.Y > start.Y {
+				// 右上方
+				x = s.mapConfig.X + s.mapWidth - 1
+				y = (end.Y-start.Y)*(x-start.X)/(end.X-start.X) + start.Y
+				if y >= s.mapConfig.Y+s.mapHeight {
+					y = s.mapConfig.Y + s.mapHeight - 1
+					x = (end.X-start.X)*(y-start.Y)/(end.Y-start.Y) + start.X
+				}
+			} else {
+				// 左上方
+				x = s.mapConfig.X
+				y = (end.Y-start.Y)*(s.mapConfig.X-start.X)/(end.X-start.X) + start.Y
+				if y >= s.mapConfig.Y+s.mapHeight {
+					y = s.mapConfig.Y + s.mapHeight - 1
+					x = (end.X-start.X)*(y-start.Y)/(end.Y-start.Y) + start.X
+				}
+			}
+			end.X, end.Y = x, y
+		}
+	}
+
+	// 判斷起始點是否在某個物體内
+	objList := s.gmap.PointInObjList(start)
+	for _, id := range objList {
+		obj := s.GetObj(id)
+		if obj == nil {
+			continue
+		}
+		typ := obj.Type()
+		subtype := obj.Subtype()
+		switch typ {
+		case base.ObjTypeStatic:
+			switch subtype {
+			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
+				return pos, false
+			}
+		}
+	}
+
+	// 獲得綫段相交的物體列表
+	objList = s.gmap.GetObjListWithLineSegment(&start, &end)
+	for _, id := range objList {
+		obj := s.GetObj(id)
+		typ := obj.Type()
+		subtype := obj.Subtype()
+		switch typ {
+		case base.ObjTypeStatic:
+			switch subtype {
+			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
+				if object.GetLineSegmentAndObjIntersection(&start, &end, obj, &in, &in2) {
+					d1 := base.Distance(&start, &in)
+					d2 := base.Distance(&start, &in2)
+					if d1 <= d2 {
+						if d1 < distance {
+							distance = d1
+							pos = in
+						}
+					} else {
+						if d2 < distance {
+							distance = d2
+							pos = in2
+						}
+					}
+					log.Debug("line_segment(%v,%v) intersect object %v with two point %v, %v, the closest point is %v", start, end, obj.InstId(), in, in2, pos)
+				} else {
+					log.Debug("line_segment(%v,%v) no intersect with object %v", start, end, obj.InstId())
+				}
+			}
+		case base.ObjTypeMovable:
+			switch subtype {
+			case base.ObjSubtypeTank:
+				if obj.Camp() != laser.Camp() {
+					obj.ToRecycle()
+				}
+			}
+		}
+	}
+	if len(objList) > 0 {
+		log.Debug("laser effect object List: %+v", objList)
+	}
+	if distance == sys_math.MaxUint32 {
+		pos = end
+		log.Debug("not found intersect point, pos is %v", pos)
+	}
+	return pos, true
+}
+
+func (w *World) posIsValid(pos *base.Pos) bool {
+	if pos.X < w.mapConfig.X || pos.X >= w.mapConfig.X+w.mapWidth {
+		return false
+	}
+	if pos.Y < w.mapConfig.Y || pos.Y >= w.mapConfig.Y+w.mapHeight {
+		return false
+	}
+	return true
 }

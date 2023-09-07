@@ -1,8 +1,6 @@
 package effect
 
-import (
-	"project_b/common/object"
-)
+import "project_b/common/base"
 
 // 效果作用類型
 type EffectType int
@@ -37,7 +35,7 @@ type Effect struct {
 	staticInfo *EffectStaticInfo
 	effectFunc func(...any)
 	args       []any
-	center     object.Pos
+	center     base.Pos
 	count      int32
 	durationMs uint32
 	isOver     bool

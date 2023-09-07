@@ -5,6 +5,7 @@ import (
 	"math"
 	"project_b/client_base"
 	"project_b/common"
+	"project_b/common/base"
 	"project_b/common/effect"
 	pmath "project_b/common/math"
 	"project_b/common/object"
@@ -237,44 +238,44 @@ func (s *PlayableScene) getPlayableObject(obj object.IObject, dstImage *ebiten.I
 		animConfig  *client_base.SpriteAnimConfig
 	)
 	switch obj.Type() {
-	case object.ObjTypeStatic:
-		if object.StaticObjType(obj.Subtype()) == object.StaticObjNone {
+	case base.ObjTypeStatic:
+		if base.StaticObjType(obj.Subtype()) == base.StaticObjNone {
 			return nil, nil
 		}
-		config := GetStaticObjAnimConfig(object.StaticObjType(obj.Subtype()))
+		config := GetStaticObjAnimConfig(base.StaticObjType(obj.Subtype()))
 		if config == nil {
 			log.Error("can't get static object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		playableObj = NewPlayableStaticObject(obj, config)
 		animConfig = config.AnimConfig
-	case object.ObjTypeItem:
-		if object.ItemObjType(obj.Subtype()) == object.ItemObjNone {
+	case base.ObjTypeItem:
+		if base.ItemObjType(obj.Subtype()) == base.ItemObjNone {
 			return nil, nil
 		}
-		config := getItemObjAnimConfig(object.ItemObjType(obj.Subtype()))
+		config := getItemObjAnimConfig(base.ItemObjType(obj.Subtype()))
 		if config == nil {
 			log.Error("can't get item object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		playableObj = NewPlayableItemObject(obj, config)
 		animConfig = config
-	case object.ObjTypeMovable:
-		if object.MovableObjType(obj.Subtype()) == object.MovableObjNone {
+	case base.ObjTypeMovable:
+		if base.MovableObjType(obj.Subtype()) == base.MovableObjNone {
 			return nil, nil
 		}
 		mobj := obj.(object.IMovableObject)
-		config := GetMovableObjAnimConfig(object.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
+		config := GetMovableObjAnimConfig(base.MovableObjType(obj.Subtype()), mobj.Id(), mobj.Level())
 		if config == nil {
 			log.Error("can't get movable object anim by subtype %v", obj.Subtype())
 			return nil, nil
 		}
 		switch obj.Subtype() {
-		case object.ObjSubtypeTank:
+		case base.ObjSubtypeTank:
 			playableObj = NewPlayableTank(mobj.(object.ITank), config)
-		case object.ObjSubtypeShell:
+		case base.ObjSubtypeShell:
 			playableObj = NewPlayableShell(mobj.(object.IShell), config)
-		case object.ObjSubtypeSurroundObj:
+		case base.ObjSubtypeSurroundObj:
 			surroundObj := mobj.(object.ISurroundObject)
 			aroundCenterObj := surroundObj.GetAroundCenterObject()
 			// 環繞物體需要先創建被環繞物體

@@ -315,6 +315,29 @@ func (g *GameLogic) PlayerTankFire(uid uint64) {
 	g.world.TankFire(tankId)
 }
 
+// 玩家坦克發射激光
+func (g *GameLogic) PlayerTankEmitLaser(uid uint64) {
+	if g.state == logicStatePause {
+		return
+	}
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.world.TankEmitLaser(tankId)
+}
+
+func (g *GameLogic) PlayerTankCancelLaser(uid uint64) {
+	if g.state == logicStatePause {
+		return
+	}
+	tankId, o := g.player2Tank.Get(uid)
+	if !o {
+		return
+	}
+	g.world.TankCancelLaser(tankId)
+}
+
 // 坦克增加新炮彈
 func (g *GameLogic) PlayerTankAddNewShell(uid uint64, shellConfigId int32) {
 	if g.state == logicStatePause {
@@ -394,7 +417,7 @@ func (g *GameLogic) createBots(config *game_map.Config) {
 			continue
 		}
 
-		for index < int32(len(tankBornPosList)) && tankBornPosList[index].flag != object.BotTileFlag {
+		for index < int32(len(tankBornPosList)) && tankBornPosList[index].flag != base.BotTileFlag {
 			index++
 		}
 

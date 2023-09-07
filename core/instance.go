@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"project_b/common"
 	"project_b/common/base"
-	"project_b/common/object"
 	"project_b/game_map"
 	"project_b/log"
 
@@ -71,12 +70,6 @@ func (inst *Instance) Load(config *game_map.Config) bool {
 }
 
 func (inst *Instance) Unload() {
-	/*mapConfig := inst.logic.World().GetMapConfig()
-	if inst.mode == instanceModePlay && inst.recordHandle != nil {
-		inst.recordHandle(mapConfig.Name, Record{
-			mapId: mapConfig.Id, frameList: inst.frameList, playerIdList: inst.playerIdList, frameNum: inst.GetFrame(), frameMs: inst.frameMs / uint32(time.Millisecond),
-		})
-	}*/
 	inst.recycleFrameList()
 	inst.logic.UnloadScene()
 	inst.frameIndexInList = 0
@@ -194,15 +187,7 @@ func (inst *Instance) PushFrame(frameNum uint32, playerId uint64, cmd CmdCode, a
 		}
 		if playerId == fd.playerDataList[i].playerId {
 			playerData := fd.playerDataList[i]
-			//cmdListLen := len(playerData.cmdList)
-			//if cmdListLen == 0 {
 			playerData.cmdList = append(playerData.cmdList, CmdData{cmd, args})
-			//} else {
-			//	pcmd := &playerData.cmdList[cmdListLen-1]
-			//	if pcmd.cmd != cmd || reflect.DeepEqual(pcmd.args, args) {
-			//		playerData.cmdList = append(playerData.cmdList, CmdData{cmd, args})
-			//	}
-			//}
 		}
 	}
 	return true
@@ -273,13 +258,17 @@ func (inst *Instance) processFrameCmdList() bool {
 func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []int64, playerId uint64, playerIndex int) {
 	switch cmdCode {
 	case CMD_TANK_MOVE:
-		dir := object.Direction(cmdArgs[0])
-		orientation := object.Dir2Orientation(dir)
+		dir := base.Direction(cmdArgs[0])
+		orientation := base.Dir2Orientation(dir)
 		inst.logic.PlayerTankMove(playerId, orientation)
 	case CMD_TANK_STOP:
 		inst.logic.PlayerTankStopMove(playerId)
 	case CMD_TANK_FIRE:
 		inst.logic.PlayerTankFire(playerId)
+	case CMD_TANK_EMIT_LASER:
+		inst.logic.PlayerTankEmitLaser(playerId)
+	case CMD_TANK_CANCEL_LASER:
+		inst.logic.PlayerTankCancelLaser(playerId)
 	case CMD_TANK_ADD_SHELL:
 		inst.logic.PlayerTankAddNewShell(playerId, int32(cmdArgs[0]))
 	case CMD_TANK_SWITCH_SHELL:

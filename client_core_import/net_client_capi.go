@@ -4,7 +4,7 @@ package main
 import "C"
 import (
 	"project_b/client_core"
-	"project_b/common/object"
+	"project_b/common/base"
 	"project_b/game_proto"
 )
 
@@ -81,7 +81,7 @@ func net_client_send_tank_update_pos_req(h C.net_handle_t, state C.int, x, y /*d
 	if client == nil {
 		return -1
 	}
-	err := client.SendTankUpdatePosReq(game_proto.MovementState(state), object.Pos{X: int32(x), Y: int32(y)} /*object.Direction(dir)*/, int32(orientation), int32(speed))
+	err := client.SendTankUpdatePosReq(game_proto.MovementState(state), base.Pos{X: int32(x), Y: int32(y)} /*object.Direction(dir)*/, int32(orientation), int32(speed))
 	if err != nil {
 		return -2
 	}

@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/math"
 	"project_b/common/object"
@@ -30,9 +31,9 @@ func newGridObjs() gridObjs {
 }
 
 func (g *gridObjs) addObj(obj object.IObject) {
-	if obj.Type() == object.ObjTypeStatic {
+	if obj.Type() == base.ObjTypeStatic {
 		g.sobjs.Add(obj.InstId(), struct{}{})
-	} else if obj.Type() == object.ObjTypeMovable {
+	} else if obj.Type() == base.ObjTypeMovable {
 		g.mobjs.Add(obj.InstId(), struct{}{})
 	} else {
 		panic(fmt.Sprintf("invalid object type %v", obj.Type()))
@@ -147,7 +148,7 @@ func (m *PartitionMap) RemoveTile(instId uint32) {
 
 func (m *PartitionMap) AddObj(obj object.IObject) {
 	instId := obj.InstId()
-	if obj.Type() == object.ObjTypeMovable {
+	if obj.Type() == base.ObjTypeMovable {
 		if m.mobjs.Exists(instId) {
 			return
 		}
@@ -177,7 +178,7 @@ func (m *PartitionMap) AddObj(obj object.IObject) {
 			log.Info("MapInstance: obj %v add to grid(line: %v, col: %v, index: %v)", instId, ty, lx, index)
 		}
 	}
-	if obj.Type() == object.ObjTypeMovable {
+	if obj.Type() == base.ObjTypeMovable {
 		m.mobjs.Add(instId, obj.(object.IMovableObject))
 	} else {
 		m.sobjs.Add(instId, obj.(object.IStaticObject))
@@ -378,7 +379,7 @@ func (m *PartitionMap) GetLayerObjsWithRange(rect *math.Rect) [MapMaxLayer]*heap
 	return m.resultLayerObjs
 }
 
-func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype object.ObjSubtype) []uint32 {
+func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, subtype base.ObjSubtype) []uint32 {
 	if len(m.resultMovableObjList) > 0 {
 		m.resultMovableObjList = m.resultMovableObjList[:0]
 	}
@@ -394,7 +395,7 @@ func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, sub
 					if !o {
 						continue
 					}
-					if subtype != object.ObjSubtypeNone && obj.Subtype() == subtype {
+					if subtype != base.ObjSubtypeNone && obj.Subtype() == subtype {
 						m.resultMovableObjList = append(m.resultMovableObjList, obj.InstId())
 					}
 				}
@@ -405,11 +406,11 @@ func (m *PartitionMap) GetMovableObjListWithRangeAndSubtype(rect *math.Rect, sub
 }
 
 func (m *PartitionMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
-	return m.GetMovableObjListWithRangeAndSubtype(rect, object.ObjSubtypeNone)
+	return m.GetMovableObjListWithRangeAndSubtype(rect, base.ObjSubtypeNone)
 }
 
 // checkMovableObjCollision 遍歷碰撞範圍内的網格檢查碰撞結果 移動之前調用
-func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir object.Direction, dx, dy int32, collisionObj *object.IObject) bool {
+func (m *PartitionMap) CheckMovableObjCollision(obj object.IMovableObject, dir base.Direction, dx, dy int32, collisionObj *object.IObject) bool {
 	// 獲取檢測碰撞範圍
 	lx, by, rx, ty := m.objGridBounds(obj)
 	if rx < lx || ty < by {

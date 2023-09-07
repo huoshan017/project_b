@@ -2,7 +2,7 @@ package main
 
 import (
 	"project_b/client_base"
-	"project_b/common/object"
+	"project_b/common/base"
 	"project_b/core"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -19,11 +19,12 @@ const (
 
 // 按下键位映射命令
 var keyPressed2CmdMap = map[ebiten.Key]*core.CmdData{
-	ebiten.KeyA:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirLeft)}),
-	ebiten.KeyD:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirRight)}),
-	ebiten.KeyW:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirUp)}),
-	ebiten.KeyS:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirDown)}),
+	ebiten.KeyA:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirLeft)}),
+	ebiten.KeyD:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirRight)}),
+	ebiten.KeyW:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirUp)}),
+	ebiten.KeyS:        core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirDown)}),
 	ebiten.KeyJ:        core.NewCmdData(core.CMD_TANK_FIRE, []int64{}),
+	ebiten.KeyK:        core.NewCmdData(core.CMD_TANK_EMIT_LASER, []int64{}),
 	ebiten.KeyUp:       core.NewCmdData(CMD_CAMERA_UP, []int64{10}),
 	ebiten.KeyDown:     core.NewCmdData(CMD_CAMERA_DOWN, []int64{-10}),
 	ebiten.KeyLeft:     core.NewCmdData(CMD_CAMERA_LEFT, []int64{-10}),
@@ -38,6 +39,7 @@ var keyReleased2CmdMap = map[ebiten.Key]*core.CmdData{
 	ebiten.KeyD:     core.NewCmdData(core.CMD_TANK_STOP, nil),
 	ebiten.KeyW:     core.NewCmdData(core.CMD_TANK_STOP, nil),
 	ebiten.KeyS:     core.NewCmdData(core.CMD_TANK_STOP, nil),
+	ebiten.KeyK:     core.NewCmdData(core.CMD_TANK_CANCEL_LASER, nil),
 	ebiten.Key1:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{1}),
 	ebiten.Key2:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{2}),
 	ebiten.Key3:     core.NewCmdData(core.CMD_TANK_ADD_SHELL, []int64{3}),
@@ -79,10 +81,10 @@ var key2ComboKeyIndex = map[ebiten.Key][]ComboKeyIndex{
 }
 
 var keyIndex2CmdMap = map[int32]*core.CmdData{
-	0: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirLeftUp)}),
-	1: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirLeftDown)}),
-	2: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirRightUp)}),
-	3: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(object.DirRightDown)}),
+	0: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirLeftUp)}),
+	1: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirLeftDown)}),
+	2: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirRightUp)}),
+	3: core.NewCmdData(core.CMD_TANK_MOVE, []int64{int64(base.DirRightDown)}),
 }
 
 // 輸入管理器

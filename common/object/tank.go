@@ -2,6 +2,7 @@ package object
 
 import (
 	"project_b/common/base"
+	"project_b/common/weapon"
 	"project_b/log"
 	"unsafe"
 )
@@ -85,6 +86,28 @@ func (s *Shield) IsEffective() bool {
 	return s.isEffective
 }
 
+// 激光持有者
+type laserHolder struct {
+	tank *Tank
+}
+
+func (holder *laserHolder) LaunchPoint() base.Pos {
+	vp := holder.tank.TankStaticInfo().ShellLaunchPos
+	x, y := holder.tank.Pos()
+	x1, y1 := x+vp.X(), y+vp.Y()
+	return base.NewPos(base.Rotate(x1, y1, x, y, holder.tank.Rotation()))
+}
+
+// 朝向
+func (holder *laserHolder) Forward() base.Vec2 {
+	return holder.tank.Forward()
+}
+
+// 陣營
+func (holder *laserHolder) Camp() base.CampType {
+	return holder.tank.Camp()
+}
+
 // 坦克
 type Tank struct {
 	*Vehicle
@@ -95,6 +118,8 @@ type Tank struct {
 	shellStaticInfoList            []*ShellStaticInfo
 	shellIndex                     int32
 	shield                         *Shield
+	laser                          *weapon.Laser
+	laserHolder                    laserHolder
 	addShieldEvent                 base.Event
 	cancelShieldEvent              base.Event
 }
@@ -229,6 +254,23 @@ func (t *Tank) CheckAndFire(newShellFunc func(*ShellStaticInfo) *Shell) *Shell {
 	return shell
 }
 
+// 發射激光
+func (t *Tank) LaunchLaser(laserStaticInfo *weapon.LaserStaticInfo) *weapon.Laser {
+	if t.laser == nil {
+		t.laserHolder.tank = t
+		t.laser = weapon.NewLaser(&t.laserHolder, laserStaticInfo)
+	}
+	return t.laser
+}
+
+// 取消發射激光
+func (t *Tank) CancelLaser() {
+	if t.laser == nil {
+		return
+	}
+	t.laser.Cancel()
+}
+
 // 移動
 func (t *Tank) Move(dir base.Angle) {
 	if t.pause {
@@ -276,6 +318,9 @@ func (t *Tank) Update(tickMs uint32) {
 	if t.shield != nil {
 		t.shield.Update(tickMs)
 	}
+	if t.laser != nil {
+		t.laser.Update(tickMs)
+	}
 }
 
 // 添加彈藥
@@ -318,7 +363,12 @@ func (t *Tank) HasShield() bool {
 	return t.shield != nil
 }
 
-// 炮彈發射口
+// 激光
+func (t *Tank) GetLaser() *weapon.Laser {
+	return t.laser
+}
+
+// 炮彈發射點
 func (t *Tank) shellLaunchPos(shell *Shell) (int32, int32) {
 	vp := t.TankStaticInfo().ShellLaunchPos
 	x, y := t.Pos()
