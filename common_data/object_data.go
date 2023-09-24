@@ -201,7 +201,7 @@ var (
 			Diameter:       4,
 			Range:          2000,
 			Dps:            100,
-			Speed:          1000,
+			Speed:          100000,
 			Energy:         100,
 			CostPerSecond:  40,
 			ChargPerSecond: 200,

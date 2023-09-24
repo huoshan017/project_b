@@ -1,7 +1,6 @@
 package common
 
 import (
-	sys_math "math"
 	"project_b/common/base"
 	"project_b/common/ds"
 	"project_b/common/effect"
@@ -816,17 +815,13 @@ func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 }
 
 // 激光效果
-func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (realEnd base.Pos, result bool) {
-	var (
-		pos, in, in2 base.Pos
-		distance     uint32 = sys_math.MaxUint32
-	)
+func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (pos base.Pos, result bool) {
 	log.Debug("LaserEffect: start %v, end %v", start, end)
 	if !s.posIsValid(&start) {
-		return pos, false
+		return
 	}
 	if start == end {
-		return pos, false
+		return
 	}
 	if !s.posIsValid(&end) {
 		if start.X == end.X {
@@ -899,39 +894,24 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (realEnd b
 		case base.ObjTypeStatic:
 			switch subtype {
 			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
-				return pos, false
+				return
 			}
 		}
 	}
 
+	pos = end
+
 	// 獲得綫段相交的物體列表
-	objList = s.gmap.GetObjListWithLineSegment(&start, &end)
-	for _, id := range objList {
-		obj := s.GetObj(id)
+	var intersectInfo IntersectInfo
+	if s.gmap.GetLineSegmentFirstIntersectInfo(&start, &end, &intersectInfo) {
+		obj := intersectInfo.obj
 		typ := obj.Type()
 		subtype := obj.Subtype()
 		switch typ {
 		case base.ObjTypeStatic:
 			switch subtype {
 			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
-				if object.GetLineSegmentAndObjIntersection(&start, &end, obj, &in, &in2) {
-					d1 := base.Distance(&start, &in)
-					d2 := base.Distance(&start, &in2)
-					if d1 <= d2 {
-						if d1 < distance {
-							distance = d1
-							pos = in
-						}
-					} else {
-						if d2 < distance {
-							distance = d2
-							pos = in2
-						}
-					}
-					log.Debug("line_segment(%v,%v) intersect object %v with two point %v, %v, the closest point is %v", start, end, obj.InstId(), in, in2, pos)
-				} else {
-					log.Debug("line_segment(%v,%v) no intersect with object %v", start, end, obj.InstId())
-				}
+				pos = intersectInfo.pos
 			}
 		case base.ObjTypeMovable:
 			switch subtype {
@@ -941,12 +921,7 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (realEnd b
 				}
 			}
 		}
-	}
-	if len(objList) > 0 {
-		log.Debug("laser effect object List: %+v", objList)
-	}
-	if distance == sys_math.MaxUint32 {
-		pos = end
+	} else {
 		log.Debug("not found intersect point, pos is %v", pos)
 	}
 	return pos, true
