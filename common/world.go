@@ -718,7 +718,7 @@ func (s *World) onTankCollision(mobj object.IMovableObject, ci *object.Collision
 		objType := obj.Type()
 		if objType == base.ObjTypeMovable {
 			if obj.Subtype() == base.ObjSubtypeShell {
-				s.shellEffect(obj.(*object.Shell), tank)
+				s.shellHitObjEffect(obj.(*object.Shell), tank)
 			}
 		} else if objType == base.ObjTypeItem {
 			objSubtype := obj.Subtype()
@@ -739,11 +739,11 @@ func (s *World) onShellCollision(mobj object.IMovableObject, ci *object.Collisio
 	shell := mobj.(*object.Shell)
 	for i := 0; i < len(ci.ObjList); i++ {
 		obj := ci.ObjList[i]
-		s.shellEffect(shell, obj)
+		s.shellHitObjEffect(shell, obj)
 	}
 }
 
-func (s *World) shellEffect(shell *object.Shell, obj object.IObject) {
+func (s *World) shellHitObjEffect(shell *object.Shell, obj object.IObject) {
 	var (
 		objType      = obj.Type()
 		effectParams = [2]struct {
@@ -780,6 +780,37 @@ func (s *World) shellEffect(shell *object.Shell, obj object.IObject) {
 		effect := s.effectPool.Get(common_data.EffectConfigData[effectParams[i].effectId], effectParams[i].effectFunc, s.gmap, shell)
 		effect.SetPos(effectParams[i].cx, effectParams[i].cy)
 		s.effectList.Add(effect.InstId(), effect)
+	}
+}
+
+func (w *World) laserHitObjEffect(laser *weapon.Laser, obj object.IObject) {
+	var (
+		effectId   int32
+		effectFunc func(...any)
+		cx, cy     int32
+	)
+	objType := obj.Type()
+	if objType == base.ObjTypeMovable {
+		objSubtype := obj.Subtype()
+		if objSubtype == base.ObjSubtypeShell {
+			obj.ToRecycle()
+			effectId = 1
+			effectFunc = bulletExplodeEffect
+			cx, cy = obj.Pos()
+		} else if objSubtype == base.ObjSubtypeTank {
+			tank := obj.(*object.Tank)
+			if !tank.HasShield() {
+				obj.ToRecycle()
+				effectId = 2
+				effectFunc = bigBulletExplodeEffect
+				cx, cy = obj.Pos()
+			}
+		}
+	}
+	if effectId > 0 {
+		effect := w.effectPool.Get(common_data.EffectConfigData[effectId], effectFunc, w.gmap)
+		effect.SetPos(cx, cy)
+		w.effectList.Add(effect.InstId(), effect)
 	}
 }
 
@@ -915,14 +946,16 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos,
 			}
 		case base.ObjTypeMovable:
 			switch subtype {
-			case base.ObjSubtypeTank:
+			case base.ObjSubtypeShell, base.ObjSubtypeTank:
 				if obj.Camp() != laser.Camp() {
 					obj.ToRecycle()
+					s.laserHitObjEffect(laser, obj)
+					end = intersectInfo.pos
 				}
 			}
 		}
 	} else {
-		log.Debug("not found intersect point, pos is %v", end)
+		log.Debug("not found intersect point, laser end pos is %v", end)
 	}
 	return end, true
 }

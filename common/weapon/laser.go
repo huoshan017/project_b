@@ -2,7 +2,6 @@ package weapon
 
 import (
 	"project_b/common/base"
-	"project_b/log"
 )
 
 type IHolder interface {
@@ -25,7 +24,6 @@ type Laser struct {
 	holder               IHolder
 	staticInfo           *LaserStaticInfo
 	effectFunc           func(*Laser, base.Pos, base.Pos) (base.Pos, bool)
-	currLength           int32 // 當前長度
 	state                laserState
 	toCancel             bool
 	energy               int32
@@ -64,7 +62,6 @@ func (l *Laser) Update(tickMs uint32) {
 	if l.state == laserStateReadyEmit {
 		if l.toCancel {
 			l.state = laserStateIdle
-			l.currLength = 0
 			l.toCancel = false
 		} else {
 			// todo 激光效果
@@ -73,7 +70,6 @@ func (l *Laser) Update(tickMs uint32) {
 	} else if l.state == laserStateEmitting {
 		if l.toCancel {
 			l.state = laserStateIdle
-			l.currLength = 0
 			l.toCancel = false
 		} else {
 			l.energy -= (l.staticInfo.CostPerSecond * int32(tickMs)) / 1000
@@ -83,7 +79,6 @@ func (l *Laser) Update(tickMs uint32) {
 			l.checkEmitting(tickMs)
 			if l.energy == 0 {
 				l.state = laserStateIdle
-				l.currLength = 0
 			}
 		}
 	} else {
@@ -117,22 +112,18 @@ func (l *Laser) Camp() base.CampType {
 
 func (l *Laser) checkEmitting(tickMs uint32) {
 	startPoint := l.holder.LaunchPoint()
-	mx, my := base.DirPos(startPoint.X, startPoint.Y, l.currLength, l.holder.Forward().ToAngle360())
-	var end base.Pos
-	end.X, end.Y = base.MovePos(mx, my, l.holder.Forward().ToAngle360(), l.staticInfo.Speed, tickMs)
+	var endPoint base.Pos
+	endPoint.X, endPoint.Y = base.DirPos(startPoint.X, startPoint.Y, l.staticInfo.Range, l.holder.Forward().ToAngle360())
 	var o bool
-	end, o = l.effectFunc(l, startPoint, end)
+	endPoint, o = l.effectFunc(l, startPoint, endPoint)
 	if o {
 		l.startPoint = startPoint
-		l.endPoint = end
-		l.currLength = int32(base.Distance(&l.endPoint, &l.startPoint))
+		l.endPoint = endPoint
 		if l.state == laserStateReadyEmit {
 			l.state = laserStateEmitting
 		}
-		log.Debug("after laser effect: start_point %v, end_point %v\n\n", l.startPoint, l.endPoint)
 	} else {
 		l.state = laserStateIdle
-		l.currLength = 0
 	}
 }
 
