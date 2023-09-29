@@ -470,102 +470,89 @@ func (m *GridMap) GetLineSegmentFirstIntersectInfo(start, end *base.Pos, interse
 	// 過網格的高度或寬度，這樣才能保證遍歷所有經過的網格，而不
 	// 遺漏掉任何網格
 	if abs_dx*m.gridHeight >= abs_dy*m.gridWidth {
+		is, ie, js, je = sx, ex, sy, ey
+		if dy >= 0 {
+			dj = abs_dy * m.gridWidth / abs_dx
+		} else {
+			dj = -(abs_dy * m.gridWidth / abs_dx)
+		}
 		if dx >= 0 {
-			if dy >= 0 {
-				is, ie, js, je = sx, ex, sy, ey
-				dj = abs_dy * m.gridWidth / abs_dx
-			} else {
-				is, ie, js, je = sx, ex, ey, sy
-				dj = -(abs_dy * m.gridWidth / abs_dx)
-			}
 			di = m.gridWidth
 		} else {
-			if dy >= 0 {
-				is, ie, js, je = ex, sx, sy, ey
-				dj = abs_dy * m.gridWidth / abs_dx
-			} else {
-				is, ie, js, je = ex, sx, ey, sy
-				dj = -(abs_dy * m.gridWidth / abs_dx)
-			}
 			di = -m.gridWidth
 		}
 	} else { // abs_dx/abs_dy >= m.gridWidth/m.gridHeight
+		is, ie, js, je = sy, ey, sx, ex
+		if dx >= 0 {
+			dj = abs_dx * m.gridHeight / abs_dy
+		} else {
+			dj = -(abs_dx * m.gridHeight / abs_dy)
+		}
 		if dy >= 0 {
-			if dx >= 0 {
-				is, ie, js, je = sy, ey, sx, ex
-				dj = abs_dx * m.gridHeight / abs_dy
-			} else {
-				is, ie, js, je = sy, ey, ex, sx
-				dj = -(abs_dx * m.gridHeight / abs_dy)
-			}
 			di = m.gridHeight
 		} else {
-			if dx >= 0 {
-				is, ie, js, je = ey, sy, sx, ex
-				dj = abs_dx * m.gridHeight / abs_dy
-			} else {
-				is, ie, js, je = ey, sy, ex, sx
-				dj = -(abs_dx * m.gridHeight / abs_dy)
-			}
 			di = -m.gridHeight
 		}
 		flag = true
 	}
+
 	var (
 		index [3]int32
 		i, j  = is, js
 	)
-	for i = is; ; i += di {
-		for j = js; ; j += dj {
-			if !flag { // x方向
-				index[1] = m.posGridIndex(i, j)
-				index[0] = index[1] - int32(m.gridColNum)
-				index[2] = index[1] + int32(m.gridColNum)
-			} else { // y方向
-				index[1] = m.posGridIndex(j, i)
-				if index[1]%int32(m.gridColNum) == 0 {
-					index[0] = -1
-				} else {
-					index[0] = index[1] - 1
-				}
-				if (index[1]+1)%int32(m.gridColNum) == 0 {
-					index[2] = -1
-				} else {
-					index[2] = index[1] + 1
-				}
+	for (di > 0 && i <= ie) || (di < 0 && i >= ie) || (dj > 0 && j <= je) || (dj < 0 && j >= je) {
+		if !flag { // x方向
+			index[1] = m.posGridIndex(i, j)
+			index[0] = index[1] - int32(m.gridColNum)
+			index[2] = index[1] + int32(m.gridColNum)
+		} else { // y方向
+			index[1] = m.posGridIndex(j, i)
+			if index[1]%int32(m.gridColNum) == 0 {
+				index[0] = -1
+			} else {
+				index[0] = index[1] - 1
 			}
-			// 判斷綫段[start,end]與哪個物體相交得到最近點
-			var distance uint32 = sys_math.MaxUint32
-			var theObj object.IObject
-			var thePos base.Pos
-			for n := 0; n < len(index); n++ {
-				if index[n] < 0 || index[n] >= int32(m.gridColNum*m.gridLineNum)-1 {
-					continue
-				}
-				l := m.grids[index[n]]
-				for k := 0; k < len(l); k++ {
-					// 判斷綫段跟物體是否有相交
-					obj, o := m.sobjs.Get(l[k])
-					if o && object.GetLineSegmentAndObjIntersection(start, end, obj, &thePos) {
-						d := base.Distance(start, &thePos)
-						if d < distance {
-							distance = d
-							theObj = obj
-						}
+			if (index[1]+1)%int32(m.gridColNum) == 0 {
+				index[2] = -1
+			} else {
+				index[2] = index[1] + 1
+			}
+		}
+		// 判斷綫段[start,end]與哪個物體相交得到最近點
+		var distance uint32 = sys_math.MaxUint32
+		var theObj object.IObject
+		var thePos base.Pos
+		for n := 0; n < len(index); n++ {
+			if index[n] < 0 || index[n] >= int32(m.gridColNum*m.gridLineNum)-1 {
+				continue
+			}
+			l := m.grids[index[n]]
+			for k := 0; k < len(l); k++ {
+				// 判斷綫段跟物體是否有相交
+				obj, o := m.sobjs.Get(l[k])
+				var pos base.Pos
+				if o && object.GetLineSegmentAndObjIntersection(start, end, obj, &pos) {
+					d := base.Distance(start, &pos)
+					if d < distance {
+						distance = d
+						theObj = obj
+						thePos = pos
 					}
 				}
 			}
-			if distance < sys_math.MaxUint32 {
-				intersectInfo.obj = theObj
-				intersectInfo.pos = thePos
-				return true
-			}
-			if dj == 0 || (dj > 0 && j+dj > je) || (dj < 0 && j+dj < je) {
-				break
-			}
 		}
-		if di == 0 || (di > 0 && i+di > ie) || (di < 0 && i+di < ie) {
-			break
+		if distance < sys_math.MaxUint32 {
+			intersectInfo.obj = theObj
+			intersectInfo.pos = thePos
+			return true
+		}
+		i += di
+		if (di > 0 && i > ie && i-di < ie) || (di < 0 && i < ie && i-di > ie) {
+			i = ie
+		}
+		j += dj
+		if (dj > 0 && j > je && j-dj < je) || (dj < 0 && j < je && j-dj > je) {
+			j = je
 		}
 	}
 	return false

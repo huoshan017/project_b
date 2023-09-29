@@ -21,7 +21,7 @@ func IsPointInObject(pos base.Pos, obj IObject) bool {
 	cp := base.NewVec2(pos.X-posC.X, pos.Y-posC.Y)
 	c2 := cd.Cross(cp)
 
-	log.Debug("(AB X AP) * (CD X CP) = (%v*%v) = %v", c1, c2, c1*c2)
+	//log.Debug("(AB X AP) * (CD X CP) = (%v*%v) = %v", c1, c2, c1*c2)
 	if int64(c1)*int64(c2) < 0 {
 		return false
 	}
@@ -35,7 +35,7 @@ func IsPointInObject(pos base.Pos, obj IObject) bool {
 	dp := base.NewVec2(pos.X-posD.X, pos.Y-posD.Y)
 	c4 := da.Cross(dp)
 
-	log.Debug("(BC X BP) * (DA X DP) = (%v*%v) = %v", c3, c4, c3*c4)
+	//log.Debug("(BC X BP) * (DA X DP) = (%v*%v) = %v", c3, c4, c3*c4)
 	return int64(c3)*int64(c4) >= 0
 }
 
@@ -88,6 +88,9 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		// (e2.X-s2.X)/(e2.Y-s2.Y) == (x-s2.X)/(y-s2.Y)
 		x = e1.X
 		y = (e1.X-s2.X)*(e2.Y-s2.Y)/(e2.X-s2.X) + s2.Y
+		if (s1.Y-y)*(e1.Y-y) > 0 {
+			return false
+		}
 	} else if e1.Y == s1.Y {
 		if e2.Y == s2.Y {
 			return false
@@ -95,6 +98,9 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		// (e2.X-s2.X)/(e2.Y-s2.Y) == (x-s2.X)(y-s2.Y)
 		y = e1.Y
 		x = (e2.X-s2.X)*(e1.Y-s2.Y)/(e2.Y-s2.Y) + s2.X
+		if (s1.X-x)*(e1.X-x) > 0 {
+			return false
+		}
 	} else if e2.X == s2.X {
 		if e1.X == s1.X {
 			return false
@@ -102,6 +108,9 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		// (e1.X-s1.X)/(e1.Y-s1.Y) == (x-s1.X)/(y-s1.Y)
 		x = e2.X
 		y = (e1.Y-s1.Y)*(e2.X-s1.X)/(e1.X-s1.X) + s1.Y
+		if (s2.Y-y)*(e2.Y-y) > 0 {
+			return false
+		}
 	} else if e2.Y == s2.Y {
 		if e1.Y == s1.Y {
 			return false
@@ -109,6 +118,9 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		// (e1.X-s1.X)/(e1.Y-s1.Y) == (x-s1.X)/(y-s1.Y)
 		y = e2.Y
 		x = (e1.X-s1.X)*(e2.Y-s1.Y)/(e1.Y-s1.Y) + s1.X
+		if (s2.X-x)*(e2.X-x) > 0 {
+			return false
+		}
 	} else {
 		// 利用斜率求出交點的坐標
 		// (e1.X-s1.X)/(e1.Y-s1.Y) = (in.X-s1.X)/(in.Y-s1.Y)
@@ -122,17 +134,24 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		//in.X = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)/(e2.X-s2.X)+s2.Y-s1.Y) + s1.X*(e1.Y-s1.Y)) / ((e1.Y - s1.Y) - (e1.X-s1.X)*(e2.Y-s2.Y)/(e2.X-s2.X))
 		x = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)+(s2.Y-s1.Y)*(e2.X-s2.X)) + s1.X*(e1.Y-s1.Y)*(e2.X-s2.X)) / ((e1.Y-s1.Y)*(e2.X-s2.X) - (e1.X-s1.X)*(e2.Y-s2.Y))
 		y = (e2.Y-s2.Y)*(x-s2.X)/(e2.X-s2.X) + s2.Y
-		log.Debug("get intersection (%v, %v)", x, y)
+		//log.Debug("get intersection (%v, %v)", x, y)
 	}
 
 	// 再判斷交點是否在兩條綫段上（因爲上面求出的交點有可能只是在綫段延長綫上）
 	// 交點與綫段兩端的差值符號相反
-	if (start1.X-x)*(end1.X-x) > 0 || (start1.Y-y)*(end1.Y-y) > 0 {
-		log.Debug("point(%v, %v) not within line segment (%+v, %+v) and (%+v, %+v)", x, y, start1, end1, start2, end2)
-		return false
+	var a, b int32
+	if s1.X != e1.X {
+		a = (s1.X - x) * (e1.X - x)
+	} else {
+		a = (s1.Y - y) * (e1.Y - y)
 	}
-	if (start2.X-x)*(end2.X-x) > 0 || (start2.Y-y)*(end2.Y-y) > 0 {
-		log.Debug("point(%v, %v) not within line segment (%+v, %+v) and (%+v, %+v)", x, y, start1, end1, start2, end2)
+	if s2.X != e2.X {
+		b = (s2.X - x) * (e2.X - x)
+	} else {
+		b = (s2.Y - y) * (e2.Y - y)
+	}
+	if (a > 0 && b < 0) || (a < 0 && b > 0) || (a > 0 && b > 0) {
+		log.Debug("point(%v, %v) not within line segment (%+v, %+v) and (%+v, %+v)", x, y, s1, e1, s2, e2)
 		return false
 	}
 
@@ -168,8 +187,8 @@ func CheckLineSegmentIntersectObj(start, end *base.Pos, obj IObject) bool {
 }
 
 // 獲得綫段和物體的交點(是距離綫段起始點start最近的交點，遠些的交點沒有太大用處)
+// 綫段分別與四條邊判斷是否有交點，如果有交點在綫段上，這個點與綫段兩個端點構成的兩條綫段的斜率相等
 func GetLineSegmentAndObjIntersection(start, end *base.Pos, obj IObject, intersection *base.Pos) bool {
-	// 綫段分別與四條邊判斷是否有交點，如果有交點在綫段上，這個點與綫段兩個端點構成的兩條綫段的斜率相等
 	posA := base.NewPos(obj.LeftBottom())
 	posB := base.NewPos(obj.RightBottom())
 	posC := base.NewPos(obj.RightTop())
@@ -181,6 +200,8 @@ func GetLineSegmentAndObjIntersection(start, end *base.Pos, obj IObject, interse
 		in      [2]base.Pos
 		inn     *base.Pos
 	)
+
+	//log.Debug("obj %v A(%v) B(%v) C(%v) D(%v)", obj.InstId(), posA, posB, posC, posD)
 
 	for i := 0; i < len(posList) && n < 2; i++ {
 		if intersection != nil {

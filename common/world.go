@@ -815,13 +815,13 @@ func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 }
 
 // 激光效果
-func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (pos base.Pos, result bool) {
+func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos, bool) {
 	log.Debug("LaserEffect: start %v, end %v", start, end)
 	if !s.posIsValid(&start) {
-		return
+		return end, false
 	}
 	if start == end {
-		return
+		return end, false
 	}
 	if !s.posIsValid(&end) {
 		if start.X == end.X {
@@ -881,6 +881,8 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (pos base.
 		}
 	}
 
+	log.Debug("laser real start(%v) end(%v)", start, end)
+
 	// 判斷起始點是否在某個物體内
 	objList := s.gmap.PointInObjList(start)
 	for _, id := range objList {
@@ -894,12 +896,10 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (pos base.
 		case base.ObjTypeStatic:
 			switch subtype {
 			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
-				return
+				return end, false
 			}
 		}
 	}
-
-	pos = end
 
 	// 獲得綫段相交的物體列表
 	var intersectInfo IntersectInfo
@@ -911,7 +911,7 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (pos base.
 		case base.ObjTypeStatic:
 			switch subtype {
 			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
-				pos = intersectInfo.pos
+				end = intersectInfo.pos
 			}
 		case base.ObjTypeMovable:
 			switch subtype {
@@ -922,9 +922,9 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (pos base.
 			}
 		}
 	} else {
-		log.Debug("not found intersect point, pos is %v", pos)
+		log.Debug("not found intersect point, pos is %v", end)
 	}
-	return pos, true
+	return end, true
 }
 
 func (w *World) posIsValid(pos *base.Pos) bool {
