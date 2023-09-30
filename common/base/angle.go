@@ -136,12 +136,24 @@ func HalfPiAngle() Angle {
 	return Angle{degree: 90}
 }
 
+func NegativeHalfPiAngle() Angle {
+	return Angle{degree: -90}
+}
+
 func PiAngle() Angle {
 	return Angle{degree: 180}
 }
 
+func NegativePiAngle() Angle {
+	return Angle{degree: -180}
+}
+
 func TwoPiAngle() Angle {
 	return Angle{degree: 360}
+}
+
+func NegativeTwoPiAngle() Angle {
+	return Angle{degree: -360}
 }
 
 func Rotate(x, y int32, x0, y0 int32, angle Angle) (int32, int32) {

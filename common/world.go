@@ -847,7 +847,7 @@ func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 
 // 激光效果
 func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos, bool) {
-	log.Debug("LaserEffect: start %v, end %v", start, end)
+	//log.Debug("LaserEffect: start %v, end %v", start, end)
 	if !s.posIsValid(&start) {
 		return end, false
 	}
@@ -912,7 +912,7 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos,
 		}
 	}
 
-	log.Debug("laser real start(%v) end(%v)", start, end)
+	//log.Debug("laser real start(%v) end(%v)", start, end)
 
 	// 判斷起始點是否在某個物體内
 	objList := s.gmap.PointInObjList(start)
@@ -955,7 +955,7 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos,
 			}
 		}
 	} else {
-		log.Debug("not found intersect point, laser end pos is %v", end)
+		//log.Debug("not found intersect point, laser end pos is %v", end)
 	}
 	return end, true
 }

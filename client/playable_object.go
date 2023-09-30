@@ -2,9 +2,8 @@ package main
 
 import (
 	"image/color"
-	"project_b/client_base"
+	client_base "project_b/client_base"
 	"project_b/common/base"
-	common_base "project_b/common/base"
 	"project_b/common/effect"
 	"project_b/common/object"
 	"project_b/common/time"
@@ -16,7 +15,7 @@ import (
 
 type Transform struct {
 	tx, ty   float64
-	rotation common_base.Angle
+	rotation base.Angle
 	sx, sy   float64
 }
 
@@ -377,7 +376,7 @@ func (ps *PlayableShell) Interpolation(transform *Transform) {
 // 后更新事件處理
 func (ps *PlayableShell) onEventLateUpdate(args ...any) {
 	ps.moveInfo.X, ps.moveInfo.Y = args[0].(int32), args[1].(int32)
-	ps.moveInfo.Rotation = args[2].(common_base.Angle)
+	ps.moveInfo.Rotation = args[2].(base.Angle)
 	ps.updated = true
 	ps.lastMs = time.CurrentMs() //core.GetSyncServTime()
 }

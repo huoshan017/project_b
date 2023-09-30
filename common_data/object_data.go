@@ -199,7 +199,7 @@ var (
 	LaserConfigData = map[int32]*weapon.LaserStaticInfo{
 		1: {
 			Diameter:       4,
-			Range:          20000,
+			Range:          2500,
 			Dps:            100,
 			Energy:         100,
 			CostPerSecond:  40,

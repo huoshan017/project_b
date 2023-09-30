@@ -132,26 +132,28 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		// in.X*[(e1.Y-s1.Y)-(e1.X-s1.X)*(e2.Y-s2.Y)/(e2.X-s2.X)] =
 		//     (e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)/(e2.X-s2.X)+s2.Y-s1.Y) + s1.X*(e1.Y-s1.Y)
 		//in.X = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)/(e2.X-s2.X)+s2.Y-s1.Y) + s1.X*(e1.Y-s1.Y)) / ((e1.Y - s1.Y) - (e1.X-s1.X)*(e2.Y-s2.Y)/(e2.X-s2.X))
-		x = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)+(s2.Y-s1.Y)*(e2.X-s2.X)) + s1.X*(e1.Y-s1.Y)*(e2.X-s2.X)) / ((e1.Y-s1.Y)*(e2.X-s2.X) - (e1.X-s1.X)*(e2.Y-s2.Y))
-		y = (e2.Y-s2.Y)*(x-s2.X)/(e2.X-s2.X) + s2.Y
+		//x = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)+(s2.Y-s1.Y)*(e2.X-s2.X)) + s1.X*(e1.Y-s1.Y)*(e2.X-s2.X)) / ((e1.Y-s1.Y)*(e2.X-s2.X) - (e1.X-s1.X)*(e2.Y-s2.Y))
+		//y = (e2.Y-s2.Y)*(x-s2.X)/(e2.X-s2.X) + s2.Y
+		x = (s1.X*(e1.Y-s1.Y)*(e2.X-s2.X) - s2.X*(e2.Y-s2.Y)*(e1.X-s1.X) + (s2.Y-s1.Y)*(e1.X-s1.X)*(e2.X-s2.X)) / ((e1.Y-s1.Y)*(e2.X-s2.X) - (e1.X-s1.X)*(e2.Y-s2.Y))
+		y = s1.Y + (e1.Y-s1.Y)*(x-s1.X)/(e1.X-s1.X)
 		//log.Debug("get intersection (%v, %v)", x, y)
 	}
 
 	// 再判斷交點是否在兩條綫段上（因爲上面求出的交點有可能只是在綫段延長綫上）
 	// 交點與綫段兩端的差值符號相反
-	var a, b int32
+	var a, b int64
 	if s1.X != e1.X {
-		a = (s1.X - x) * (e1.X - x)
+		a = int64(s1.X-x) * int64(e1.X-x)
 	} else {
-		a = (s1.Y - y) * (e1.Y - y)
+		a = int64(s1.Y-y) * int64(e1.Y-y)
 	}
 	if s2.X != e2.X {
-		b = (s2.X - x) * (e2.X - x)
+		b = int64(s2.X-x) * int64(e2.X-x)
 	} else {
-		b = (s2.Y - y) * (e2.Y - y)
+		b = int64(s2.Y-y) * int64(e2.Y-y)
 	}
-	if (a > 0 && b < 0) || (a < 0 && b > 0) || (a > 0 && b > 0) {
-		log.Debug("point(%v, %v) not within line segment (%+v, %+v) and (%+v, %+v)", x, y, s1, e1, s2, e2)
+	if a > 0 || b > 0 {
+		//log.Debug("point(%v, %v) not within line segment (%+v, %+v) and (%+v, %+v)", x, y, s1, e1, s2, e2)
 		return false
 	}
 
@@ -159,7 +161,7 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		in.X, in.Y = x, y
 	}
 
-	log.Debug("two line segment (%+v, %+v) and (%+v, %+v) with intersection point (%v, %v)", start1, end1, start2, end2, x, y)
+	//log.Debug("two line segment (%+v, %+v) and (%+v, %+v) with intersection point (%v, %v)", start1, end1, start2, end2, x, y)
 
 	return true
 }
@@ -201,7 +203,7 @@ func GetLineSegmentAndObjIntersection(start, end *base.Pos, obj IObject, interse
 		inn     *base.Pos
 	)
 
-	//log.Debug("obj %v A(%v) B(%v) C(%v) D(%v)", obj.InstId(), posA, posB, posC, posD)
+	log.Debug("obj %v A(%v) B(%v) C(%v) D(%v)", obj.InstId(), posA, posB, posC, posD)
 
 	for i := 0; i < len(posList) && n < 2; i++ {
 		if intersection != nil {

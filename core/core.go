@@ -122,7 +122,7 @@ func (core *GameCore) Update(ms uint32) {
 		return
 	}
 	usedMs := ms - core.lastCheckMs
-	for usedMs >= uint32(core.args.FrameMs) {
+	for usedMs >= core.args.FrameMs {
 		core.inst.UpdateFrame()
 		usedMs -= core.args.FrameMs
 		core.lastCheckMs += core.args.FrameMs

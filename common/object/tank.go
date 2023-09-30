@@ -3,7 +3,6 @@ package object
 import (
 	"project_b/common/base"
 	"project_b/common/weapon"
-	"project_b/log"
 	"unsafe"
 )
 
@@ -283,7 +282,7 @@ func (t *Tank) Move(dir base.Angle) {
 	t.moveDir = dir
 	if t.moveDir != t.Rotation() || t.state == rotating {
 		t.setState(rotating)
-		log.Debug("@@@ tank %v rotating, moveDir %v, rotation %v, currMs %v", t.instId, t.moveDir, t.Rotation(), t.CurrMs())
+		//log.Debug("@@@ tank %v rotating, moveDir %v, rotation %v, currMs %v", t.instId, t.moveDir, t.Rotation(), t.CurrMs())
 		return
 	}
 	t.MovableObject.Move(dir)
@@ -296,10 +295,6 @@ func (t *Tank) Stop() {
 	}
 	// rotating狀態不能被打斷
 	if t.state == rotating {
-		/*t.setState(toStop)
-		x, y := t.Pos()
-		t.stopEvent.Call(Pos{X: x, Y: y}, t.moveDir, t.CurrentSpeed())
-		log.Debug("@@@ tank %v rotating => to stop, moveDir %v, rotation %v, currMs %v", t.instId, t.moveDir, t.Rotation(), t.CurrMs())*/
 		return
 	}
 	t.MovableObject.Stop()
@@ -311,10 +306,10 @@ func (t *Tank) Update(tickMs uint32) {
 		return
 	}
 
-	if t.checkRotateState(tickMs) {
-		return
+	if !t.checkRotateState(tickMs) {
+		t.MovableObject.Update(tickMs)
 	}
-	t.MovableObject.Update(tickMs)
+
 	if t.shield != nil {
 		t.shield.Update(tickMs)
 	}
@@ -391,8 +386,8 @@ func (t *Tank) checkRotateState(tickMs uint32) bool {
 
 	// 把角度差限制在[-180, 180]範圍内
 	if angleDiff.Greater(base.PiAngle()) {
-		angleDiff.Add(base.TwoPiAngle().Negative())
-	} else if angleDiff.Less(base.PiAngle().Negative()) {
+		angleDiff.Add(base.NegativeTwoPiAngle())
+	} else if angleDiff.Less(base.NegativePiAngle()) {
 		angleDiff.Add(base.TwoPiAngle())
 	}
 
