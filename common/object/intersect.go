@@ -1,8 +1,8 @@
 package object
 
 import (
+	"math"
 	"project_b/common/base"
-	"project_b/log"
 )
 
 // 點是否在物體内
@@ -123,19 +123,12 @@ func GetTwoLineSegmentIntersection(start1, end1, start2, end2 *base.Pos, interse
 		}
 	} else {
 		// 利用斜率求出交點的坐標
-		// (e1.X-s1.X)/(e1.Y-s1.Y) = (in.X-s1.X)/(in.Y-s1.Y)
-		// (e2.X-s2.X)/(e2.Y-s2.Y) = (in.X-s2.X)/(in.Y-s2.Y)
-		// in.X = (e1.X-s1.X)*(in.Y-s1.Y)/(e1.Y-s1.Y) + s1.X
-		// in.Y = (e2.Y-s2.Y)*(in.X-s2.X)/(e2.X-s2.X) + s2.Y
-		// in.X = (e1.X-s1.X)*((e2.Y-s2.Y)*(in.X-s2.X)/(e2.X-s2.X) + s2.Y-s1.Y)/(e1.Y-s1.Y) + s1.X
-		// in.X*(e1.Y-s1.Y) = (e1.X-s1.X)*((e2.Y-s2.Y)*(in.X-s2.X)/(e2.X-s2.X)+s2.Y-s1.Y) +s1.X*(e1.Y-s1.Y)
-		// in.X*[(e1.Y-s1.Y)-(e1.X-s1.X)*(e2.Y-s2.Y)/(e2.X-s2.X)] =
-		//     (e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)/(e2.X-s2.X)+s2.Y-s1.Y) + s1.X*(e1.Y-s1.Y)
-		//in.X = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)/(e2.X-s2.X)+s2.Y-s1.Y) + s1.X*(e1.Y-s1.Y)) / ((e1.Y - s1.Y) - (e1.X-s1.X)*(e2.Y-s2.Y)/(e2.X-s2.X))
-		//x = ((e1.X-s1.X)*((e2.Y-s2.Y)*(-s2.X)+(s2.Y-s1.Y)*(e2.X-s2.X)) + s1.X*(e1.Y-s1.Y)*(e2.X-s2.X)) / ((e1.Y-s1.Y)*(e2.X-s2.X) - (e1.X-s1.X)*(e2.Y-s2.Y))
-		//y = (e2.Y-s2.Y)*(x-s2.X)/(e2.X-s2.X) + s2.Y
-		x = (s1.X*(e1.Y-s1.Y)*(e2.X-s2.X) - s2.X*(e2.Y-s2.Y)*(e1.X-s1.X) + (s2.Y-s1.Y)*(e1.X-s1.X)*(e2.X-s2.X)) / ((e1.Y-s1.Y)*(e2.X-s2.X) - (e1.X-s1.X)*(e2.Y-s2.Y))
-		y = s1.Y + (e1.Y-s1.Y)*(x-s1.X)/(e1.X-s1.X)
+		// (e1.X-s1.X)/(e1.Y-s1.Y) = (x-s1.X)/(y-s1.Y)
+		// (e2.X-s2.X)/(e2.Y-s2.Y) = (x-s2.X)/(y-s2.Y)
+		var fm int64 = int64(s1.X)*int64(e1.Y-s1.Y)*int64(e2.X-s2.X) - int64(s2.X)*int64(e2.Y-s2.Y)*int64(e1.X-s1.X) + int64(s2.Y-s1.Y)*int64(e1.X-s1.X)*int64(e2.X-s2.X)
+		var fz int64 = int64(e1.Y-s1.Y)*int64(e2.X-s2.X) - int64(e1.X-s1.X)*int64(e2.Y-s2.Y)
+		x = int32(fm / fz)
+		y = s1.Y + int32(int64(e1.Y-s1.Y)*int64(x-s1.X)/int64(e1.X-s1.X))
 		//log.Debug("get intersection (%v, %v)", x, y)
 	}
 
@@ -203,7 +196,7 @@ func GetLineSegmentAndObjIntersection(start, end *base.Pos, obj IObject, interse
 		inn     *base.Pos
 	)
 
-	log.Debug("obj %v A(%v) B(%v) C(%v) D(%v)", obj.InstId(), posA, posB, posC, posD)
+	//log.Debug("obj %v A(%v) B(%v) C(%v) D(%v)", obj.InstId(), posA, posB, posC, posD)
 
 	for i := 0; i < len(posList) && n < 2; i++ {
 		if intersection != nil {
@@ -216,14 +209,15 @@ func GetLineSegmentAndObjIntersection(start, end *base.Pos, obj IObject, interse
 		}
 	}
 
-	var result = n >= 2
+	var result = (n >= 1)
 	if result {
-		d0 := base.Distance(start, &in[0])
-		d1 := base.Distance(start, &in[1])
-		if d0 <= d1 {
-			*intersection = in[0]
-		} else {
-			*intersection = in[1]
+		var d uint32 = math.MaxUint32
+		for i := int8(0); i < n; i++ {
+			dd := base.Distance(start, &in[i])
+			if d > dd {
+				*intersection = in[i]
+				d = dd
+			}
 		}
 	}
 	return result

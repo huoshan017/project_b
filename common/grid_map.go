@@ -351,109 +351,12 @@ func (m *GridMap) GetMovableObjListWithRange(rect *math.Rect) []uint32 {
 	return m.GetMovableObjListWithRangeAndSubtype(rect, base.ObjSubtypeNone)
 }
 
-func (m *GridMap) GetObjListWithLineSegment(start, end *base.Pos) (objList []uint32) {
-	sx, sy := start.X, start.Y
-	ex, ey := end.X, end.Y
-	var (
-		dx, dy                 int32 = ex - sx, ey - sy
-		is, ie, js, je, di, dj int32
-		flag                   bool
-	)
-	// check abs_dx/abs_dy and m.gridWidth/m.gridHeight
-	// abs_dx/abs_dy >= m.gridWidth/m.gridHeight
-	abs_dx, abs_dy := base.Abs(dx), base.Abs(dy)
-	// 計算從start到end的綫段在水平和垂直兩個方向上的步進增量
-	// 以一個方向(x軸或y軸)網格的寬度或高度爲增量遍歷經過的網格
-	// 而另一個方向(y軸或x軸)遍歷時的增量按網格寬高比計算，不超
-	// 過網格的高度或寬度，這樣才能保證遍歷所有經過的網格，而不
-	// 遺漏掉任何網格
-	if abs_dx*m.gridHeight >= abs_dy*m.gridWidth {
-		if dx >= 0 {
-			if dy >= 0 {
-				is, ie, js, je = sx, ex, sy, ey
-				dj = abs_dy * m.gridWidth / abs_dx
-			} else {
-				is, ie, js, je = sx, ex, ey, sy
-				dj = -(abs_dy * m.gridWidth / abs_dx)
-			}
-			di = m.gridWidth
-		} else {
-			if dy >= 0 {
-				is, ie, js, je = ex, sx, sy, ey
-				dj = abs_dy * m.gridWidth / abs_dx
-			} else {
-				is, ie, js, je = ex, sx, ey, sy
-				dj = -(abs_dy * m.gridWidth / abs_dx)
-			}
-			di = -m.gridWidth
-		}
-	} else { // abs_dx/abs_dy >= m.gridWidth/m.gridHeight
-		if dy >= 0 {
-			if dx >= 0 {
-				is, ie, js, je = sy, ey, sx, ex
-				dj = abs_dx * m.gridHeight / abs_dy
-			} else {
-				is, ie, js, je = sy, ey, ex, sx
-				dj = -(abs_dx * m.gridHeight / abs_dy)
-			}
-			di = m.gridHeight
-		} else {
-			if dx >= 0 {
-				is, ie, js, je = ey, sy, sx, ex
-				dj = abs_dx * m.gridHeight / abs_dy
-			} else {
-				is, ie, js, je = ey, sy, ex, sx
-				dj = -(abs_dx * m.gridHeight / abs_dy)
-			}
-			di = -m.gridHeight
-		}
-		flag = true
-	}
-	var (
-		index [3]int32
-		i, j  = is, js
-	)
-	for i = is; ; i += di {
-		for j = js; ; j += dj {
-			if !flag {
-				index[1] = m.posGridIndex(i, j)
-				index[0] = index[1] - int32(m.gridColNum)
-				index[2] = index[1] + int32(m.gridColNum)
-			} else {
-				index[1] = m.posGridIndex(j, i)
-				index[0] = index[1] - 1
-				index[2] = index[1] + 1
-			}
-			for n := 0; n < len(index); n++ {
-				if index[n] < 0 {
-					continue
-				}
-				l := m.grids[index[n]]
-				for k := 0; k < len(l); k++ {
-					// 判斷綫段跟物體是否有相交
-					obj, o := m.sobjs.Get(l[k])
-					if o && object.CheckLineSegmentIntersectObj(start, end, obj) {
-						objList = append(objList, l[k])
-					}
-				}
-			}
-			if dj == 0 || (dj > 0 && j+dj > je) || (dj < 0 && j+dj < je) {
-				break
-			}
-		}
-		if di == 0 || (di > 0 && i+di > ie) || (di < 0 && i+di < ie) {
-			break
-		}
-	}
-	return
-}
-
 type IntersectInfo struct {
 	obj object.IObject
 	pos base.Pos
 }
 
-func (m *GridMap) GetLineSegmentFirstIntersectInfo(start, end *base.Pos, intersectInfo *IntersectInfo) bool {
+func (m *GridMap) GetLineSegmentFirstIntersectInfo(start, end *base.Pos, exceptObjInstId uint32, intersectInfo *IntersectInfo) bool {
 	sx, sy := start.X, start.Y
 	ex, ey := end.X, end.Y
 	var (
@@ -532,6 +435,9 @@ func (m *GridMap) GetLineSegmentFirstIntersectInfo(start, end *base.Pos, interse
 				var d uint32
 				var oo bool
 				// 判斷綫段跟物體是否有相交
+				if l[k] == exceptObjInstId {
+					continue
+				}
 				obj, o := m.sobjs.Get(l[k])
 				if o && object.GetLineSegmentAndObjIntersection(start, end, obj, &pos) {
 					oo = true

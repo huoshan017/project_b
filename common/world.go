@@ -934,7 +934,7 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos,
 
 	// 獲得綫段相交的物體列表
 	var intersectInfo IntersectInfo
-	if s.gmap.GetLineSegmentFirstIntersectInfo(&start, &end, &intersectInfo) {
+	if s.gmap.GetLineSegmentFirstIntersectInfo(&start, &end, laser.Emitter(), &intersectInfo) {
 		obj := intersectInfo.obj
 		typ := obj.Type()
 		subtype := obj.Subtype()

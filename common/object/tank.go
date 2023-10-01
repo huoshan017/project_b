@@ -107,6 +107,11 @@ func (holder *laserHolder) Camp() base.CampType {
 	return holder.tank.Camp()
 }
 
+// 實例id
+func (holder *laserHolder) InstId() uint32 {
+	return holder.tank.instId
+}
+
 // 坦克
 type Tank struct {
 	*Vehicle

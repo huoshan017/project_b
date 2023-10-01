@@ -8,6 +8,7 @@ type IHolder interface {
 	LaunchPoint() base.Pos
 	Forward() base.Vec2
 	Camp() base.CampType
+	InstId() uint32
 }
 
 type laserState int
@@ -108,6 +109,10 @@ func (l *Laser) GetEndPoint() (base.Pos, bool) {
 
 func (l *Laser) Camp() base.CampType {
 	return l.holder.Camp()
+}
+
+func (l *Laser) Emitter() uint32 {
+	return l.holder.InstId()
 }
 
 func (l *Laser) checkEmitting(tickMs uint32) {
