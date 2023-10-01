@@ -252,15 +252,11 @@ func (o *MovableObject) Update(tickMs uint32) {
 	}
 
 	ox, oy := o.Pos()
-	if o.checkMove(x-ox, y-oy, true, func() {
+	o.checkMove(x-ox, y-oy, true, func() {
 		o.SetPos(x, y)
 	}, func() {
 		o.setState(toStop)
-	}) {
-		//o.SetPos(x, y)
-	} else {
-		//o.state = toStop
-	}
+	})
 
 	if o.state == isMoving {
 		o.updateEvent.Call(base.Pos{X: x, Y: y}, o.moveDir, o.CurrentSpeed())
