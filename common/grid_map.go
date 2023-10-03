@@ -356,7 +356,10 @@ type IntersectInfo struct {
 	pos base.Pos
 }
 
-func (m *GridMap) GetLineSegmentFirstIntersectInfo(start, end *base.Pos, exceptObjInstId uint32, intersectInfo *IntersectInfo) bool {
+func (m *GridMap) GetLineSegmentFirstIntersectInfo(
+	start, end *base.Pos, exceptObjInstId uint32,
+	checkIntersectFunc func(object.IObject) bool,
+	intersectInfo *IntersectInfo) bool {
 	sx, sy := start.X, start.Y
 	ex, ey := end.X, end.Y
 	var (
@@ -433,21 +436,15 @@ func (m *GridMap) GetLineSegmentFirstIntersectInfo(start, end *base.Pos, exceptO
 			for k := 0; k < len(l); k++ {
 				var pos base.Pos
 				var d uint32
-				var oo bool
 				// 判斷綫段跟物體是否有相交
 				if l[k] == exceptObjInstId {
 					continue
 				}
 				obj, o := m.sobjs.Get(l[k])
-				if o && object.GetLineSegmentAndObjIntersection(start, end, obj, &pos) {
-					oo = true
-				} else if !o {
+				if !o {
 					obj, o = m.mobjs.Get(l[k])
-					if o && object.GetLineSegmentAndObjIntersection(start, end, obj, &pos) {
-						oo = true
-					}
 				}
-				if oo {
+				if o && checkIntersectFunc(obj) && object.GetLineSegmentAndObjIntersection(start, end, obj, &pos) {
 					d = base.Distance(start, &pos)
 					if d < distance {
 						distance = d

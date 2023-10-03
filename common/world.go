@@ -932,28 +932,36 @@ func (s *World) LaserEffect(laser *weapon.Laser, start, end base.Pos) (base.Pos,
 		}
 	}
 
-	// 獲得綫段相交的物體列表
-	var intersectInfo IntersectInfo
-	if s.gmap.GetLineSegmentFirstIntersectInfo(&start, &end, laser.Emitter(), &intersectInfo) {
-		obj := intersectInfo.obj
+	// 检测函数，返回true表示有阻挡相交，返回false表示没有阻挡继续检测
+	checkFunc := func(obj object.IObject) bool {
+		result := false
 		typ := obj.Type()
 		subtype := obj.Subtype()
 		switch typ {
 		case base.ObjTypeStatic:
 			switch subtype {
 			case base.ObjSubtypeBrick, base.ObjSubtypeIron:
-				end = intersectInfo.pos
+				result = true
 			}
 		case base.ObjTypeMovable:
 			switch subtype {
 			case base.ObjSubtypeShell, base.ObjSubtypeTank:
 				if obj.Camp() != laser.Camp() {
-					obj.ToRecycle()
-					s.laserHitObjEffect(laser, obj)
-					end = intersectInfo.pos
+					result = true
 				}
 			}
 		}
+		return result
+	}
+	// 獲得綫段相交信息
+	var intersectInfo IntersectInfo
+	if s.gmap.GetLineSegmentFirstIntersectInfo(&start, &end, laser.Emitter(), checkFunc, &intersectInfo) {
+		obj := intersectInfo.obj
+		if obj.Type() == base.ObjTypeMovable && (obj.Subtype() == base.ObjSubtypeShell || obj.Subtype() == base.ObjSubtypeTank) {
+			obj.ToRecycle()
+			s.laserHitObjEffect(laser, obj)
+		}
+		end = intersectInfo.pos
 	} else {
 		//log.Debug("not found intersect point, laser end pos is %v", end)
 	}
