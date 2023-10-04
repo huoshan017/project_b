@@ -135,7 +135,7 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 			mx, my       = int32(math.MaxInt32), int32(math.MaxInt32)
 			xList, yList []int32
 		)
-		fn := func(x, y, i int32) (int32, int32) {
+		fn := func(x, y, i int32) {
 			if x < mx {
 				mx = x
 				if len(xList) > 0 {
@@ -154,7 +154,6 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 			} else if y == my {
 				yList = append(yList, i)
 			}
-			return mx, my
 		}
 		if dx > 0 && dy > 0 { // 右上方移動
 			for i := int32(0); i < ml; i++ {
@@ -187,7 +186,7 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				} else {
 					panic(fmt.Sprintf("dx(%v)>0 dy(%v)>0  aabb.Right(%v) > aabb2.Left(%v) && aabb.Top(%v) > aabb2.Bottom(%v)", dx, dy, aabb.Right, aabb2.Left, aabb.Top, aabb2.Bottom))
 				}
-				mx, my = fn(x, y, i)
+				fn(x, y, i)
 				if movingObjCollision2ObjResult(mobj, obj) == CollisionAndBlock {
 					collisionInfo.Result = CollisionAndBlock
 				}
@@ -222,7 +221,7 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				} else {
 					panic(fmt.Sprintf("dx(%v)>0 dy(%v)<0  aabb.Right(%v) > aabb2.Left(%v) && aabb.Bottom(%v) < aabb2.Top(%v)", dx, dy, aabb.Right, aabb2.Left, aabb.Bottom, aabb2.Top))
 				}
-				mx, my = fn(x, y, i)
+				fn(x, y, i)
 				if movingObjCollision2ObjResult(mobj, obj) == CollisionAndBlock {
 					collisionInfo.Result = CollisionAndBlock
 				}
@@ -256,7 +255,7 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				} else {
 					panic(fmt.Sprintf("dx(%v)<0 dy(%v)>0  aabb.Left(%v) < aabb2.Right(%v) && aabb.Top(%v) > aabb2.Bottom(%v)", dx, dy, aabb.Left, aabb2.Right, aabb.Top, aabb2.Bottom))
 				}
-				mx, my = fn(x, y, i)
+				fn(x, y, i)
 				if movingObjCollision2ObjResult(mobj, obj) == CollisionAndBlock {
 					collisionInfo.Result = CollisionAndBlock
 				}
@@ -290,7 +289,7 @@ func NarrowPhaseCheckMovingObjCollision2ObjList(mobj IMovableObject, dx, dy int3
 				} else {
 					panic(fmt.Sprintf("dx(%v)<0 dy(%v)<0  aabb.Left(%v) < aabb2.Right(%v) && aabb.Top(%v) >= aabb2.Bottom(%v)", dx, dy, aabb.Left, aabb2.Right, aabb.Top, aabb2.Bottom))
 				}
-				mx, my = fn(x, y, i)
+				fn(x, y, i)
 				if movingObjCollision2ObjResult(mobj, obj) == CollisionAndBlock {
 					collisionInfo.Result = CollisionAndBlock
 				}
@@ -358,7 +357,7 @@ func movingObjCollision2ObjResult(mobj IMovableObject, obj IObject) CollisionRes
 		case base.ObjTypeStatic:
 			switch obj.Subtype() {
 			case base.ObjSubtypeBrick, base.ObjSubtypeIron, base.ObjSubtypeHome:
-				result = CollisionOnly
+				result = CollisionAndBlock
 			default:
 			}
 		case base.ObjTypeMovable:
