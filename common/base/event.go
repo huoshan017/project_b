@@ -12,7 +12,7 @@ type Event struct {
 
 func (e *Event) Register(eh EventHandle) {
 	for _, h := range e.handles {
-		if reflect.DeepEqual(h, eh) {
+		if reflect.ValueOf(h).Pointer() == reflect.ValueOf(eh).Pointer() {
 			return
 		}
 	}
@@ -21,7 +21,7 @@ func (e *Event) Register(eh EventHandle) {
 
 func (e *Event) Unregister(eh EventHandle) {
 	for i, h := range e.handles {
-		if reflect.DeepEqual(h, eh) {
+		if reflect.ValueOf(h).Pointer() == reflect.ValueOf(eh).Pointer() {
 			e.handles = append(e.handles[:i], e.handles[i+1:]...)
 			return
 		}

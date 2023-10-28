@@ -3,6 +3,7 @@ package ui
 import (
 	"project_b/client_base"
 	"project_b/client_core"
+	"project_b/common"
 	"project_b/common_data"
 	"project_b/game_map"
 	"project_b/log"
@@ -79,4 +80,5 @@ func (ui *MissionsSubUI) enterGame() {
 	}
 	ui.game.GameCore().Start([]uint64{client_core.DefaultSinglePlayerId}, ui.isRecord)
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
+	ui.game.EventMgr().InvokeEvent(common.EventIdEnterGame)
 }

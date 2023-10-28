@@ -70,11 +70,10 @@ func (g *EventHandles) registerEvents() {
 
 	// 游戏事件处理
 	g.gameEvent2Handles = []event2Handle{
-		{common.EventIdTankMove, g.onEventTankMove},         // 处理坦克移动
+		{common.EventIdTankStartMove, g.onEventTankMove},    // 处理坦克开始移动
 		{common.EventIdTankStopMove, g.onEventTankStopMove}, // 处理坦克停止移动
-		{common.EventIdTankSetPos, g.onEventTankSetPos},     // 处理坦克位置更新
-		{common.EventIdTankChange, g.onEventTankChange},     // 处理坦克变化
-		{common.EventIdTankRestore, g.onEventTankRestore},   // 处理坦克恢复
+		{common.EventIdChangeTank, g.onEventTankChange},     // 处理坦克变化
+		{common.EventIdRestoreTank, g.onEventTankRestore},   // 处理坦克恢复
 	}
 
 	for _, e2h := range g.playerEvent2Handles {
@@ -280,23 +279,6 @@ func (eh *EventHandles) onEventTankStopMove(args ...any) {
 	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_ToStop, pos /*dir*/, int32(orientation.ToMinutes()), speed)
 	if err != nil {
 		log.Error("send tank stop move req err: %v", err)
-	}
-}
-
-/*
-*
-处理坦克设置坐标事件
-args[0]: object.Pos
-args[1]: object.Direction
-args[2]: int32
-*/
-func (eh *EventHandles) onEventTankSetPos(args ...any) {
-	pos := args[0].(base.Pos)
-	orientation := args[1].(base.Angle)
-	speed := args[2].(int32)
-	err := eh.net.SendTankUpdatePosReq(game_proto.MovementState_Moving, pos /*dir*/, int32(orientation.ToMinutes()), speed)
-	if err != nil {
-		log.Error("send tank update pos req err: %v", err)
 	}
 }
 

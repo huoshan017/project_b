@@ -37,9 +37,3 @@ type IEventManager interface {
 	IEventDispatcher
 	IEventClearer
 }
-
-// 場景
-type IScene interface {
-	Width() int32
-	Height() int32
-}

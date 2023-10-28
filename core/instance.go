@@ -118,6 +118,7 @@ func (inst *Instance) CheckAndStart(playerList []uint64) bool {
 	}
 	inst.playerIdList = playerList
 	inst.frameIndexInList = 0
+	inst.eventMgr.InvokeEvent(common.EventIdEnterGame)
 	return true
 }
 
@@ -135,6 +136,7 @@ func (inst *Instance) Pause() {
 		return
 	}
 	inst.logic.Pause()
+	inst.eventMgr.InvokeEvent(common.EventIdGamePause)
 }
 
 func (inst *Instance) Resume() {

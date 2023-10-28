@@ -198,7 +198,7 @@ var (
 	// 激光配置信息
 	LaserConfigData = map[int32]*weapon.LaserStaticInfo{
 		1: {
-			Diameter:       2,
+			Diameter:       1,
 			Range:          2500,
 			Dps:            100,
 			Energy:         100,

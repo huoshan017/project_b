@@ -14,6 +14,14 @@ import (
 	"github.com/huoshan017/ponu/heap"
 )
 
+type FireType int32
+
+const (
+	FireTypeNone FireType = iota
+	FireTypeShell
+	FireTypeLaser
+)
+
 type PlayerTankKV struct {
 	PlayerId uint64
 	Tank     *object.Tank
@@ -59,7 +67,7 @@ func NewWorld(eventMgr base.IEventManager) *World {
 		objFactory:      object.NewObjectFactory(true),
 		effectList:      ds.NewMapListUnion[uint32, *effect.Effect](),
 		effectPool:      effect.NewEffectPool(),
-		gmap:            NewGridMap(1),
+		gmap:            NewGridMap(2),
 	}
 }
 
@@ -241,12 +249,10 @@ func (s *World) RegisterTankEvent(instId uint32, eid base.EventId, handle func(a
 		return
 	}
 	switch eid {
-	case EventIdTankMove:
+	case EventIdTankStartMove:
 		tank.RegisterMoveEventHandle(handle)
 	case EventIdTankStopMove:
 		tank.RegisterStopMoveEventHandle(handle)
-	case EventIdTankSetPos:
-		tank.RegisterUpdateEventHandle(handle)
 	}
 }
 
@@ -257,12 +263,10 @@ func (s *World) UnregisterTankEvent(instId uint32, eid base.EventId, handle func
 		return
 	}
 	switch eid {
-	case EventIdTankMove:
+	case EventIdTankStartMove:
 		tank.UnregisterMoveEventHandle(handle)
 	case EventIdTankStopMove:
 		tank.UnregisterStopMoveEventHandle(handle)
-	case EventIdTankSetPos:
-		tank.UnregisterUpdateEventHandle(handle)
 	}
 }
 
@@ -403,6 +407,7 @@ func (s *World) TankFire(instId uint32) {
 		} else {
 			shell.Move(tank.Rotation())
 		}
+		s.eventMgr.InvokeEvent(EventIdTankShoot, instId, FireTypeShell)
 	}
 }
 

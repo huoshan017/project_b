@@ -3,6 +3,7 @@ package ui
 import (
 	"project_b/client_base"
 	"project_b/client_core"
+	"project_b/common"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -116,11 +117,13 @@ func (ui *PauseMenuUI) popQueryQuit2MainMenuDialog() {
 func (ui *PauseMenuUI) restart() {
 	ui.game.GameCore().Restart()
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerEnterGame, "", client_core.DefaultSinglePlayerId)
+	ui.game.EventMgr().InvokeEvent(common.EventIdEnterGame)
 	ui.resume()
 }
 
 func (ui *PauseMenuUI) quit2MainMenu() {
 	ui.game.GameCore().End()
 	ui.game.EventMgr().InvokeEvent(client_core.EventIdPlayerExitGame, ui.game.GetGameData().MyId)
+	ui.game.EventMgr().InvokeEvent(common.EventIdExitGame)
 	ui.resume()
 }
