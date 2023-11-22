@@ -258,49 +258,41 @@ func (po *PlayableMoveObject) onEventResume(args ...any) {
 
 // 繪製包圍盒
 func (po *PlayableMoveObject) drawBoundingbox(dstImage *ebiten.Image) {
-	showShellBoundingbox := debug.IsShowShellBoundingbox()
-	showTankBoundingbox := debug.IsShowTankBoundingbox()
-	if showShellBoundingbox || showTankBoundingbox {
-		x0, y0 := po.mobj.LeftTop()
-		x1, y1 := po.mobj.RightTop()
-		x2, y2 := po.mobj.RightBottom()
-		x3, y3 := po.mobj.LeftBottom()
-		x0, y0 = mainCamera.World2Screen(x0, y0)
-		x1, y1 = mainCamera.World2Screen(x1, y1)
-		x2, y2 = mainCamera.World2Screen(x2, y2)
-		x3, y3 = mainCamera.World2Screen(x3, y3)
-		var c color.RGBA
-		if showShellBoundingbox {
-			c = color.RGBA{255, 0, 0, 0}
-		} else {
-			c = color.RGBA{0, 255, 0, 0}
-		}
-		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
+	x0, y0 := po.mobj.LeftTop()
+	x1, y1 := po.mobj.RightTop()
+	x2, y2 := po.mobj.RightBottom()
+	x3, y3 := po.mobj.LeftBottom()
+	x0, y0 = mainCamera.World2Screen(x0, y0)
+	x1, y1 = mainCamera.World2Screen(x1, y1)
+	x2, y2 = mainCamera.World2Screen(x2, y2)
+	x3, y3 = mainCamera.World2Screen(x3, y3)
+	var c color.RGBA
+	if debug.IsShowShellBoundingbox() {
+		c = color.RGBA{255, 0, 0, 0}
+	} else {
+		c = color.RGBA{0, 255, 0, 0}
 	}
+	vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
+	vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
+	vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
+	vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
 }
 
 func (po *PlayableMoveObject) drawAABB(dstImage *ebiten.Image) {
-	showShellAABB := debug.IsShowShellAABB()
-	showTankAABB := debug.IsShowTankAABB()
-	if showShellAABB || showTankAABB {
-		collider := po.mobj.GetColliderComp()
-		if collider == nil {
-			return
-		}
-		aabb := collider.GetAABB()
-		x0, y0 := mainCamera.World2Screen(aabb.Left, aabb.Bottom)
-		x1, y1 := mainCamera.World2Screen(aabb.Right, aabb.Bottom)
-		x2, y2 := mainCamera.World2Screen(aabb.Right, aabb.Top)
-		x3, y3 := mainCamera.World2Screen(aabb.Left, aabb.Top)
-		c := color.RGBA{255, 255, 0, 0}
-		vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
-		vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
+	collider := po.mobj.GetColliderComp()
+	if collider == nil {
+		return
 	}
+	aabb := collider.GetAABB()
+	x0, y0 := mainCamera.World2Screen(aabb.Left, aabb.Bottom)
+	x1, y1 := mainCamera.World2Screen(aabb.Right, aabb.Bottom)
+	x2, y2 := mainCamera.World2Screen(aabb.Right, aabb.Top)
+	x3, y3 := mainCamera.World2Screen(aabb.Left, aabb.Top)
+	c := color.RGBA{255, 255, 0, 0}
+	vector.StrokeLine(dstImage, float32(x0), float32(y0), float32(x1), float32(y1), 1, c, false)
+	vector.StrokeLine(dstImage, float32(x1), float32(y1), float32(x2), float32(y2), 1, c, false)
+	vector.StrokeLine(dstImage, float32(x2), float32(y2), float32(x3), float32(y3), 1, c, false)
+	vector.StrokeLine(dstImage, float32(x3), float32(y3), float32(x0), float32(y0), 1, c, false)
 }
 
 // 炮彈播放對象
@@ -336,8 +328,12 @@ func (ps *PlayableShell) Uninit() {
 // 繪製
 func (ps *PlayableShell) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) {
 	ps.PlayableMoveObject.Draw(screen, op)
-	ps.drawAABB(screen)
-	ps.drawBoundingbox(screen)
+	if debug.IsShowShellAABB() {
+		ps.drawAABB(screen)
+	}
+	if debug.IsShowShellBoundingbox() {
+		ps.drawBoundingbox(screen)
+	}
 }
 
 // 插值
@@ -440,8 +436,12 @@ func (pt *PlayableTank) Draw(screen *ebiten.Image, op *ebiten.DrawImageOptions) 
 	if laser != nil {
 		pt.drawLaser(laser, screen, op)
 	}
-	pt.drawAABB(screen)
-	pt.drawBoundingbox(screen)
+	if debug.IsShowTankAABB() {
+		pt.drawAABB(screen)
+	}
+	if debug.IsShowTankBoundingbox() {
+		pt.drawBoundingbox(screen)
+	}
 }
 
 // 繪製激光

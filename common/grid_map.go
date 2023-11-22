@@ -539,7 +539,6 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 	x, y := mobj.Pos()
 	x += dx
 	y += dy
-	var index int32
 
 	// 九宮格
 	m.getNineSquaredGridIndexWithPos(x, y)
@@ -548,10 +547,13 @@ func (m *GridMap) CheckMovingObjCollision(mobj object.IMovableObject, dx, dy int
 		obj object.IObject
 		o   bool
 	)
+
 	if len(m.checkCollisionObjList) > 0 {
 		clear(m.checkCollisionObjList)
 		m.checkCollisionObjList = m.checkCollisionObjList[:0]
 	}
+
+	var index int32
 	for i := 0; i < len(m.nineSquared); i++ {
 		for j := 0; j < len(m.nineSquared[i]); j++ {
 			index = m.nineSquared[i][j]
