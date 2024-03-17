@@ -439,7 +439,12 @@ func (s *World) TankAddNewShell(instId uint32, shellConfigId int32) bool {
 		log.Error("World: tank %v not found", instId)
 		return false
 	}
-	return tank.AppendShell(common_data.ShellConfigData[shellConfigId])
+	shellConfig := common_data.ShellConfigData[shellConfigId]
+	if shellConfig == nil {
+		log.Error("World: shell config id %v not found", shellConfigId)
+		return false
+	}
+	return tank.AppendShell(shellConfig)
 }
 
 func (s *World) TankSwitchShell(instId uint32) {
@@ -822,8 +827,8 @@ func (w *World) laserHitObjEffect(laser *weapon.Laser, obj object.IObject) {
 func (s *World) searchShellTarget(shell *object.Shell) object.IObject {
 	staticInfo := shell.ShellStaticInfo()
 	cx, cy := shell.Pos()
-	rect := math.NewRect(cx-staticInfo.SearchTargetRadius, cy-staticInfo.SearchTargetRadius, cx+staticInfo.SearchTargetRadius, cy+staticInfo.SearchTargetRadius)
-	objList := s.gmap.GetMovableObjListWithRangeAndSubtype(rect, base.ObjSubtypeTank)
+	rect := math.NewRectObj(cx-staticInfo.SearchTargetRadius, cy-staticInfo.SearchTargetRadius, cx+staticInfo.SearchTargetRadius, cy+staticInfo.SearchTargetRadius)
+	objList := s.gmap.GetMovableObjListWithRangeAndSubtype(&rect, base.ObjSubtypeTank)
 	var (
 		tank *object.Tank
 		o    bool

@@ -1,22 +1,9 @@
 package object
 
+import "project_b/common/base"
+
 type IComponent interface {
 	Name() string
-}
-
-type AABB struct {
-	Left, Bottom int32
-	Right, Top   int32
-}
-
-// 是否相交
-func (ab *AABB) Intersect(aabb *AABB) bool {
-	return !(ab.Left >= aabb.Right || ab.Right <= aabb.Left || ab.Top <= aabb.Bottom || ab.Bottom >= aabb.Top)
-}
-
-// 移動相交
-func (ab *AABB) MoveIntersect(dx, dy int32, aabb *AABB) bool {
-	return !(ab.Left+dx >= aabb.Right || ab.Right+dx <= aabb.Left || ab.Top+dy <= aabb.Bottom || ab.Bottom+dy >= aabb.Top)
 }
 
 // 碰撞組件
@@ -31,7 +18,7 @@ func (c ColliderComp) Name() string {
 }
 
 // 獲得AABB
-func (c ColliderComp) GetAABB() AABB {
+func (c ColliderComp) GetAABB() base.AABB {
 	var (
 		s    int32
 		w    = c.obj.Width()
@@ -43,7 +30,7 @@ func (c ColliderComp) GetAABB() AABB {
 	} else {
 		s = l
 	}
-	return AABB{
+	return base.AABB{
 		Left:   x - s/2,
 		Bottom: y - s/2,
 		Right:  x + s/2,

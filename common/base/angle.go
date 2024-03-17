@@ -46,7 +46,7 @@ func (a *Angle) Sub(angle Angle) {
 }
 
 func (a *Angle) Normalize() {
-	minutes := a.degree*60 + a.minute
+	minutes := int32(a.degree*60 + a.minute)
 	if minutes >= 360*60 {
 		minutes %= (360 * 60)
 	} else if minutes < 0 {
@@ -59,8 +59,8 @@ func (a *Angle) Normalize() {
 	if minutes == 0 {
 		a.degree, a.minute = 0, 0
 	} else {
-		a.degree = minutes / 60
-		a.minute = minutes % 60
+		a.degree = int16(minutes / 60)
+		a.minute = int16(minutes % 60)
 	}
 }
 

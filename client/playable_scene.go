@@ -158,7 +158,7 @@ func (s *PlayableScene) drawObj(obj object.IObject, dstImage *ebiten.Image) {
 		s.playableObjs[obj.InstId()] = tc
 	}
 
-	s._draw(tc, obj.Width(), obj.Length(), dstImage)
+	s.draw(tc, obj.Width(), obj.Length(), dstImage)
 }
 
 func (s *PlayableScene) drawEffect(effect effect.IEffect, dstImage *ebiten.Image) {
@@ -175,10 +175,10 @@ func (s *PlayableScene) drawEffect(effect effect.IEffect, dstImage *ebiten.Image
 		s.playableEffects[effect.InstId()] = tc
 	}
 
-	s._draw(tc, effect.Width(), effect.Height(), dstImage)
+	s.draw(tc, effect.Width(), effect.Height(), dstImage)
 }
 
-func (s *PlayableScene) _draw(tc *objOpCache, width, length int32, dstImage *ebiten.Image) {
+func (s *PlayableScene) draw(tc *objOpCache, width, length int32, dstImage *ebiten.Image) {
 	// 插值
 	var transform Transform
 	tc.playable.Interpolation(&transform)

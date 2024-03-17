@@ -284,6 +284,8 @@ func (inst *Instance) execCmd(cmdCode CmdCode, cmdArgs []int64, playerId uint64,
 		inst.logic.PlayerTankChange(playerId, nil)
 	case CMD_TANK_RESTORE:
 		inst.logic.PlayerTankRestore(playerId)
+	case CMD_RELEASE_SMALL_BALL:
+		inst.logic.PlayerTankReleaseSurroundObj(playerId)
 	}
 }
 
